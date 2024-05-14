@@ -29,7 +29,7 @@ import ortus.boxlang.runtime.interop.DynamicObject;
 import ortus.boxlang.runtime.types.exceptions.AbortException;
 import ortus.boxlang.runtime.types.exceptions.MissingIncludeException;
 import ortus.boxlang.runtime.util.FRTransService;
-import ortus.boxlang.web.context.WebRequestBoxContext;
+import ortus.boxlang.web.handlers.WebErrorHandler;
 
 /**
  * I handle running a web request
@@ -65,7 +65,8 @@ public class WebRequestExecutor {
 			trans		= frTransService.startTransaction( "Web Request", requestPath );
 			context		= new WebRequestBoxContext( BoxRuntime.getInstance().getRuntimeContext(), exchange, webRoot );
 			// Set default content type to text/html
-			exchange.getResponseHeaders().put( new HttpString( "Content-Type" ), "text/html" );
+			exchange.getResponseHeaders().put( new HttpString( "Content-Type" ), "text/html;charset=UTF-8" );
+			// exchange.getResponseHeaders().put( new HttpString( "Content-Encoding" ), "UTF-8" );
 			context.loadApplicationDescriptor( new URI( requestPath ) );
 			appListener = context.getApplicationListener();
 			boolean result = appListener.onRequestStart( context, new Object[] { requestPath } );
