@@ -23,7 +23,7 @@ import ortus.boxlang.runtime.scopes.Key;
 import ortus.boxlang.runtime.types.Argument;
 import ortus.boxlang.runtime.types.IStruct;
 import ortus.boxlang.runtime.types.Struct;
-import ortus.boxlang.web.WebRequestBoxContext;
+import ortus.boxlang.web.context.WebRequestBoxContext;
 
 @BoxBIF
 public class GetHTTPRequestData extends BIF {

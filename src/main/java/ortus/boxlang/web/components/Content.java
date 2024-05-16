@@ -38,7 +38,7 @@ import ortus.boxlang.runtime.types.exceptions.BoxIOException;
 import ortus.boxlang.runtime.types.exceptions.BoxRuntimeException;
 import ortus.boxlang.runtime.util.FileSystemUtil;
 import ortus.boxlang.runtime.validation.Validator;
-import ortus.boxlang.web.WebRequestBoxContext;
+import ortus.boxlang.web.context.WebRequestBoxContext;
 
 @BoxComponent
 public class Content extends Component {

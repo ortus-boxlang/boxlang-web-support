@@ -26,7 +26,7 @@ import ortus.boxlang.runtime.scopes.Key;
 import ortus.boxlang.runtime.types.Argument;
 import ortus.boxlang.runtime.types.exceptions.AbortException;
 import ortus.boxlang.runtime.validation.Validator;
-import ortus.boxlang.web.WebRequestBoxContext;
+import ortus.boxlang.web.context.WebRequestBoxContext;
 
 @BoxBIF
 public class Location extends BIF {

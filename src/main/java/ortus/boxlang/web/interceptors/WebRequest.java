@@ -30,7 +30,7 @@ import ortus.boxlang.runtime.services.ComponentService;
 import ortus.boxlang.runtime.types.IStruct;
 import ortus.boxlang.runtime.types.Struct;
 import ortus.boxlang.runtime.types.exceptions.BoxRuntimeException;
-import ortus.boxlang.web.WebRequestBoxContext;
+import ortus.boxlang.web.context.WebRequestBoxContext;
 
 /**
  * Web request based interceptions

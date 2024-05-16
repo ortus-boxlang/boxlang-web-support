@@ -29,7 +29,7 @@ import ortus.boxlang.runtime.scopes.Key;
 import ortus.boxlang.runtime.types.IStruct;
 import ortus.boxlang.runtime.types.exceptions.AbortException;
 import ortus.boxlang.runtime.validation.Validator;
-import ortus.boxlang.web.WebRequestBoxContext;
+import ortus.boxlang.web.context.WebRequestBoxContext;
 
 @BoxComponent
 public class Location extends Component {
