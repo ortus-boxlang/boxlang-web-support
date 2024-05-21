@@ -54,22 +54,24 @@ public class WebRequestExecutor {
 			frTransService	= FRTransService.getInstance( manageFullReqestLifecycle );
 
 			requestPath		= exchange.getRelativePath();
-			// Process path info real quick
-			// Path info is sort of a servlet concept. It's just everything left in the URI that didn't match the servlet mapping
-			// In undertow, we can use predicates to match the path info and store it in the exchange attachment so we can get it in the CGI scope
-			Map<String, Object>	predicateContext	= exchange.getAttachment( Predicate.PREDICATE_CONTEXT );
-			Matcher				matcher				= pattern.matcher( requestPath );
-			if ( matcher.find() ) {
-				// Use the second capture group if it exists to set the path info
-				String pathInfo = matcher.group( 2 );
-				if ( pathInfo != null ) {
-					exchange.setRelativePath( matcher.group( 1 ) );
-					predicateContext.put( "pathInfo", pathInfo );
+			Map<String, Object> predicateContext = exchange.getAttachment( Predicate.PREDICATE_CONTEXT );
+			if ( !predicateContext.containsKey( "pathInfo" ) ) {
+				// Process path info real quick
+				// Path info is sort of a servlet concept. It's just everything left in the URI that didn't match the servlet mapping
+				// In undertow, we can use predicates to match the path info and store it in the exchange attachment so we can get it in the CGI scope
+				Matcher matcher = pattern.matcher( requestPath );
+				if ( matcher.find() ) {
+					// Use the second capture group if it exists to set the path info
+					String pathInfo = matcher.group( 2 );
+					if ( pathInfo != null ) {
+						exchange.setRelativePath( matcher.group( 1 ) );
+						predicateContext.put( "pathInfo", pathInfo );
+					} else {
+						predicateContext.put( "pathInfo", "" );
+					}
 				} else {
 					predicateContext.put( "pathInfo", "" );
 				}
-			} else {
-				predicateContext.put( "pathInfo", "" );
 			}
 			// end path info processing
 
