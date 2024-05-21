@@ -19,6 +19,8 @@ package ortus.boxlang.web;
 
 import java.net.URI;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import io.undertow.predicate.Predicate;
 import io.undertow.server.HttpServerExchange;
@@ -37,6 +39,8 @@ import ortus.boxlang.web.handlers.WebErrorHandler;
  */
 public class WebRequestExecutor {
 
+	static final Pattern pattern = Pattern.compile( "^(/.+?\\.cfml|/.+?\\.cf[cms]|.+?\\.bx[ms]{0,1})(/.*)?$" );
+
 	public static void execute( HttpServerExchange exchange, String webRoot, Boolean manageFullReqestLifecycle ) {
 
 		WebRequestBoxContext	context			= null;
@@ -47,24 +51,30 @@ public class WebRequestExecutor {
 		String					requestPath		= "";
 
 		try {
-			frTransService = FRTransService.getInstance( manageFullReqestLifecycle );
+			frTransService	= FRTransService.getInstance( manageFullReqestLifecycle );
 
+			requestPath		= exchange.getRelativePath();
 			// Process path info real quick
 			// Path info is sort of a servlet concept. It's just everything left in the URI that didn't match the servlet mapping
 			// In undertow, we can use predicates to match the path info and store it in the exchange attachment so we can get it in the CGI scope
 			Map<String, Object>	predicateContext	= exchange.getAttachment( Predicate.PREDICATE_CONTEXT );
-			String				pathInfo			= ( String ) predicateContext.get( "2" );
-			if ( pathInfo != null ) {
-				exchange.setRelativePath( ( String ) predicateContext.get( "1" ) );
-				predicateContext.put( "pathInfo", pathInfo );
+			Matcher				matcher				= pattern.matcher( requestPath );
+			if ( matcher.find() ) {
+				// Use the second capture group if it exists to set the path info
+				String pathInfo = matcher.group( 2 );
+				if ( pathInfo != null ) {
+					exchange.setRelativePath( matcher.group( 1 ) );
+					predicateContext.put( "pathInfo", pathInfo );
+				} else {
+					predicateContext.put( "pathInfo", "" );
+				}
 			} else {
 				predicateContext.put( "pathInfo", "" );
 			}
 			// end path info processing
 
-			requestPath	= exchange.getRelativePath();
-			trans		= frTransService.startTransaction( "Web Request", requestPath );
-			context		= new WebRequestBoxContext( BoxRuntime.getInstance().getRuntimeContext(), exchange, webRoot );
+			trans	= frTransService.startTransaction( "Web Request", requestPath );
+			context	= new WebRequestBoxContext( BoxRuntime.getInstance().getRuntimeContext(), exchange, webRoot );
 			// Set default content type to text/html
 			exchange.getResponseHeaders().put( new HttpString( "Content-Type" ), "text/html;charset=UTF-8" );
 			// exchange.getResponseHeaders().put( new HttpString( "Content-Encoding" ), "UTF-8" );
