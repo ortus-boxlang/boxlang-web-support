@@ -23,6 +23,8 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
+import org.xnio.ChannelListener;
+import org.xnio.ChannelListeners;
 import org.xnio.channels.StreamSinkChannel;
 
 import io.undertow.server.HttpServerExchange;
@@ -354,11 +356,49 @@ public class WebRequestBoxContext extends RequestBoxContext {
 	}
 
 	public void finalizeResponse() {
-		try {
-			getResponseChannel().shutdownWrites();
-		} catch ( IOException e ) {
-			e.printStackTrace();
-		}
+		StreamSinkChannel channel = getResponseChannel();
+
+		channel.getWriteSetter().set( new ChannelListener<StreamSinkChannel>() {
+
+			@Override
+			public void handleEvent( StreamSinkChannel channel ) {
+				try {
+					// Shutdown writes after data is written
+					channel.shutdownWrites();
+
+					// Ensure the channel is flushed
+					if ( !channel.flush() ) {
+						// If not flushed, set a listener to complete the flushing
+						channel.getWriteSetter().set( ChannelListeners.flushingChannelListener( new ChannelListener<StreamSinkChannel>() {
+
+							@Override
+							public void handleEvent( StreamSinkChannel channel ) {
+								try {
+									if ( channel.flush() ) {
+										// End the exchange after flushing is complete
+										exchange.endExchange();
+									}
+								} catch ( IOException e ) {
+									// End the exchange in case of an error
+									exchange.endExchange();
+								}
+							}
+						}, ChannelListeners.closingChannelExceptionHandler() ) );
+						// Resume writes to complete the flush
+						channel.resumeWrites();
+					} else {
+						// If flushed immediately, end the exchange
+						exchange.endExchange();
+					}
+				} catch ( IOException e ) {
+					// End the exchange in case of an error
+					exchange.endExchange();
+				}
+			}
+		} );
+
+		// Resume writes to trigger the listener
+		channel.resumeWrites();
 	}
 
 	/**
@@ -393,13 +433,12 @@ public class WebRequestBoxContext extends RequestBoxContext {
 		}
 		if ( !output.isEmpty() ) {
 			ByteBuffer bBuffer = ByteBuffer.wrap( output.getBytes( StandardCharsets.UTF_8 ) );
+
 			try {
 				getResponseChannel().write( bBuffer );
 			} catch ( IOException e ) {
 				e.printStackTrace();
 			}
-			// This ends the exchange, so not what we want
-			// exchange.getResponseSender().send( output );
 		}
 		return this;
 	}
