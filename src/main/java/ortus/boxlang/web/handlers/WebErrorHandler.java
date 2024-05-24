@@ -297,8 +297,7 @@ public class WebErrorHandler {
 			    .append( "</section>" );
 
 			if ( context != null ) {
-				context.writeToBuffer( errorOutput.toString() );
-				context.flushBuffer( true );
+				context.writeToBuffer( errorOutput.toString(), true );
 			} else {
 				// fail safe in case we errored out before creating the context
 				ByteBuffer bBuffer = ByteBuffer.wrap( errorOutput.toString().getBytes( StandardCharsets.UTF_8 ) );
