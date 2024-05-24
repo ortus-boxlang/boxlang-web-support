@@ -426,7 +426,7 @@ public class WebRequestBoxContext extends RequestBoxContext {
 		} else if ( force ) {
 			for ( StringBuffer buf : buffers ) {
 				synchronized ( buf ) {
-					output.concat( buf.toString() );
+					output = output.concat( buf.toString() );
 					buf.setLength( 0 );
 				}
 			}
