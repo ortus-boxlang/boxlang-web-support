@@ -145,6 +145,12 @@ public class CGIScope extends BaseScope {
 		if ( key.equals( Key.server_port ) ) {
 			return exchange.getHostPort();
 		}
+		if ( key.equals( Key.query_string ) ) {
+			return exchange.getQueryString();
+		}
+		if ( key.equals( Key.http_host ) ) {
+			return exchange.getHostName();
+		}
 
 		if ( key.equals( Key.path_info ) ) {
 			Map<String, Object>	predicateContext	= exchange.getAttachment( Predicate.PREDICATE_CONTEXT );
@@ -175,7 +181,6 @@ public class CGIScope extends BaseScope {
 		 * http_accept_language
 		 * http_connection
 		 * http_cookie
-		 * http_host
 		 * http_referer
 		 * http_user_agent
 		 * https_keysize
@@ -186,7 +191,6 @@ public class CGIScope extends BaseScope {
 		 * local_addr
 		 * local_host
 		 * path_translated
-		 * query_string
 		 * remote_addr
 		 * remote_host
 		 * remote_user
