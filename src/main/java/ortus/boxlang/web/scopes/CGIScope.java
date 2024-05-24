@@ -17,7 +17,10 @@
  */
 package ortus.boxlang.web.scopes;
 
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import io.undertow.predicate.Predicate;
 import io.undertow.server.HttpServerExchange;
@@ -33,12 +36,60 @@ import ortus.boxlang.runtime.types.meta.BoxMeta;
  */
 public class CGIScope extends BaseScope {
 
+	Set<Key>						knownKeys	= new HashSet<Key>( Arrays.asList(
+	    Key.auth_password,
+	    Key.auth_type,
+	    Key.auth_user,
+	    Key.cert_cookie,
+	    Key.cert_flags,
+	    Key.cert_issuer,
+	    Key.cert_keysize,
+	    Key.cert_secretkeysize,
+	    Key.cert_serialnumber,
+	    Key.cert_server_issuer,
+	    Key.cert_server_subject,
+	    Key.cert_subject,
+	    Key.cf_template_path,
+	    Key.content_length,
+	    Key.content_type,
+	    Key.context_path,
+	    Key.gateway_interface,
+	    Key.http_accept,
+	    Key.http_accept_encoding,
+	    Key.http_accept_language,
+	    Key.http_connection,
+	    Key.http_cookie,
+	    Key.http_host,
+	    Key.http_referer,
+	    Key.http_user_agent,
+	    Key.https_keysize,
+	    Key.https_secretkeysize,
+	    Key.https_server_issuer,
+	    Key.https_server_subject,
+	    Key.https,
+	    Key.local_addr,
+	    Key.local_host,
+	    Key.path_translated,
+	    Key.query_string,
+	    Key.remote_addr,
+	    Key.remote_host,
+	    Key.remote_user,
+	    Key.request_method,
+	    Key.request_url,
+	    Key.script_name,
+	    Key.server_name,
+	    Key.server_port,
+	    Key.server_port_secure,
+	    Key.server_protocol,
+	    Key.server_software,
+	    Key.web_server_api ) );
+
 	/**
 	 * --------------------------------------------------------------------------
 	 * Public Properties
 	 * --------------------------------------------------------------------------
 	 */
-	public static final Key			name	= Key.of( "cgi" );
+	public static final Key			name		= Key.of( "cgi" );
 
 	protected HttpServerExchange	exchange;
 
@@ -162,7 +213,12 @@ public class CGIScope extends BaseScope {
 			}
 		}
 
-		// CGI scope NEVER errors. It simply returns empty string if the key is not found
+		// CGI scope NEVER errors. It simply returns empty string if the key is not
+		// found
 		return "";
+	}
+
+	public Set<Key> getDumpKeys() {
+		return knownKeys;
 	}
 }
