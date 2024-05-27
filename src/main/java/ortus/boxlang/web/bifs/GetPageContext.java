@@ -80,8 +80,14 @@ public class GetPageContext extends BIF {
 			setHeader( "Content-Type", value );
 		}
 
+		// Shim until we fix auto java casting
 		public void setStatus( Double code, String text ) {
 			setStatus( code.intValue(), text );
+		}
+
+		// Shim until we fix auto java casting
+		public void setStatus( Double code ) {
+			setStatus( code.intValue() );
 		}
 
 		public void setStatus( int code, String text ) {
