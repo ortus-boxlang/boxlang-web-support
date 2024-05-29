@@ -151,6 +151,13 @@ public class CGIScope extends BaseScope {
 		if ( key.equals( Key.http_host ) ) {
 			return exchange.getHostName();
 		}
+		if ( key.equals( Key.request_method ) ) {
+			return exchange.getRequestMethod().toString();
+		}
+		if ( key.equals( Key.content_type ) ) {
+			String result = exchange.getRequestHeaders().getFirst( "Content-Type" );
+			return result == null ? "" : result;
+		}
 
 		if ( key.equals( Key.path_info ) ) {
 			Map<String, Object>	predicateContext	= exchange.getAttachment( Predicate.PREDICATE_CONTEXT );
@@ -173,7 +180,6 @@ public class CGIScope extends BaseScope {
 		 * cert_subject
 		 * cf_template_path
 		 * content_length
-		 * content_type
 		 * context_path
 		 * gateway_interface
 		 * http_accept
@@ -194,9 +200,7 @@ public class CGIScope extends BaseScope {
 		 * remote_addr
 		 * remote_host
 		 * remote_user
-		 * request_method
 		 * request_url
-		 * script_name
 		 * server_name
 		 * server_port
 		 * server_port_secure

@@ -150,7 +150,6 @@ public class WebRequestExecutor {
 				if ( context != null ) {
 					context.finalizeResponse();
 				}
-				exchange.endExchange();
 			}
 			if ( frTransService != null ) {
 				frTransService.endTransaction( trans );
