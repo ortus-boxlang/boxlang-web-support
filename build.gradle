@@ -37,7 +37,7 @@ dependencies {
 	// Production Dependency
     compileOnly files( 'src/test/resources/libs/boxlang-1.0.0-all.jar' )
 	// https://mvnrepository.com/artifact/io.undertow/undertow-core/2.3.12.Final
-	compileOnly 'io.undertow:undertow-core:2.3.12.Final'
+	compileOnly 'io.undertow:undertow-core:2.3.13.Final'
 
     // Testing Dependencies
 	testImplementation files( 'src/test/resources/libs/boxlang-1.0.0-all.jar' )
