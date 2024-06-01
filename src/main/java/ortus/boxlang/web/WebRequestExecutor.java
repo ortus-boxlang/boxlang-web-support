@@ -121,7 +121,7 @@ public class WebRequestExecutor {
 		} finally {
 			if ( appListener != null ) {
 				try {
-					appListener.onRequestEnd( context, new Object[] {} );
+					appListener.onRequestEnd( context, new Object[] { requestPath } );
 				} catch ( Throwable e ) {
 					// Opps, an error while handling onRequestEnd
 					errorToHandle = e;
