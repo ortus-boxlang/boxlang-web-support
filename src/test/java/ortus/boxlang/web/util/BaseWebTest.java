@@ -64,8 +64,11 @@ public class BaseWebTest {
 
 		// Create the mock contexts
 		context		= new ScriptingRequestBoxContext( runtime.getRuntimeContext() );
+
 		webContext	= new WebRequestBoxContext( context, exchange, TEST_WEBROOT );
-		variables	= webContext.getScopeNearby( VariablesScope.name );
+		Mockito.spy( webContext );
+		Mockito.when( webContext.canOutput() ).thenReturn( false );
+		variables = webContext.getScopeNearby( VariablesScope.name );
 	}
 
 }
