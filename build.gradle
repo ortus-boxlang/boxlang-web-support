@@ -44,7 +44,6 @@ dependencies {
 
     // Testing Dependencies
 	testImplementation files( 'src/test/resources/libs/boxlang-1.0.0-all.jar' )
-	testImplementation 'io.undertow:undertow-core:2.3.12.Final'
     testImplementation "org.junit.jupiter:junit-jupiter:5.+"
 	testImplementation "org.mockito:mockito-core:5.+"
 	testImplementation "com.google.truth:truth:1.+"

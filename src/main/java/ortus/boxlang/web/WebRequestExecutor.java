@@ -18,13 +18,7 @@
 package ortus.boxlang.web;
 
 import java.net.URI;
-import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
-import io.undertow.predicate.Predicate;
-import io.undertow.server.HttpServerExchange;
-import io.undertow.util.HttpString;
 import ortus.boxlang.runtime.BoxRuntime;
 import ortus.boxlang.runtime.application.ApplicationListener;
 import ortus.boxlang.runtime.interop.DynamicObject;
@@ -32,6 +26,7 @@ import ortus.boxlang.runtime.types.exceptions.AbortException;
 import ortus.boxlang.runtime.types.exceptions.MissingIncludeException;
 import ortus.boxlang.runtime.util.FRTransService;
 import ortus.boxlang.web.context.WebRequestBoxContext;
+import ortus.boxlang.web.exchange.IBoxHTTPExchange;
 import ortus.boxlang.web.handlers.WebErrorHandler;
 
 /**
@@ -39,9 +34,7 @@ import ortus.boxlang.web.handlers.WebErrorHandler;
  */
 public class WebRequestExecutor {
 
-	static final Pattern pattern = Pattern.compile( "^(/.+?\\.cfml|/.+?\\.cf[cms]|.+?\\.bx[ms]{0,1})(/.*)?$" );
-
-	public static void execute( HttpServerExchange exchange, String webRoot, Boolean manageFullReqestLifecycle ) {
+	public static void execute( IBoxHTTPExchange exchange, String webRoot, Boolean manageFullReqestLifecycle ) {
 
 		WebRequestBoxContext	context			= null;
 		DynamicObject			trans			= null;
@@ -53,32 +46,12 @@ public class WebRequestExecutor {
 		try {
 			frTransService	= FRTransService.getInstance( manageFullReqestLifecycle );
 
-			requestPath		= exchange.getRelativePath();
-			Map<String, Object> predicateContext = exchange.getAttachment( Predicate.PREDICATE_CONTEXT );
-			if ( !predicateContext.containsKey( "pathInfo" ) ) {
-				// Process path info real quick
-				// Path info is sort of a servlet concept. It's just everything left in the URI that didn't match the servlet mapping
-				// In undertow, we can use predicates to match the path info and store it in the exchange attachment so we can get it in the CGI scope
-				Matcher matcher = pattern.matcher( requestPath );
-				if ( matcher.find() ) {
-					// Use the second capture group if it exists to set the path info
-					String pathInfo = matcher.group( 2 );
-					if ( pathInfo != null ) {
-						exchange.setRelativePath( matcher.group( 1 ) );
-						predicateContext.put( "pathInfo", pathInfo );
-					} else {
-						predicateContext.put( "pathInfo", "" );
-					}
-				} else {
-					predicateContext.put( "pathInfo", "" );
-				}
-			}
-			// end path info processing
+			requestPath		= exchange.getRequestURI();
 
-			trans	= frTransService.startTransaction( "Web Request", requestPath );
-			context	= new WebRequestBoxContext( BoxRuntime.getInstance().getRuntimeContext(), exchange, webRoot );
+			trans			= frTransService.startTransaction( "Web Request", requestPath );
+			context			= new WebRequestBoxContext( BoxRuntime.getInstance().getRuntimeContext(), exchange, webRoot );
 			// Set default content type to text/html
-			exchange.getResponseHeaders().put( new HttpString( "Content-Type" ), "text/html;charset=UTF-8" );
+			exchange.setResponseHeader( "Content-Type", "text/html;charset=UTF-8" );
 			// exchange.getResponseHeaders().put( new HttpString( "Content-Encoding" ), "UTF-8" );
 			context.loadApplicationDescriptor( new URI( requestPath ) );
 			appListener = context.getApplicationListener();
@@ -141,16 +114,13 @@ public class WebRequestExecutor {
 					WebErrorHandler.handleError( t, exchange, context, frTransService, trans );
 				}
 			}
-			if ( context != null )
-				context.flushBuffer( false );
 
-			// for our embedded mini-server, we must finalize the request, but in a servlet context
-			// the servlet does this for us.
-			if ( manageFullReqestLifecycle ) {
-				if ( context != null ) {
-					context.finalizeResponse();
-				}
+			if ( context != null ) {
+				context.flushBuffer( false );
+			} else {
+				exchange.flushResponseBuffer();
 			}
+
 			if ( frTransService != null ) {
 				frTransService.endTransaction( trans );
 			}

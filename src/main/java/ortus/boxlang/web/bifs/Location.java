@@ -16,8 +16,6 @@ package ortus.boxlang.web.bifs;
 
 import java.util.Set;
 
-import io.undertow.server.HttpServerExchange;
-import io.undertow.util.HttpString;
 import ortus.boxlang.runtime.bifs.BIF;
 import ortus.boxlang.runtime.bifs.BoxBIF;
 import ortus.boxlang.runtime.context.IBoxContext;
@@ -27,6 +25,7 @@ import ortus.boxlang.runtime.types.Argument;
 import ortus.boxlang.runtime.types.exceptions.AbortException;
 import ortus.boxlang.runtime.validation.Validator;
 import ortus.boxlang.web.context.WebRequestBoxContext;
+import ortus.boxlang.web.exchange.IBoxHTTPExchange;
 
 @BoxBIF
 public class Location extends BIF {
@@ -73,10 +72,10 @@ public class Location extends BIF {
 		Integer					statusCode		= arguments.getAsInteger( Key.statusCode );
 
 		WebRequestBoxContext	requestContext	= context.getParentOfType( WebRequestBoxContext.class );
-		HttpServerExchange		exchange		= requestContext.getExchange();
+		IBoxHTTPExchange		exchange		= requestContext.getHTTPExchange();
 
-		exchange.setStatusCode( statusCode );
-		exchange.getResponseHeaders().put( new HttpString( "location" ), URL );
+		exchange.setResponseStatus( statusCode );
+		exchange.setResponseHeader( "location", URL );
 
 		throw new AbortException();
 	}

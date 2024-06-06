@@ -19,8 +19,6 @@ package ortus.boxlang.web.components;
 
 import java.util.Set;
 
-import io.undertow.server.HttpServerExchange;
-import io.undertow.server.handlers.CookieImpl;
 import ortus.boxlang.runtime.components.Attribute;
 import ortus.boxlang.runtime.components.BoxComponent;
 import ortus.boxlang.runtime.components.Component;
@@ -29,6 +27,8 @@ import ortus.boxlang.runtime.scopes.Key;
 import ortus.boxlang.runtime.types.IStruct;
 import ortus.boxlang.runtime.validation.Validator;
 import ortus.boxlang.web.context.WebRequestBoxContext;
+import ortus.boxlang.web.exchange.BoxCookie;
+import ortus.boxlang.web.exchange.IBoxHTTPExchange;
 
 @BoxComponent
 public class Cookie extends Component {
@@ -117,9 +117,9 @@ public class Cookie extends Component {
 
 		WebRequestBoxContext	requestContext	= context.getParentOfType( WebRequestBoxContext.class );
 
-		HttpServerExchange		exchange		= requestContext.getExchange();
+		IBoxHTTPExchange		exchange		= requestContext.getHTTPExchange();
 
-		CookieImpl				cookieInstance	= new CookieImpl( name, value );
+		BoxCookie				cookieInstance	= new BoxCookie( name, value );
 
 		if ( secure != null ) {
 			cookieInstance.setSecure( secure );
@@ -129,11 +129,7 @@ public class Cookie extends Component {
 			cookieInstance.setHttpOnly( httpOnly );
 		}
 
-		// TODO: Implement a custom method into CookieImp.class to manage expires
-
-		if ( samesite != null ) {
-			cookieInstance.setSameSiteMode( samesite );
-		}
+		// TODO: Implement expires and same site
 
 		if ( path != null ) {
 			cookieInstance.setPath( path );
@@ -143,7 +139,7 @@ public class Cookie extends Component {
 			cookieInstance.setDomain( domain );
 		}
 
-		exchange.setResponseCookie( cookieInstance );
+		exchange.addResponseCookie( cookieInstance );
 
 		return DEFAULT_RETURN;
 	}

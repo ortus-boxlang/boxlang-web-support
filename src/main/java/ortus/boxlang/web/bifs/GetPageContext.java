@@ -14,13 +14,12 @@
  */
 package ortus.boxlang.web.bifs;
 
-import io.undertow.server.HttpServerExchange;
-import io.undertow.util.HttpString;
 import ortus.boxlang.runtime.bifs.BIF;
 import ortus.boxlang.runtime.bifs.BoxBIF;
 import ortus.boxlang.runtime.context.IBoxContext;
 import ortus.boxlang.runtime.scopes.ArgumentsScope;
 import ortus.boxlang.web.context.WebRequestBoxContext;
+import ortus.boxlang.web.exchange.IBoxHTTPExchange;
 
 @BoxBIF
 public class GetPageContext extends BIF {
@@ -50,12 +49,12 @@ public class GetPageContext extends BIF {
 	 */
 	public class PageContext {
 
-		private HttpServerExchange		exchange;
+		private IBoxHTTPExchange		exchange;
 		private WebRequestBoxContext	context;
 
 		public PageContext( IBoxContext context ) {
 			this.context	= context.getParentOfType( WebRequestBoxContext.class );
-			this.exchange	= this.context.getExchange();
+			this.exchange	= this.context.getHTTPExchange();
 		}
 
 		public PageContext getResponse() {
@@ -70,7 +69,7 @@ public class GetPageContext extends BIF {
 			if ( exchange.isResponseStarted() ) {
 				return;
 			}
-			exchange.getResponseHeaders().put( new HttpString( name ), value );
+			exchange.setResponseHeader( name, value );
 		}
 
 		public void setContentType( String value ) {
@@ -94,8 +93,7 @@ public class GetPageContext extends BIF {
 			if ( exchange.isResponseStarted() ) {
 				return;
 			}
-			exchange.setStatusCode( code );
-			exchange.setReasonPhrase( text );
+			exchange.setResponseStatus( code, text );
 		}
 
 		public void setStatus( int code ) {
@@ -103,7 +101,7 @@ public class GetPageContext extends BIF {
 		}
 
 		public int getStatus() {
-			return exchange.getStatusCode();
+			return exchange.getResponseStatus();
 		}
 
 		public void reset() {
@@ -128,7 +126,7 @@ public class GetPageContext extends BIF {
 
 		// Getting response content type. If we need to get request content type, we'll need to spoof actual request and response objects
 		public String getContentType() {
-			String contentType = exchange.getResponseHeaders().getFirst( "Content-Type" );
+			String contentType = exchange.getResponseHeader( "Content-Type" );
 			if ( contentType == null ) {
 				return "text/html";
 			} else {

@@ -19,24 +19,21 @@ package ortus.boxlang.web.scopes;
 
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 
-import io.undertow.predicate.Predicate;
-import io.undertow.server.HttpServerExchange;
-import io.undertow.util.HeaderValues;
 import ortus.boxlang.runtime.context.IBoxContext;
 import ortus.boxlang.runtime.scopes.BaseScope;
 import ortus.boxlang.runtime.scopes.Key;
 import ortus.boxlang.runtime.types.exceptions.BoxRuntimeException;
 import ortus.boxlang.runtime.types.meta.BoxMeta;
+import ortus.boxlang.web.exchange.IBoxHTTPExchange;
 
 /**
  * Variables scope implementation in BoxLang
  */
 public class CGIScope extends BaseScope {
 
-	Set<Key>						knownKeys	= new HashSet<Key>( Arrays.asList(
+	Set<Key>					knownKeys	= new HashSet<Key>( Arrays.asList(
 	    Key.auth_password,
 	    Key.auth_type,
 	    Key.auth_user,
@@ -89,9 +86,9 @@ public class CGIScope extends BaseScope {
 	 * Public Properties
 	 * --------------------------------------------------------------------------
 	 */
-	public static final Key			name		= Key.of( "cgi" );
+	public static final Key		name		= Key.of( "cgi" );
 
-	protected HttpServerExchange	exchange;
+	protected IBoxHTTPExchange	exchange;
 
 	/**
 	 * --------------------------------------------------------------------------
@@ -99,7 +96,7 @@ public class CGIScope extends BaseScope {
 	 * --------------------------------------------------------------------------
 	 */
 
-	public CGIScope( HttpServerExchange exchange ) {
+	public CGIScope( IBoxHTTPExchange exchange ) {
 		super( CGIScope.name );
 		this.exchange = exchange;
 	}
@@ -137,31 +134,30 @@ public class CGIScope extends BaseScope {
 		}
 
 		if ( key.equals( Key.script_name ) ) {
-			return exchange.getRelativePath();
+			return exchange.getRequestURI();
 		}
 		if ( key.equals( Key.server_name ) ) {
-			return exchange.getHostName();
+			return exchange.getRequestServerName();
 		}
 		if ( key.equals( Key.server_port ) ) {
-			return exchange.getHostPort();
+			return exchange.getRequestServerPort();
 		}
 		if ( key.equals( Key.query_string ) ) {
-			return exchange.getQueryString();
+			return exchange.getRequestQueryString();
 		}
 		if ( key.equals( Key.http_host ) ) {
-			return exchange.getHostName();
+			return exchange.getRequestServerName();
 		}
 		if ( key.equals( Key.request_method ) ) {
-			return exchange.getRequestMethod().toString();
+			return exchange.getRequestMethod();
 		}
 		if ( key.equals( Key.content_type ) ) {
-			String result = exchange.getRequestHeaders().getFirst( "Content-Type" );
+			String result = exchange.getRequestHeader( "Content-Type" );
 			return result == null ? "" : result;
 		}
 
 		if ( key.equals( Key.path_info ) ) {
-			Map<String, Object>	predicateContext	= exchange.getAttachment( Predicate.PREDICATE_CONTEXT );
-			String				pathInfo			= ( String ) predicateContext.get( "pathInfo" );
+			String pathInfo = exchange.getRequestPathInfo();
 			return pathInfo == null ? "" : pathInfo;
 		}
 		// TODO: All other CGI keys
@@ -210,14 +206,14 @@ public class CGIScope extends BaseScope {
 		 */
 
 		// HTTP header fallbacks
-		HeaderValues header = exchange.getRequestHeaders().get( key.getName() );
+		String header = exchange.getRequestHeader( key.getName() );
 		if ( header != null ) {
-			return header.getFirst();
+			return header;
 		}
 		if ( key.getName().toLowerCase().startsWith( "http" ) ) {
-			header = exchange.getRequestHeaders().get( key.getName().substring( 5 ) );
+			header = exchange.getRequestHeader( key.getName().substring( 5 ) );
 			if ( header != null ) {
-				return header.getFirst();
+				return header;
 			}
 		}
 

@@ -17,12 +17,12 @@
  */
 package ortus.boxlang.web.scopes;
 
-import io.undertow.server.HttpServerExchange;
-import io.undertow.server.handlers.CookieImpl;
 import ortus.boxlang.runtime.context.IBoxContext;
 import ortus.boxlang.runtime.dynamic.casters.StringCaster;
 import ortus.boxlang.runtime.scopes.BaseScope;
 import ortus.boxlang.runtime.scopes.Key;
+import ortus.boxlang.web.exchange.BoxCookie;
+import ortus.boxlang.web.exchange.IBoxHTTPExchange;
 
 /**
  * Variables scope implementation in BoxLang
@@ -34,9 +34,9 @@ public class CookieScope extends BaseScope {
 	 * Public Properties
 	 * --------------------------------------------------------------------------
 	 */
-	public static final Key			name	= Key.of( "cookie" );
+	public static final Key		name	= Key.of( "cookie" );
 
-	protected HttpServerExchange	exchange;
+	protected IBoxHTTPExchange	exchange;
 
 	/**
 	 * --------------------------------------------------------------------------
@@ -44,10 +44,10 @@ public class CookieScope extends BaseScope {
 	 * --------------------------------------------------------------------------
 	 */
 
-	public CookieScope( HttpServerExchange exchange ) {
+	public CookieScope( IBoxHTTPExchange exchange ) {
 		super( CookieScope.name );
 		this.exchange = exchange;
-		for ( var cookie : exchange.requestCookies() ) {
+		for ( var cookie : exchange.getRequestCookies() ) {
 			this.put( Key.of( cookie.getName() ), cookie.getValue() );
 		}
 	}
@@ -66,7 +66,7 @@ public class CookieScope extends BaseScope {
 	 */
 	@Override
 	public Object assign( IBoxContext context, Key key, Object value ) {
-		exchange.setResponseCookie( new CookieImpl( key.getName(), StringCaster.cast( value ) ) );
+		exchange.addResponseCookie( new BoxCookie( key.getName(), StringCaster.cast( value ) ) );
 		return value;
 	}
 }

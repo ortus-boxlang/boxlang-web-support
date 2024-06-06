@@ -14,7 +14,6 @@
  */
 package ortus.boxlang.web.bifs;
 
-import io.undertow.server.HttpServerExchange;
 import ortus.boxlang.runtime.bifs.BIF;
 import ortus.boxlang.runtime.bifs.BoxBIF;
 import ortus.boxlang.runtime.context.IBoxContext;
@@ -24,6 +23,7 @@ import ortus.boxlang.runtime.types.Argument;
 import ortus.boxlang.runtime.types.IStruct;
 import ortus.boxlang.runtime.types.Struct;
 import ortus.boxlang.web.context.WebRequestBoxContext;
+import ortus.boxlang.web.exchange.IBoxHTTPExchange;
 
 @BoxBIF
 public class GetHTTPRequestData extends BIF {
@@ -50,18 +50,17 @@ public class GetHTTPRequestData extends BIF {
 	 */
 	public Object _invoke( IBoxContext context, ArgumentsScope arguments ) {
 		WebRequestBoxContext	requestContext	= context.getParentOfType( WebRequestBoxContext.class );
-		HttpServerExchange		exchange		= requestContext.getExchange();
+		IBoxHTTPExchange		exchange		= requestContext.getHTTPExchange();
 
 		IStruct					headers			= new Struct();
-		exchange.getRequestHeaders().forEach( ( headerValues ) -> {
-			// TODO: What does CF do with duplicate request header names?
-			headers.put( headerValues.getHeaderName().toString(), headerValues.getFirst() );
+		exchange.getRequestHeaderMap().forEach( ( key, values ) -> {
+			headers.put( key, values[ 0 ] );
 		} );
 
 		IStruct result = Struct.of(
 		    Key.headers, headers,
-		    Key.method, exchange.getRequestMethod().toString(),
-		    Key.protocol, exchange.getProtocol().toString()
+		    Key.method, exchange.getRequestMethod(),
+		    Key.protocol, exchange.getRequestProtocol()
 		);
 
 		if ( arguments.getAsBoolean( Key.includeBody ) ) {

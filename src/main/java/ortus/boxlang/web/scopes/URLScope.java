@@ -17,11 +17,12 @@
  */
 package ortus.boxlang.web.scopes;
 
+import java.util.Arrays;
 import java.util.stream.Collectors;
 
-import io.undertow.server.HttpServerExchange;
 import ortus.boxlang.runtime.scopes.BaseScope;
 import ortus.boxlang.runtime.scopes.Key;
+import ortus.boxlang.web.exchange.IBoxHTTPExchange;
 
 /**
  * Variables scope implementation in BoxLang
@@ -41,10 +42,10 @@ public class URLScope extends BaseScope {
 	 * --------------------------------------------------------------------------
 	 */
 
-	public URLScope( HttpServerExchange exchange ) {
+	public URLScope( IBoxHTTPExchange exchange ) {
 		super( URLScope.name );
-		exchange.getQueryParameters().forEach( ( key, value ) -> {
-			this.put( Key.of( key ), value.stream().collect( Collectors.joining( "," ) ) );
+		exchange.getRequestURLMap().forEach( ( key, value ) -> {
+			this.put( Key.of( key ), Arrays.stream( value ).collect( Collectors.joining( "," ) ) );
 		} );
 	}
 

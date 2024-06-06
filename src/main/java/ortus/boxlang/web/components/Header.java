@@ -19,8 +19,6 @@ package ortus.boxlang.web.components;
 
 import java.util.Set;
 
-import io.undertow.server.HttpServerExchange;
-import io.undertow.util.HttpString;
 import ortus.boxlang.runtime.components.Attribute;
 import ortus.boxlang.runtime.components.BoxComponent;
 import ortus.boxlang.runtime.components.Component;
@@ -30,6 +28,7 @@ import ortus.boxlang.runtime.types.IStruct;
 import ortus.boxlang.runtime.types.exceptions.BoxValidationException;
 import ortus.boxlang.runtime.validation.Validator;
 import ortus.boxlang.web.context.WebRequestBoxContext;
+import ortus.boxlang.web.exchange.IBoxHTTPExchange;
 
 @BoxComponent
 public class Header extends Component {
@@ -80,19 +79,16 @@ public class Header extends Component {
 		String					statusText		= attributes.getAsString( Key.statusText );
 
 		WebRequestBoxContext	requestContext	= context.getParentOfType( WebRequestBoxContext.class );
-		HttpServerExchange		exchange		= requestContext.getExchange();
+		IBoxHTTPExchange		exchange		= requestContext.getHTTPExchange();
 
 		if ( statusCode != null ) {
-			exchange.setStatusCode( statusCode );
 			if ( statusText != null ) {
-				exchange.setReasonPhrase( statusText );
+				exchange.setResponseStatus( statusCode, statusText );
+			} else {
+				exchange.setResponseStatus( statusCode );
 			}
 		} else {
-			// TODO: check and see if we remove existing headers, or just append
-			exchange.getResponseHeaders().add(
-			    new HttpString( name ),
-			    value
-			);
+			exchange.setResponseHeader( name, value );
 		}
 
 		return DEFAULT_RETURN;

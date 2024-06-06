@@ -17,10 +17,6 @@
  */
 package ortus.boxlang.web.handlers;
 
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
-
-import io.undertow.server.HttpServerExchange;
 import ortus.boxlang.runtime.dynamic.casters.CastAttempt;
 import ortus.boxlang.runtime.dynamic.casters.StringCaster;
 import ortus.boxlang.runtime.interop.DynamicObject;
@@ -36,6 +32,7 @@ import ortus.boxlang.runtime.types.exceptions.LockException;
 import ortus.boxlang.runtime.types.exceptions.MissingIncludeException;
 import ortus.boxlang.runtime.util.FRTransService;
 import ortus.boxlang.web.context.WebRequestBoxContext;
+import ortus.boxlang.web.exchange.IBoxHTTPExchange;
 
 /**
  * I handle default errors for a web request
@@ -43,7 +40,7 @@ import ortus.boxlang.web.context.WebRequestBoxContext;
  */
 public class WebErrorHandler {
 
-	public static void handleError( Throwable e, HttpServerExchange exchange, WebRequestBoxContext context, FRTransService frTransService,
+	public static void handleError( Throwable e, IBoxHTTPExchange exchange, WebRequestBoxContext context, FRTransService frTransService,
 	    DynamicObject trans ) {
 		try {
 			e.printStackTrace();
@@ -300,8 +297,7 @@ public class WebErrorHandler {
 				context.writeToBuffer( errorOutput.toString(), true );
 			} else {
 				// fail safe in case we errored out before creating the context
-				ByteBuffer bBuffer = ByteBuffer.wrap( errorOutput.toString().getBytes( StandardCharsets.UTF_8 ) );
-				exchange.getResponseSender().send( bBuffer );
+				exchange.getResponseWriter().append( errorOutput.toString() );
 			}
 
 		} catch ( Throwable t ) {

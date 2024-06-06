@@ -17,16 +17,9 @@
  */
 package ortus.boxlang.web.components;
 
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
+import java.io.File;
 import java.util.Set;
 
-import org.xnio.channels.StreamSinkChannel;
-
-import io.undertow.server.HttpServerExchange;
-import io.undertow.util.HttpString;
 import ortus.boxlang.runtime.components.Attribute;
 import ortus.boxlang.runtime.components.BoxComponent;
 import ortus.boxlang.runtime.components.Component;
@@ -34,11 +27,11 @@ import ortus.boxlang.runtime.context.IBoxContext;
 import ortus.boxlang.runtime.dynamic.casters.StringCaster;
 import ortus.boxlang.runtime.scopes.Key;
 import ortus.boxlang.runtime.types.IStruct;
-import ortus.boxlang.runtime.types.exceptions.BoxIOException;
-import ortus.boxlang.runtime.types.exceptions.BoxRuntimeException;
+import ortus.boxlang.runtime.types.exceptions.AbortException;
 import ortus.boxlang.runtime.util.FileSystemUtil;
 import ortus.boxlang.runtime.validation.Validator;
 import ortus.boxlang.web.context.WebRequestBoxContext;
+import ortus.boxlang.web.exchange.IBoxHTTPExchange;
 
 @BoxComponent
 public class Content extends Component {
@@ -95,28 +88,21 @@ public class Content extends Component {
 		Boolean					reset			= attributes.getAsBoolean( Key.reset );
 
 		WebRequestBoxContext	requestContext	= context.getParentOfType( WebRequestBoxContext.class );
-		HttpServerExchange		exchange		= requestContext.getExchange();
-
-		StreamSinkChannel		responseChannel	= requestContext.getResponseChannel();
+		IBoxHTTPExchange		exchange		= requestContext.getHTTPExchange();
 
 		if ( file != null ) {
 			file = FileSystemUtil.expandPath( context, file ).absolutePath().toString();
 			context.clearBuffer();
-			try ( FileInputStream fis = new FileInputStream( file ) ) {
-				// This method doesn't buffer entire file in heap.
-				// On supported kernels, it may even use sendfile directly
-				FileChannel fileChannel = fis.getChannel();
-				if ( type != null ) {
-					exchange.getResponseHeaders().put( new HttpString( "content-type" ), type );
-				}
-				responseChannel.transferFrom( fileChannel, 0, fileChannel.size() );
-				if ( deleteFile ) {
-					fileChannel.close();
-					FileSystemUtil.deleteFile( file );
-				}
-			} catch ( IOException e ) {
-				throw new BoxIOException( e );
+			if ( type != null ) {
+				exchange.setResponseHeader( "content-type", type );
 			}
+			exchange.sendResponseFile( new File( file ) );
+			if ( deleteFile ) {
+				FileSystemUtil.deleteFile( file );
+			}
+			// I'm not sure CF actually aborts here if. If not, we need a flag in the context
+			// to stop writing to the output buffer
+			throw new AbortException();
 		} else if ( variable != null ) {
 			if ( reset ) {
 				context.clearBuffer();
@@ -129,15 +115,13 @@ public class Content extends Component {
 			} else {
 				bytesToWrite = StringCaster.cast( variable ).getBytes();
 			}
-			ByteBuffer bBuffer = ByteBuffer.wrap( bytesToWrite );
-			try {
-				if ( type != null ) {
-					exchange.getResponseHeaders().put( new HttpString( "content-type" ), type );
-				}
-				responseChannel.write( bBuffer );
-			} catch ( IOException e ) {
-				throw new BoxRuntimeException( "Error writing to response channel", e );
+			if ( type != null ) {
+				exchange.setResponseHeader( "content-type", type );
 			}
+			exchange.sendResponseBinary( bytesToWrite );
+			// I'm not sure CF actually aborts here if. If not, we need a flag in the context
+			// to stop writing to the output buffer
+			throw new AbortException();
 		} else {
 			if ( reset ) {
 				context.clearBuffer();

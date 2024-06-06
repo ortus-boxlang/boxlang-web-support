@@ -17,16 +17,12 @@
  */
 package ortus.boxlang.web.scopes;
 
-import java.io.IOException;
+import java.util.Arrays;
 import java.util.stream.Collectors;
 
-import io.undertow.server.HttpServerExchange;
-import io.undertow.server.handlers.form.FormData;
-import io.undertow.server.handlers.form.FormDataParser;
-import io.undertow.server.handlers.form.FormParserFactory;
 import ortus.boxlang.runtime.scopes.BaseScope;
 import ortus.boxlang.runtime.scopes.Key;
-import ortus.boxlang.runtime.types.exceptions.BoxRuntimeException;
+import ortus.boxlang.web.exchange.IBoxHTTPExchange;
 
 /**
  * Variables scope implementation in BoxLang
@@ -46,34 +42,11 @@ public class FormScope extends BaseScope {
 	 * --------------------------------------------------------------------------
 	 */
 
-	public FormScope( HttpServerExchange exchange ) {
+	public FormScope( IBoxHTTPExchange exchange ) {
 		super( FormScope.name );
-
-		FormParserFactory	parserFactory	= FormParserFactory.builder().build();
-		FormDataParser		parser			= parserFactory.createParser( exchange );
-
-		FormData			formData;
-
-		// If there is no parser for the request content type, this will be null
-		if ( parser != null ) {
-
-			try {
-				formData = parser.parseBlocking();
-			} catch ( IOException e ) {
-				throw new BoxRuntimeException( "Could not parse form data", e );
-			}
-			for ( String key : formData ) {
-				this.put(
-				    Key.of( key ),
-				    formData.get( key )
-				        .stream()
-				        .filter( f -> !f.isFileItem() )
-				        .map( f -> f.getValue() )
-				        .collect( Collectors.joining( "," ) )
-				);
-			}
-		}
-
+		exchange.getRequestFormMap().forEach( ( key, value ) -> {
+			this.put( Key.of( key ), Arrays.stream( value ).collect( Collectors.joining( "," ) ) );
+		} );
 	}
 
 	/**

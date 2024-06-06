@@ -14,7 +14,6 @@
  */
 package ortus.boxlang.web.bifs;
 
-import io.undertow.server.HttpServerExchange;
 import ortus.boxlang.runtime.bifs.BIF;
 import ortus.boxlang.runtime.bifs.BoxBIF;
 import ortus.boxlang.runtime.context.IBoxContext;
@@ -22,6 +21,7 @@ import ortus.boxlang.runtime.scopes.ArgumentsScope;
 import ortus.boxlang.runtime.scopes.Key;
 import ortus.boxlang.runtime.types.Argument;
 import ortus.boxlang.web.context.WebRequestBoxContext;
+import ortus.boxlang.web.exchange.IBoxHTTPExchange;
 
 @BoxBIF
 public class Forward extends BIF {
@@ -47,15 +47,12 @@ public class Forward extends BIF {
 	 * @argument.template The logical path to which the request should be forwarded to.
 	 *
 	 */
-	@SuppressWarnings( "deprecation" )
 	public Object _invoke( IBoxContext context, ArgumentsScope arguments ) {
 		String					templatePath	= arguments.getAsString( Key.template );
 		WebRequestBoxContext	requestContext	= context.getParentOfType( WebRequestBoxContext.class );
-		HttpServerExchange		exchange		= requestContext.getExchange();
+		IBoxHTTPExchange		exchange		= requestContext.getHTTPExchange();
 
-		exchange.setRequestPath( templatePath );
-		exchange.setRelativePath( templatePath );
-		exchange.dispatch();
+		exchange.forward( templatePath );
 
 		return null;
 	}

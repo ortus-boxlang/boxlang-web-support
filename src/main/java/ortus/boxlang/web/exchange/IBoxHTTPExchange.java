@@ -17,28 +17,54 @@
  */
 package ortus.boxlang.web.exchange;
 
-import java.io.BufferedReader;
-import java.io.IOException;
+import java.io.File;
 import java.io.PrintWriter;
-import java.io.UnsupportedEncodingException;
-import java.util.Collection;
+import java.nio.file.Path;
 import java.util.Enumeration;
 import java.util.Locale;
 import java.util.Map;
 
+import ortus.boxlang.runtime.scopes.Key;
+import ortus.boxlang.web.context.WebRequestBoxContext;
+
 /**
  * I represent a web request and response
  */
-public interface BoxHTTPExchange {
+public interface IBoxHTTPExchange {
 
 	/*
 	 * Do a server-side foward to a new URI
 	 */
 	public void forward( String URI );
 
+	/**
+	 * Set the BoxLang context for this request
+	 * 
+	 * @param context The BoxLang context
+	 */
+	public void setWebContext( WebRequestBoxContext context );
+
+	/**
+	 * Get the BoxLang context for this request
+	 * 
+	 * @return The BoxLang context
+	 */
+	public WebRequestBoxContext getWebContext();
+
 	/*****************************************
 	 * REQUEST METHODS
 	 ****************************************/
+
+	default boolean isTextBasedContentType() {
+		String contentType = getRequestContentType();
+		return contentType != null && ( contentType.startsWith( "text/" ) ||
+		    contentType.equals( "application/json" ) ||
+		    contentType.equals( "application/xml" ) ||
+		    contentType.equals( "application/javascript" ) ||
+		    contentType.equals( "application/xhtml+xml" ) ||
+		    contentType.equals( "application/rss+xml" ) ||
+		    contentType.equals( "application/atom+xml" ) );
+	}
 
 	/**
 	 * Returns the name of the authentication scheme used to protect the servlet. All servlet containers support basic, form
@@ -54,23 +80,26 @@ public interface BoxHTTPExchange {
 	public BoxCookie[] getRequestCookies();
 
 	/**
+	 * Get a request cookie by name
+	 * 
+	 * @param name the name of the cookie
+	 * 
+	 * @return the cookie or null if not found
+	 */
+	public BoxCookie getRequestCookie( String name );
+
+	/**
+	 * Returns a map of HTTP request headers where the keys are header names and the values are arrays of header values.
+	 */
+	public Map<String, String[]> getRequestHeaderMap();
+
+	/**
 	 * Returns the value of the specified request header as a <code>String</code>. If the request did not include a header
 	 * of the specified name, this method returns <code>null</code>. If there are multiple headers with the same name, this
 	 * method returns the first head in the request. The header name is case insensitive. You can use this method with any
 	 * request header.
 	 */
 	public String getRequestHeader( String name );
-
-	/**
-	 * Returns all the values of the specified request header as an <code>Enumeration</code> of <code>String</code> objects.
-	 */
-	public Enumeration<String> getRequestHeaders( String name );
-
-	/**
-	 * Returns an enumeration of all the header names this request contains. If the request has no headers, this method
-	 * returns an empty enumeration.
-	 */
-	public Enumeration<String> getRequestHeaderNames();
 
 	/**
 	 * Returns the name of the HTTP method with which this request was made, for example, GET, POST, or PUT.
@@ -134,10 +163,9 @@ public interface BoxHTTPExchange {
 	public Object getRequestAttribute( String name );
 
 	/**
-	 * Returns an <code>Enumeration</code> containing the names of the attributes available to this request. This method
-	 * returns an empty <code>Enumeration</code> if the request has no attributes available to it.
+	 * Returns a Map containing the attributes available to this request.
 	 */
-	public Enumeration<String> getRequestAttributeNames();
+	public Map<String, Object> getRequestAttributeMap();
 
 	/**
 	 * Returns the name of the character encoding used in the body of this request. This method returns <code>null</code> if
@@ -146,16 +174,10 @@ public interface BoxHTTPExchange {
 	public String getRequestCharacterEncoding();
 
 	/**
-	 * Overrides the name of the character encoding used in the body of this request. This method must be called prior to
-	 * reading request parameters or reading input using getReader(). Otherwise, it has no effect.
-	 */
-	public void setRequestCharacterEncoding( String env ) throws UnsupportedEncodingException;
-
-	/**
 	 * Returns the length, in bytes, of the request body and made available by the input stream, or -1 if the length is not
 	 * known.
 	 */
-	public long getRequestContentLengthLong();
+	public long getRequestContentLength();
 
 	/**
 	 * Returns the MIME type of the body of the request, or <code>null</code> if the type is not known.
@@ -165,29 +187,23 @@ public interface BoxHTTPExchange {
 	public String getRequestContentType();
 
 	/**
-	 * Returns the value of a request parameter as a <code>String</code>, or <code>null</code> if the parameter does not
-	 * exist. Request parameters are extra information sent with the request. For HTTP servlets, parameters are contained in
-	 * the query string or posted form data.
+	 * Returns a java.util.Map of the form parameters of this request.
+	 * This also processes any multi-part form data since the request body is parsed at this time
 	 */
-	public String getRequestParameter( String name );
+	public Map<String, String[]> getRequestFormMap();
 
 	/**
-	 *
-	 * Returns an <code>Enumeration</code> of <code>String</code> objects containing the names of the parameters contained
-	 * in this request. If the request has no parameters, the method returns an empty <code>Enumeration</code>.
+	 * Returns data about multi-part file uploads that were processed in the request.
+	 * The order of the file upload objects is the order they were sent in the form. (note when the file component is called
+	 * with action="upload" and no file name, the first file is processed.)
+	 * Each FileUpload object contains the temporary file path and the original file name.
 	 */
-	public Enumeration<String> getRequestParameterNames();
+	public FileUpload[] getUploadData();
 
 	/**
-	 * Returns an array of <code>String</code> objects containing all of the values the given request parameter has, or
-	 * <code>null</code> if the parameter does not exist.
+	 * Returns a java.util.Map of the URL parameters of this request.
 	 */
-	public String[] getRequestParameterValues( String name );
-
-	/**
-	 * Returns a java.util.Map of the parameters of this request.
-	 */
-	public Map<String, String[]> getRequestParameterMap();
+	public Map<String, String[]> getRequestURLMap();
 
 	/**
 	 * Returns the name and version of the protocol the request uses in the form <i>protocol/majorVersion.minorVersion</i>,
@@ -219,11 +235,9 @@ public interface BoxHTTPExchange {
 	public int getRequestServerPort();
 
 	/**
-	 * Retrieves the body of the request as character data using a <code>BufferedReader</code>. The reader translates the
-	 * character data according to the character encoding used on the body. Either this method or {@link #getInputStream}
-	 * may be called to read the body, not both.
+	 * Retrieves the body of the request. Will be a string or a byte array depending on the content type.
 	 */
-	public BufferedReader getRequestReader() throws IOException;
+	public Object getRequestBody();
 
 	/**
 	 * Returns the Internet Protocol (IP) of the remote end of the connection on which the request was received. By default
@@ -234,7 +248,7 @@ public interface BoxHTTPExchange {
 	public String getRequestRemoteAddr();
 
 	/**
-	 * Returns the fully qualified name of the address returned by {@link #getRemoteAddr()}. If the engine cannot or chooses
+	 * Returns the fully qualified name of the address returned by getRemoteAddr(). If the engine cannot or chooses
 	 * not to resolve the hostname (to improve performance), this method returns the IP address.
 	 */
 	public String getRequestRemoteHost();
@@ -282,7 +296,7 @@ public interface BoxHTTPExchange {
 	public int getRequestRemotePort();
 
 	/**
-	 * Returns the fully qualified name of the address returned by {@link #getLocalAddr()}. If the engine cannot or chooses
+	 * Returns the fully qualified name of the address returned by getLocalAddr(). If the engine cannot or chooses
 	 * not to resolve the hostname (to improve performance), this method returns the IP address.
 	 */
 	public String getRequestLocalName();
@@ -306,15 +320,17 @@ public interface BoxHTTPExchange {
 	 ****************************************/
 
 	/**
+	 * Returns a boolean indicating if the response has been started.
+	 * 
+	 * @return true if the response has been started, false otherwise
+	 */
+	public boolean isResponseStarted();
+
+	/**
 	 * Adds the specified cookie to the response. This method can be called multiple times to set more than one cookie.
 	 *
 	 */
 	public void addResponseCookie( BoxCookie cookie );
-
-	/**
-	 * Returns a boolean indicating whether the named response header has already been set.
-	 */
-	public boolean containsResponseHeader( String name );
 
 	/**
 	 *
@@ -335,6 +351,11 @@ public interface BoxHTTPExchange {
 	public void setResponseStatus( int sc );
 
 	/**
+	 * Sets the status code and reason phrase for this response.
+	 */
+	public void setResponseStatus( int sc, String sm );
+
+	/**
 	 * Gets the current status code of this response.
 	 */
 	public int getResponseStatus();
@@ -345,50 +366,38 @@ public interface BoxHTTPExchange {
 	public String getResponseHeader( String name );
 
 	/**
-	 * Gets the values of the response header with the given name.
+	 * Gets the values of the response headers
 	 */
-	public Collection<String> getResponseHeaders( String name );
-
-	/**
-	 * Gets the names of the headers of this response.
-	 */
-	public Collection<String> getResponseHeaderNames();
-
-	/**
-	 * Returns the name of the character encoding (MIME charset) used for the body sent in this response.
-	 */
-	public String getResponseCharacterEncoding();
-
-	/**
-	 * Returns the content type used for the MIME body sent in this response.
-	 */
-	public String getResponseContentType();
+	public Map<String, String[]> getResponseHeaderMap();
 
 	/**
 	 * Returns a <code>PrintWriter</code> object that can send character text to the client. The <code>PrintWriter</code>
-	 * uses the character encoding returned by {@link #getCharacterEncoding}. If the response's character encoding has not
+	 * uses the character encoding returned by getCharacterEncoding. If the response's character encoding has not
 	 * been specified as described in <code>getCharacterEncoding</code> (i.e., the method just returns the default value
 	 * <code>ISO-8859-1</code>), <code>getWriter</code> updates it to <code>ISO-8859-1</code>.
 	 */
-	public PrintWriter getResponseWriter() throws IOException;
+	public PrintWriter getResponseWriter();
 
 	/**
-	 * Sets the character encoding (MIME charset) of the response being sent to the client, for example, to UTF-8.
+	 * Send binary data as response. Rest any other response body content.
+	 * 
+	 * @param data the binary data to send
 	 */
-	public void setResponseCharacterEncoding( String charset );
+	public void sendResponseBinary( byte[] data );
 
 	/**
-	 * Sets the content type of the response being sent to the client, if the response has not been committed yet. The given
-	 * content type may include a character encoding specification, for example, <code>text/html;charset=UTF-8</code>.
+	 * Send a file as response. Rest any other response body content.
+	 * 
+	 * @param file the file to send
 	 */
-	public void setResponseContentType( String type );
+	public void sendResponseFile( File file );
 
 	/**
 	 * Forces any content in the buffer to be written to the client. A call to this method automatically commits the
 	 * response, meaning the status code and headers will be written.
 	 *
 	 */
-	public void flushResponseBuffer() throws IOException;
+	public void flushResponseBuffer();
 
 	/**
 	 * Clears the content of the underlying buffer in the response without clearing headers or status code. If the response
@@ -396,16 +405,7 @@ public interface BoxHTTPExchange {
 	 */
 	public void resetResponseBuffer();
 
-	/**
-	 * Sets the locale of the response, if the response has not been committed yet.
-	 */
-	public void setResponseLocale( Locale loc );
-
-	/**
-	 * Returns the locale specified for this response using the {@link #setLocale} method. Calls made to
-	 * <code>setLocale</code> after the response is committed have no effect. If no locale has been specified, the
-	 * container's default locale is returned.
-	 */
-	public Locale getResponseLocale();
+	public static record FileUpload( Key formFieldName, Path tmpPath, String originalFileName ) {
+	}
 
 }

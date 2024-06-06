@@ -17,19 +17,9 @@
  */
 package ortus.boxlang.web.context;
 
-import java.io.IOException;
 import java.net.URI;
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
-import org.xnio.ChannelListener;
-import org.xnio.ChannelListeners;
-import org.xnio.channels.StreamSinkChannel;
-
-import io.undertow.server.HttpServerExchange;
-import io.undertow.server.handlers.Cookie;
-import io.undertow.server.handlers.CookieImpl;
 import ortus.boxlang.runtime.BoxRuntime;
 import ortus.boxlang.runtime.context.IBoxContext;
 import ortus.boxlang.runtime.context.RequestBoxContext;
@@ -41,6 +31,8 @@ import ortus.boxlang.runtime.types.IStruct;
 import ortus.boxlang.runtime.types.Struct;
 import ortus.boxlang.runtime.types.UDF;
 import ortus.boxlang.runtime.types.exceptions.ScopeNotFoundException;
+import ortus.boxlang.web.exchange.BoxCookie;
+import ortus.boxlang.web.exchange.IBoxHTTPExchange;
 import ortus.boxlang.web.scopes.CGIScope;
 import ortus.boxlang.web.scopes.CookieScope;
 import ortus.boxlang.web.scopes.FormScope;
@@ -52,7 +44,7 @@ import ortus.boxlang.web.scopes.URLScope;
  */
 public class WebRequestBoxContext extends RequestBoxContext {
 
-	private static BoxRuntime		runtime			= BoxRuntime.getInstance();
+	private static BoxRuntime	runtime			= BoxRuntime.getInstance();
 
 	/**
 	 * --------------------------------------------------------------------------
@@ -63,49 +55,41 @@ public class WebRequestBoxContext extends RequestBoxContext {
 	/**
 	 * The variables scope
 	 */
-	protected IScope				variablesScope	= new VariablesScope();
+	protected IScope			variablesScope	= new VariablesScope();
 
 	/**
 	 * The request scope
 	 */
-	protected IScope				requestScope	= new RequestScope();
+	protected IScope			requestScope	= new RequestScope();
 
 	/**
 	 * The URL scope
 	 */
-	protected IScope				URLScope;
+	protected IScope			URLScope;
 
 	/**
 	 * The form scope
 	 */
-	protected IScope				formScope;
+	protected IScope			formScope;
 
 	/**
 	 * The CGI scope
 	 */
-	protected IScope				CGIScope;
+	protected IScope			CGIScope;
 
 	/**
 	 * The cookie scope
 	 */
-	protected IScope				cookieScope;
+	protected IScope			cookieScope;
 
-	/**
-	 * The Undertow exchange for this request
-	 */
-	protected HttpServerExchange	exchange;
-
-	/**
-	 * Undertow response channel
-	 */
-	protected StreamSinkChannel		channel			= null;
+	protected IBoxHTTPExchange	httpExchange;
 
 	/**
 	 * The request body can only be read once, so we cache it here
 	 */
-	protected byte[]				requestBody		= null;
+	protected Object			requestBody		= null;
 
-	protected String				webRoot;
+	protected String			webRoot;
 
 	/**
 	 * --------------------------------------------------------------------------
@@ -118,14 +102,15 @@ public class WebRequestBoxContext extends RequestBoxContext {
 	 *
 	 * @param parent The parent context
 	 */
-	public WebRequestBoxContext( IBoxContext parent, HttpServerExchange exchange, String webRoot, URI template ) {
+	public WebRequestBoxContext( IBoxContext parent, IBoxHTTPExchange httpExchange, String webRoot, URI template ) {
 		super( parent );
-		this.exchange	= exchange;
-		this.webRoot	= webRoot;
-		URLScope		= new URLScope( exchange );
-		formScope		= new FormScope( exchange );
-		CGIScope		= new CGIScope( exchange );
-		cookieScope		= new CookieScope( exchange );
+		httpExchange.setWebContext( this );
+		this.httpExchange	= httpExchange;
+		this.webRoot		= webRoot;
+		URLScope			= new URLScope( httpExchange );
+		formScope			= new FormScope( httpExchange );
+		CGIScope			= new CGIScope( httpExchange );
+		cookieScope			= new CookieScope( httpExchange );
 
 	}
 
@@ -134,7 +119,7 @@ public class WebRequestBoxContext extends RequestBoxContext {
 	 *
 	 * @param parent The parent context
 	 */
-	public WebRequestBoxContext( IBoxContext parent, HttpServerExchange exchange, String webRoot ) {
+	public WebRequestBoxContext( IBoxContext parent, IBoxHTTPExchange exchange, String webRoot ) {
 		this( parent, exchange, webRoot, null );
 	}
 
@@ -151,14 +136,14 @@ public class WebRequestBoxContext extends RequestBoxContext {
 	 */
 	public Key getSessionID() {
 		// TODO: make this logic configurable
-		Cookie	sessionCookie	= exchange.getRequestCookie( "jsessionid" );
-		String	sessionID;
+		BoxCookie	sessionCookie	= httpExchange.getRequestCookie( "jsessionid" );
+		String		sessionID;
 		if ( sessionCookie != null ) {
 			sessionID = sessionCookie.getValue();
 		} else {
 			sessionID = UUID.randomUUID().toString();
 			// TODO: secure, domain, etc
-			exchange.setResponseCookie( new CookieImpl( "jsessionid", sessionID ) );
+			httpExchange.addResponseCookie( new BoxCookie( "jsessionid", sessionID ) );
 		}
 		return Key.of( sessionID );
 	}
@@ -168,7 +153,7 @@ public class WebRequestBoxContext extends RequestBoxContext {
 	 */
 	public void resetSession() {
 		synchronized ( this ) {
-			exchange.setResponseCookie( new CookieImpl( "jsessionid", null ) );
+			httpExchange.addResponseCookie( new BoxCookie( "jsessionid", null ) );
 			getApplicationListener().invalidateSession( getSessionID() );
 		}
 	}
@@ -347,60 +332,6 @@ public class WebRequestBoxContext extends RequestBoxContext {
 		return variablesScope;
 	}
 
-	public synchronized StreamSinkChannel getResponseChannel() {
-		if ( channel == null ) {
-			channel = exchange.getResponseChannel();
-		}
-		return channel;
-
-	}
-
-	public void finalizeResponse() {
-		StreamSinkChannel channel = getResponseChannel();
-
-		channel.getWriteSetter().set( new ChannelListener<StreamSinkChannel>() {
-
-			@Override
-			public void handleEvent( StreamSinkChannel channel ) {
-				try {
-					// Shutdown writes after data is written
-					channel.shutdownWrites();
-
-					// Ensure the channel is flushed
-					if ( !channel.flush() ) {
-						// If not flushed, set a listener to complete the flushing
-						channel.getWriteSetter().set( ChannelListeners.flushingChannelListener( new ChannelListener<StreamSinkChannel>() {
-
-							@Override
-							public void handleEvent( StreamSinkChannel channel ) {
-								try {
-									if ( channel.flush() ) {
-										// End the exchange after flushing is complete
-										exchange.endExchange();
-									}
-								} catch ( IOException e ) {
-									// End the exchange in case of an error
-									exchange.endExchange();
-								}
-							}
-						}, ChannelListeners.closingChannelExceptionHandler() ) );
-						// Resume writes to complete the flush
-						channel.resumeWrites();
-					} else {
-						// If flushed immediately, end the exchange
-						exchange.endExchange();
-					}
-				} catch ( IOException e ) {
-					// End the exchange in case of an error
-					exchange.endExchange();
-				}
-			}
-		} );
-
-		// Resume writes to trigger the listener
-		channel.resumeWrites();
-	}
-
 	/**
 	 * Flush the buffer to the output stream
 	 *
@@ -432,24 +363,19 @@ public class WebRequestBoxContext extends RequestBoxContext {
 			}
 		}
 		if ( !output.isEmpty() ) {
-			ByteBuffer bBuffer = ByteBuffer.wrap( output.getBytes( StandardCharsets.UTF_8 ) );
-
-			try {
-				getResponseChannel().write( bBuffer );
-			} catch ( IOException e ) {
-				e.printStackTrace();
-			}
+			httpExchange.getResponseWriter().write( output );
+			httpExchange.flushResponseBuffer();
 		}
 		return this;
 	}
 
 	/**
-	 * Get the Undertow server exchange
-	 *
-	 * @return The exchange
+	 * Get the HTTP exchange
+	 * 
+	 * @return The HTTP exchange
 	 */
-	public HttpServerExchange getExchange() {
-		return exchange;
+	public IBoxHTTPExchange getHTTPExchange() {
+		return httpExchange;
 	}
 
 	/**
@@ -457,15 +383,16 @@ public class WebRequestBoxContext extends RequestBoxContext {
 	 *
 	 * @return The request body
 	 */
-	public byte[] getRequestBody() {
+	public Object getRequestBody() {
+		// TODO: rework this to deal with binary and text request bodies
 		if ( requestBody != null ) {
 			return requestBody;
 		}
-		synchronized ( exchange ) {
+		synchronized ( httpExchange ) {
 			if ( requestBody != null ) {
 				return requestBody;
 			}
-			requestBody = ortus.boxlang.runtime.util.FileSystemUtil.convertInputStreamToByteArray( exchange.getInputStream() );
+			requestBody = httpExchange.getRequestBody();
 		}
 
 		return requestBody;
@@ -475,6 +402,15 @@ public class WebRequestBoxContext extends RequestBoxContext {
 		var config = super.getConfig();
 		config.getAsStruct( Key.runtime ).getAsStruct( Key.mappings ).put( "/", webRoot );
 		return config;
+	}
+
+	/**
+	 * Get the web root for this request
+	 * 
+	 * @return The web root
+	 */
+	public String getWebRoot() {
+		return webRoot;
 	}
 
 }

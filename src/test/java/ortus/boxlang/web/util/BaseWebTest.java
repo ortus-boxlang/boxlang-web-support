@@ -6,12 +6,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.mockito.Mockito;
-import org.xnio.OptionMap;
 
-import io.undertow.UndertowOptions;
-import io.undertow.server.HttpServerExchange;
-import io.undertow.server.ServerConnection;
-import io.undertow.util.HttpString;
 import ortus.boxlang.runtime.BoxRuntime;
 import ortus.boxlang.runtime.context.IBoxContext;
 import ortus.boxlang.runtime.context.ScriptingRequestBoxContext;
@@ -19,6 +14,7 @@ import ortus.boxlang.runtime.scopes.IScope;
 import ortus.boxlang.runtime.scopes.Key;
 import ortus.boxlang.runtime.scopes.VariablesScope;
 import ortus.boxlang.web.context.WebRequestBoxContext;
+import ortus.boxlang.web.exchange.IBoxHTTPExchange;
 
 public class BaseWebTest {
 
@@ -29,8 +25,7 @@ public class BaseWebTest {
 	public IScope				variables;
 	// Web Assets for mocking
 	public WebRequestBoxContext	webContext;
-	public HttpServerExchange	exchange;
-	public ServerConnection		mockConnection;
+	public IBoxHTTPExchange		mockExchange;
 
 	@BeforeAll
 	public static void setUp() {
@@ -45,27 +40,12 @@ public class BaseWebTest {
 	@BeforeEach
 	public void setupEach() {
 		// Mock a connection
-		mockConnection = Mockito.mock( ServerConnection.class );
-		OptionMap mockOptions = OptionMap.builder()
-		    .set( UndertowOptions.MAX_ENTITY_SIZE, 1024L )
-		    // Add cookie support
-		    .set( UndertowOptions.ALLOW_UNESCAPED_CHARACTERS_IN_URL, true )
-		    .set( UndertowOptions.ALLOW_EQUALS_IN_COOKIE_VALUE, true )
-		    .getMap();
-		// Configure mock behavior
-		Mockito.when( mockConnection.getUndertowOptions() ).thenReturn( mockOptions );
-
-		// Create a mock Undertow HTTP exchange
-		exchange = new HttpServerExchange( mockConnection );
-		exchange.setRequestMethod( HttpString.tryFromString( "GET" ) );
-		exchange.getRequestHeaders().put( HttpString.tryFromString( "Content-Type" ), "text/plain" );
-
-		// Mock More things here needed for tests
+		mockExchange	= Mockito.mock( IBoxHTTPExchange.class );
 
 		// Create the mock contexts
-		context		= new ScriptingRequestBoxContext( runtime.getRuntimeContext() );
-		webContext	= new WebRequestBoxContext( context, exchange, TEST_WEBROOT );
-		variables	= webContext.getScopeNearby( VariablesScope.name );
+		context			= new ScriptingRequestBoxContext( runtime.getRuntimeContext() );
+		webContext		= new WebRequestBoxContext( context, mockExchange, TEST_WEBROOT );
+		variables		= webContext.getScopeNearby( VariablesScope.name );
 	}
 
 }
