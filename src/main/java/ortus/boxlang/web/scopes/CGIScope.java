@@ -73,6 +73,7 @@ public class CGIScope extends BaseScope {
 	    Key.https,
 	    Key.local_addr,
 	    Key.local_host,
+	    Key.path_info,
 	    Key.path_translated,
 	    Key.query_string,
 	    Key.remote_addr,
@@ -138,15 +139,15 @@ public class CGIScope extends BaseScope {
 	 */
 	private String getTemplatePath( IBoxContext context ) {
 		WebRequestBoxContext	webContext	= context.getParentOfType( WebRequestBoxContext.class );
-		String					pathInfo	= exchange.getRequestPathInfo();
+		String					requestURI	= exchange.getRequestURI();
 
 		// Null checks
-		if ( pathInfo == null ) {
+		if ( requestURI == null ) {
 			return "";
 		}
 
-		// Build the path from the context.getWebRoot() + pathInfo
-		return Path.of( webContext.getWebRoot() + pathInfo ).toAbsolutePath().toString();
+		// Build the path from the context.getWebRoot() + requestURI
+		return Path.of( webContext.getWebRoot() + requestURI ).toAbsolutePath().toString();
 	}
 
 	/**
