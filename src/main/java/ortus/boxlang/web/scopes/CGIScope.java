@@ -136,13 +136,17 @@ public class CGIScope extends BaseScope {
 	 *
 	 * @return The absolute path to the template
 	 */
-	private String getTemplatePath( WebRequestBoxContext context ) {
-		String pathInfo = exchange.getRequestPathInfo();
+	private String getTemplatePath( IBoxContext context ) {
+		WebRequestBoxContext	webContext	= context.getParentOfType( WebRequestBoxContext.class );
+		String					pathInfo	= exchange.getRequestPathInfo();
+
+		// Null checks
 		if ( pathInfo == null ) {
 			return "";
 		}
+
 		// Build the path from the context.getWebRoot() + pathInfo
-		return Path.of( context.getWebRoot() + pathInfo ).toAbsolutePath().toString();
+		return Path.of( webContext.getWebRoot() + pathInfo ).toAbsolutePath().toString();
 	}
 
 	/**
@@ -168,7 +172,7 @@ public class CGIScope extends BaseScope {
 			return exchange.getRequestContentLength();
 		}
 		if ( key.equals( Key.cf_template_path ) || key.equals( KeyDictionary.bx_template_path ) || key.equals( Key.path_translated ) ) {
-			return getTemplatePath( ( WebRequestBoxContext ) context );
+			return getTemplatePath( context );
 		}
 		if ( key.equals( Key.http_host ) ) {
 			return exchange.getRequestServerName() + ":" + exchange.getRequestServerPort();
