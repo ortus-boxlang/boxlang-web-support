@@ -17,6 +17,8 @@
  */
 package ortus.boxlang.web.scopes;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Set;
@@ -175,8 +177,25 @@ public class CGIScope extends BaseScope {
 		if ( key.equals( Key.cf_template_path ) || key.equals( KeyDictionary.bx_template_path ) || key.equals( Key.path_translated ) ) {
 			return getTemplatePath( context );
 		}
+		if ( key.equals( Key.https ) ) {
+			return exchange.isRequestSecure();
+		}
 		if ( key.equals( Key.http_host ) ) {
 			return exchange.getRequestServerName() + ":" + exchange.getRequestServerPort();
+		}
+		if ( key.equals( Key.local_addr ) ) {
+			try {
+				return InetAddress.getLocalHost().getHostAddress();
+			} catch ( UnknownHostException e ) {
+				return "127.0.0.1";
+			}
+		}
+		if ( key.equals( Key.local_host ) ) {
+			try {
+				return InetAddress.getLocalHost().getHostName();
+			} catch ( UnknownHostException e ) {
+				return "localhost";
+			}
 		}
 		if ( key.equals( Key.request_url ) ) {
 			return exchange.getRequestURL();
@@ -209,6 +228,9 @@ public class CGIScope extends BaseScope {
 		if ( key.equals( Key.server_port ) ) {
 			return exchange.getRequestServerPort();
 		}
+		if ( key.equals( Key.server_port_secure ) ) {
+			return exchange.isRequestSecure() ? exchange.getRequestServerPort() : 0;
+		}
 		if ( key.equals( Key.server_protocol ) ) {
 			return exchange.getRequestProtocol();
 		}
@@ -233,10 +255,6 @@ public class CGIScope extends BaseScope {
 		 * https_secretkeysize
 		 * https_server_issuer
 		 * https_server_subject
-		 * https,
-		 * local_addr
-		 * local_host
-		 * server_port_secure
 		 * server_software
 		 * web_server_api
 		 */
