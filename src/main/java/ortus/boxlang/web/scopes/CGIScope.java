@@ -17,26 +17,33 @@
  */
 package ortus.boxlang.web.scopes;
 
+import java.nio.file.Path;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.Set;
+import java.util.TreeSet;
 
 import ortus.boxlang.runtime.context.IBoxContext;
 import ortus.boxlang.runtime.scopes.BaseScope;
 import ortus.boxlang.runtime.scopes.Key;
 import ortus.boxlang.runtime.types.exceptions.BoxRuntimeException;
 import ortus.boxlang.runtime.types.meta.BoxMeta;
+import ortus.boxlang.web.context.WebRequestBoxContext;
 import ortus.boxlang.web.exchange.IBoxHTTPExchange;
+import ortus.boxlang.web.util.KeyDictionary;
 
 /**
  * Variables scope implementation in BoxLang
  */
 public class CGIScope extends BaseScope {
 
-	Set<Key>					knownKeys	= new HashSet<Key>( Arrays.asList(
+	/**
+	 * THE KEYS THAT ARE KNOWN TO THE CGI SCOPE
+	 */
+	private Set<Key>			knownKeys	= new TreeSet<>( Arrays.asList(
 	    Key.auth_password,
 	    Key.auth_type,
 	    Key.auth_user,
+	    KeyDictionary.bx_template_path,
 	    Key.cert_cookie,
 	    Key.cert_flags,
 	    Key.cert_issuer,
@@ -51,9 +58,9 @@ public class CGIScope extends BaseScope {
 	    Key.content_type,
 	    Key.context_path,
 	    Key.gateway_interface,
-	    Key.http_accept,
 	    Key.http_accept_encoding,
 	    Key.http_accept_language,
+	    Key.http_accept,
 	    Key.http_connection,
 	    Key.http_cookie,
 	    Key.http_host,
@@ -75,11 +82,12 @@ public class CGIScope extends BaseScope {
 	    Key.request_url,
 	    Key.script_name,
 	    Key.server_name,
-	    Key.server_port,
 	    Key.server_port_secure,
+	    Key.server_port,
 	    Key.server_protocol,
 	    Key.server_software,
-	    Key.web_server_api ) );
+	    Key.web_server_api
+	) );
 
 	/**
 	 * --------------------------------------------------------------------------
@@ -88,6 +96,9 @@ public class CGIScope extends BaseScope {
 	 */
 	public static final Key		name		= Key.of( "cgi" );
 
+	/**
+	 * The Linked Exchange
+	 */
 	protected IBoxHTTPExchange	exchange;
 
 	/**
@@ -119,6 +130,22 @@ public class CGIScope extends BaseScope {
 	}
 
 	/**
+	 * Get the absolute path to the template
+	 *
+	 * @param context The current context
+	 *
+	 * @return The absolute path to the template
+	 */
+	private String getTemplatePath( WebRequestBoxContext context ) {
+		String pathInfo = exchange.getRequestPathInfo();
+		if ( pathInfo == null ) {
+			return "";
+		}
+		// Build the path from the context.getWebRoot() + pathInfo
+		return Path.of( context.getWebRoot() + pathInfo ).toAbsolutePath().toString();
+	}
+
+	/**
 	 * Dereference this object by a key and return the value, or throw exception
 	 *
 	 * @param key  The key to dereference
@@ -133,6 +160,41 @@ public class CGIScope extends BaseScope {
 			return getBoxMeta();
 		}
 
+		if ( key.equals( Key.content_type ) ) {
+			String result = exchange.getRequestHeader( "Content-Type" );
+			return result == null ? "" : result;
+		}
+		if ( key.equals( Key.content_length ) ) {
+			return exchange.getRequestContentLength();
+		}
+		if ( key.equals( Key.cf_template_path ) || key.equals( KeyDictionary.bx_template_path ) || key.equals( Key.path_translated ) ) {
+			return getTemplatePath( ( WebRequestBoxContext ) context );
+		}
+		if ( key.equals( Key.http_host ) ) {
+			return exchange.getRequestServerName() + ":" + exchange.getRequestServerPort();
+		}
+		if ( key.equals( Key.request_url ) ) {
+			return exchange.getRequestURL();
+		}
+		if ( key.equals( Key.remote_addr ) ) {
+			return exchange.getRequestRemoteAddr();
+		}
+		if ( key.equals( Key.remote_host ) ) {
+			return exchange.getRequestRemoteHost();
+		}
+		if ( key.equals( Key.remote_user ) ) {
+			return exchange.getRequestRemoteUser();
+		}
+		if ( key.equals( Key.path_info ) ) {
+			String pathInfo = exchange.getRequestPathInfo();
+			return pathInfo == null ? "" : pathInfo;
+		}
+		if ( key.equals( Key.query_string ) ) {
+			return exchange.getRequestQueryString();
+		}
+		if ( key.equals( Key.request_method ) ) {
+			return exchange.getRequestMethod();
+		}
 		if ( key.equals( Key.script_name ) ) {
 			return exchange.getRequestURI();
 		}
@@ -142,24 +204,10 @@ public class CGIScope extends BaseScope {
 		if ( key.equals( Key.server_port ) ) {
 			return exchange.getRequestServerPort();
 		}
-		if ( key.equals( Key.query_string ) ) {
-			return exchange.getRequestQueryString();
-		}
-		if ( key.equals( Key.http_host ) ) {
-			return exchange.getRequestServerName();
-		}
-		if ( key.equals( Key.request_method ) ) {
-			return exchange.getRequestMethod();
-		}
-		if ( key.equals( Key.content_type ) ) {
-			String result = exchange.getRequestHeader( "Content-Type" );
-			return result == null ? "" : result;
+		if ( key.equals( Key.server_protocol ) ) {
+			return exchange.getRequestProtocol();
 		}
 
-		if ( key.equals( Key.path_info ) ) {
-			String pathInfo = exchange.getRequestPathInfo();
-			return pathInfo == null ? "" : pathInfo;
-		}
 		// TODO: All other CGI keys
 
 		/*
@@ -174,17 +222,8 @@ public class CGIScope extends BaseScope {
 		 * cert_server_issuer
 		 * cert_server_subject
 		 * cert_subject
-		 * cf_template_path
-		 * content_length
 		 * context_path
 		 * gateway_interface
-		 * http_accept
-		 * http_accept_encoding
-		 * http_accept_language
-		 * http_connection
-		 * http_cookie
-		 * http_referer
-		 * http_user_agent
 		 * https_keysize
 		 * https_secretkeysize
 		 * https_server_issuer
@@ -192,15 +231,7 @@ public class CGIScope extends BaseScope {
 		 * https,
 		 * local_addr
 		 * local_host
-		 * path_translated
-		 * remote_addr
-		 * remote_host
-		 * remote_user
-		 * request_url
-		 * server_name
-		 * server_port
 		 * server_port_secure
-		 * server_protocol
 		 * server_software
 		 * web_server_api
 		 */
@@ -211,7 +242,7 @@ public class CGIScope extends BaseScope {
 			return header;
 		}
 		if ( key.getName().toLowerCase().startsWith( "http" ) ) {
-			header = exchange.getRequestHeader( key.getName().substring( 5 ) );
+			header = exchange.getRequestHeader( key.getName().substring( 5 ).replace( "_", "-" ) );
 			if ( header != null ) {
 				return header;
 			}
@@ -222,7 +253,25 @@ public class CGIScope extends BaseScope {
 		return "";
 	}
 
+	/**
+	 * Get the keys that can be dumped by this scope
+	 *
+	 * @return The keys that can be dumped
+	 */
 	public Set<Key> getDumpKeys() {
-		return knownKeys;
+		// return the keys in alphabetical order
+		return this.knownKeys;
+
+	}
+
+	/**
+	 * Get the keys that can be dumped by this scope
+	 *
+	 * @return The keys that can be dumped
+	 */
+	public Set<String> getDumpKeysAsString() {
+		// return the keys in alphabetical order
+		return this.knownKeys.stream().map( Key::getName ).collect( TreeSet::new, Set::add, Set::addAll );
+
 	}
 }
