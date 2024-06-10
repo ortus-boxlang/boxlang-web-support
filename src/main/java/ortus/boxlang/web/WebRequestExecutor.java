@@ -20,7 +20,7 @@ package ortus.boxlang.web;
 import java.net.URI;
 
 import ortus.boxlang.runtime.BoxRuntime;
-import ortus.boxlang.runtime.application.ApplicationListener;
+import ortus.boxlang.runtime.application.BaseApplicationListener;
 import ortus.boxlang.runtime.interop.DynamicObject;
 import ortus.boxlang.runtime.types.exceptions.AbortException;
 import ortus.boxlang.runtime.types.exceptions.MissingIncludeException;
@@ -39,7 +39,7 @@ public class WebRequestExecutor {
 		WebRequestBoxContext	context			= null;
 		DynamicObject			trans			= null;
 		FRTransService			frTransService	= null;
-		ApplicationListener		appListener		= null;
+		BaseApplicationListener	appListener		= null;
 		Throwable				errorToHandle	= null;
 		String					requestPath		= "";
 
