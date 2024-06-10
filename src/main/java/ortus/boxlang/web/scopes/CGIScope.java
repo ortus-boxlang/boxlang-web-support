@@ -181,7 +181,8 @@ public class CGIScope extends BaseScope {
 			return exchange.isRequestSecure();
 		}
 		if ( key.equals( Key.http_host ) ) {
-			return exchange.getRequestServerName() + ":" + exchange.getRequestServerPort();
+			int port = exchange.getRequestServerPort();
+			return port == 80 || port == 443 ? exchange.getRequestServerName() : exchange.getRequestServerName() + ":" + port;
 		}
 		if ( key.equals( Key.local_addr ) ) {
 			try {
