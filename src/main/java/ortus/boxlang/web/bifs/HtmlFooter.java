@@ -32,12 +32,12 @@ import ortus.boxlang.runtime.validation.Validator;
 import ortus.boxlang.web.util.KeyDictionary;
 
 @BoxBIF
-public class HtmlHead extends BIF {
+public class HtmlFooter extends BIF {
 
 	/**
 	 * Constructor
 	 */
-	public HtmlHead() {
+	public HtmlFooter() {
 		super();
 		declaredArguments = new Argument[] {
 		    new Argument( true, Argument.STRING, Key.text, Set.of( Validator.NON_EMPTY ) ),
@@ -46,39 +46,36 @@ public class HtmlHead extends BIF {
 
 	/**
 	 *
-	 * Writes text to the head section of a generated HTML page. It is
-	 * useful for embedding JavaScript code, or putting other HTML tags, such as meta, link,
-	 * title, or base in an HTML page header.
-	 *
-	 * If there is no head section in the HTML page, the function will create one.
+	 * Writes text to the footer section of a generated HTML page. It is
+	 * useful for embedding JavaScript code, or putting other HTML tags or deferred scripts.
 	 *
 	 * @param context   The context in which the BIF is being invoked.
 	 * @param arguments Argument scope for the BIF.
 	 *
-	 * @argument.text Text to add to the head area of an HTML page.
+	 * @argument.text Text to add to the footer area of an HTML page.
 	 *
 	 */
 	public Object _invoke( IBoxContext context, ArgumentsScope arguments ) {
-		// Get the text to add to the head area of an HTML page
+		// Get the text to add to the footer area of an HTML page
 		var text = arguments.getAsString( Key.text ).trim();
 
-		// invoke add to head
-		addToHead( context, text );
+		// invoke add to footer
+		addToFooter( context, text );
 
 		return true;
 	}
 
 	/**
-	 * Adds the `text` content to the head section of an HTML page.
+	 * Adds the `text` content to the footer section of an HTML page.
 	 *
 	 * @param context The context in which the BIF is being invoked.
-	 * @param text    Text to add to the head area of an HTML page.
+	 * @param text    Text to add to the footer area of an HTML page.
 	 */
-	public static void addToHead( IBoxContext context, String text ) {
+	public static void addToFooter( IBoxContext context, String text ) {
 		// Init it if it doesn't exist to an array
-		if ( !context.hasAttachment( KeyDictionary.htmlHead ) ) {
-			// Init the html head array
-			context.putAttachment( KeyDictionary.htmlHead, new Array() );
+		if ( !context.hasAttachment( KeyDictionary.htmlFooter ) ) {
+			// Init the html footer array
+			context.putAttachment( KeyDictionary.htmlFooter, new Array() );
 
 			// Init a new interceptor for the application
 			ApplicationBoxContext appContext = context.getParentOfType( ApplicationBoxContext.class );
@@ -92,18 +89,11 @@ public class HtmlHead extends BIF {
 					    StringBuffer buffer		= dataContext.getBuffer();
 					    Document	doc			= Jsoup.parse( buffer.toString() );
 
-					    // Get the html head element
-					    Element		headElement	= doc.head();
-
-					    // If the head element doesn't exist, create it
-					    if ( headElement == null ) {
-						    // Create the head element
-						    headElement = doc.appendElement( "head" );
-					    }
-
-					    // Add the head content to the head element
-					    for ( Object headContent : headArray ) {
-						    headElement.append( ( String ) headContent );
+					    // Get the body element
+					    Element		body		= doc.body();
+					    // Add to the end of the body
+					    for ( Object item : headArray ) {
+						    body.append( item.toString() );
 					    }
 
 					    // Clear the buffer
@@ -116,8 +106,8 @@ public class HtmlHead extends BIF {
 			    }, KeyDictionary.onRequestEnd );
 		}
 
-		// Append the text to the head array
-		Array head = context.getAttachment( KeyDictionary.htmlHead );
-		head.append( text );
+		// Append the text to the footer array
+		Array footer = context.getAttachment( KeyDictionary.htmlFooter );
+		footer.append( text );
 	}
 }

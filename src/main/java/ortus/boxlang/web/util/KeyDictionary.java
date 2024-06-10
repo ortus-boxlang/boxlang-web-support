@@ -21,6 +21,9 @@ import ortus.boxlang.runtime.scopes.Key;
 
 public class KeyDictionary {
 
-	public static final Key bx_template_path = Key.of( "bx_template_path" );
+	public static final Key	bx_template_path	= Key.of( "bx_template_path" );
+	public static final Key	htmlHead			= Key.of( "htmlHead" );
+	public static final Key	htmlFooter			= Key.of( "htmlFooter" );
+	public static final Key	onRequestEnd		= Key.of( "onRequestEnd" );
 
 }
