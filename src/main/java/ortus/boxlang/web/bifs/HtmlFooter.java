@@ -22,8 +22,8 @@ import org.jsoup.nodes.Element;
 
 import ortus.boxlang.runtime.bifs.BIF;
 import ortus.boxlang.runtime.bifs.BoxBIF;
-import ortus.boxlang.runtime.context.ApplicationBoxContext;
 import ortus.boxlang.runtime.context.IBoxContext;
+import ortus.boxlang.runtime.context.RequestBoxContext;
 import ortus.boxlang.runtime.scopes.ArgumentsScope;
 import ortus.boxlang.runtime.scopes.Key;
 import ortus.boxlang.runtime.types.Argument;
@@ -78,8 +78,9 @@ public class HtmlFooter extends BIF {
 			context.putAttachment( KeyDictionary.htmlFooter, new Array() );
 
 			// Init a new interceptor for the application
-			ApplicationBoxContext appContext = context.getParentOfType( ApplicationBoxContext.class );
-			appContext.getApplication()
+			context
+			    .getParentOfType( RequestBoxContext.class )
+			    .getApplicationListener()
 			    .getInterceptorPool()
 			    .register( data -> {
 				    IBoxContext dataContext = ( IBoxContext ) data.get( Key.context );
