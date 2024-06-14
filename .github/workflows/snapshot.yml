@@ -1,4 +1,4 @@
-name: BoxLang Web Support Snapshots
+name: Snapshots ${{ github.event.repository.name }}
 
 on:
   push:

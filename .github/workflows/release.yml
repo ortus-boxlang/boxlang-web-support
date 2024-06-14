@@ -1,6 +1,6 @@
 # This workflow is used to build releases
 # It can also be called by other workflows to reuse the release flow.
-name: BoxLang Web Support Release
+name: Release
 
 on:
   # If you push to main this will trigger a stable release
