@@ -32,10 +32,10 @@ repositories {
 dependencies {
 	// LOCAL DEVELOPMENT ONLY
 	// CHOOSE THE RIGHT LOCATION FOR YOUR LOCAL DEPENDENCIES
-    compileOnly files( '../boxlang/build/distributions/boxlang-1.0.0-all.jar' )
+    compileOnly files( '../boxlang/build/distributions/boxlang-' + boxlangVersion + '-all.jar' )
 
 	// Production Dependency
-    compileOnly files( 'src/test/resources/libs/boxlang-1.0.0-all.jar' )
+    compileOnly files( 'src/test/resources/libs/boxlang-' + boxlangVersion + '-all.jar' )
 	// https://mvnrepository.com/artifact/io.undertow/undertow-core/2.3.12.Final
 	compileOnly 'io.undertow:undertow-core:2.3.13.Final'
 
@@ -43,7 +43,7 @@ dependencies {
 	implementation 'org.jsoup:jsoup:1.17.2'
 
     // Testing Dependencies
-	testImplementation files( 'src/test/resources/libs/boxlang-1.0.0-all.jar' )
+	testImplementation files( 'src/test/resources/libs/boxlang-' + boxlangVersion + '-all.jar' )
     testImplementation "org.junit.jupiter:junit-jupiter:5.+"
 	testImplementation "org.mockito:mockito-core:5.+"
 	testImplementation "com.google.truth:truth:1.+"
@@ -186,7 +186,12 @@ task downloadBoxLang( type: Download ) {
  * Project Wide Helper function
  * This is not a task, but a reusable UDF
  */
-project.ext.bumpVersion = { boolean major = false, boolean minor = false, boolean patch = false, boolean beta = false ->
+project.ext.bumpVersion = {
+	boolean major = false,
+	boolean minor = false,
+	boolean patch = false,
+	boolean beta = false,
+	property = "version" ->
 
 	def propertiesFile = file( './gradle.properties' );
 	def properties = new Properties();
@@ -194,7 +199,7 @@ project.ext.bumpVersion = { boolean major = false, boolean minor = false, boolea
 	properties.load( propertiesFile.newDataInputStream() )
 	def versionTarget = major ? 0 : minor ? 1 : 2
 
-	def currentVersion = properties.getProperty( 'version' )
+	def currentVersion = properties.getProperty( property )
 	def versionParts = currentVersion.split( '\\.' )
 	if( !beta ){
 		def newPathVersion = versionParts[ versionTarget ].toInteger() + 1
@@ -215,7 +220,7 @@ project.ext.bumpVersion = { boolean major = false, boolean minor = false, boolea
 		newVersion = currentVersion.split( '-' )[ 0 ] + "-beta${betaNumber}"
 	}
 
-	properties.setProperty( 'version', newVersion )
+	properties.setProperty( property, newVersion )
 	properties.store( propertiesFile.newWriter(), null )
 
 	println "Bumped version from ${currentVersion} to ${newVersion}"
@@ -226,7 +231,8 @@ project.ext.bumpVersion = { boolean major = false, boolean minor = false, boolea
  */
 task bumpMajorVersion {
 	doLast{
-		bumpVersion( true )
+		bumpVersion( true, false, false, false, "version" )
+		bumpVersion( true, false, false, false, "boxlangVersion" )
 	}
 }
 
@@ -235,7 +241,8 @@ task bumpMajorVersion {
  */
 task bumpMinorVersion {
 	doLast{
-		bumpVersion( false, true )
+		bumpVersion( false, true, false, false, "version" )
+		bumpVersion( false, true, false, false, "boxlangVersion" )
 	}
 }
 
@@ -244,7 +251,8 @@ task bumpMinorVersion {
  */
 task bumpPatchVersion {
 	doLast{
-		bumpVersion( false, false, true )
+		bumpVersion( false, false, true, false, "version" )
+		bumpVersion( false, false, true, false, "boxlangVersion" )
 	}
 }
 
@@ -253,6 +261,7 @@ task bumpPatchVersion {
  */
 task bumpBetaVersion {
 	doLast{
-		bumpVersion( false, false, false, true )
+		bumpVersion( false, false, false, true, "version" )
+		bumpVersion( false, false, false, true, "boxlangVersion" )
 	}
 }
