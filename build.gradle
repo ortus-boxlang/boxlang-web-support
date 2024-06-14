@@ -21,7 +21,7 @@ sourceCompatibility = jdkVersion
 targetCompatibility = jdkVersion
 ext {
 	buildID = System.getenv( 'BUILD_ID' ) ?: '0'
-	branch = System.getenv( 'BRANCH' ) ?: 'development'
+	branch = System.getenv( 'BRANCH' ) ?: 'main'
 }
 
 repositories {
@@ -107,7 +107,7 @@ processResources {
 	if( branch == 'development' ){
 		filter( ReplaceTokens, tokens: [ 'build.number': "-SNAPSHOT" ] )
 	} else {
-		filter( ReplaceTokens, tokens: [ 'build.number': "+${buildID}" ] )
+		filter( ReplaceTokens, tokens: [ 'build.number': "+" + buildID ] )
 	}
 }
 
