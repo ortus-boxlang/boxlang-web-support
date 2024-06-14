@@ -19,7 +19,7 @@ on:
         type: boolean
 
 env:
-  MODULE_ID: boxlang-web-support
+  MODULE_ID: ${{ github.event.repository.name }}
   SNAPSHOT: ${{ inputs.snapshot || false }}
   JDK: 21
   GRADLE: 8.7
