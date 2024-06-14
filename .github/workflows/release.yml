@@ -18,12 +18,22 @@ on:
         default: false
         type: boolean
 
+  # Manual Trigger for LTS Releases
+  workflow_dispatch:
+    inputs:
+      lts:
+        description: 'The LTS marker'
+        required: false
+        default: true
+        type: boolean
+
 env:
   MODULE_ID: ${{ github.event.repository.name }}
   SNAPSHOT: ${{ inputs.snapshot || false }}
   JDK: 21
   GRADLE: 8.7
   BUILD_ID: ${{ github.run_number }}
+  LTS: ${{ inputs.lts || false }}
 
 jobs:
   #############################################
