@@ -1,4 +1,4 @@
-name: Test Suites ${{ github.event.repository.name }}
+name: Test Suites
 
 # We are a reusable Workflow only
 on:
@@ -9,7 +9,7 @@ on:
 
 jobs:
   tests:
-    name: Tests
+    name: Tests ${{ github.event.repository.name }}
     runs-on: ${{ matrix.os }}
     env:
       DB_USER: root
