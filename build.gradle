@@ -37,7 +37,7 @@ dependencies {
 	// Production Dependency
     compileOnly files( 'src/test/resources/libs/boxlang-' + boxlangVersion + '-all.jar' )
 	// https://mvnrepository.com/artifact/io.undertow/undertow-core/2.3.12.Final
-	compileOnly 'io.undertow:undertow-core:2.3.13.Final'
+	compileOnly 'io.undertow:undertow-core:2.3.14.Final'
 
 	// For HTML Parsing
 	implementation 'org.jsoup:jsoup:1.17.2'
