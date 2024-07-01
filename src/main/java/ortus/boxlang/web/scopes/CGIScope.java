@@ -168,72 +168,70 @@ public class CGIScope extends BaseScope {
 		}
 
 		if ( key.equals( Key.content_type ) ) {
-			String result = exchange.getRequestHeader( "Content-Type" );
-			return result == null ? "" : result;
+			return defaultNullToString( exchange.getRequestHeader( "Content-Type" ) );
 		}
 		if ( key.equals( Key.content_length ) ) {
-			return exchange.getRequestContentLength();
+			return defaultNullToString( exchange.getRequestContentLength() );
 		}
 		if ( key.equals( Key.cf_template_path ) || key.equals( KeyDictionary.bx_template_path ) || key.equals( Key.path_translated ) ) {
-			return getTemplatePath( context );
+			return defaultNullToString( getTemplatePath( context ) );
 		}
 		if ( key.equals( Key.https ) ) {
-			return exchange.isRequestSecure();
+			return defaultNullToString( exchange.isRequestSecure() );
 		}
 		if ( key.equals( Key.http_host ) ) {
 			int port = exchange.getRequestServerPort();
-			return port == 80 || port == 443 ? exchange.getRequestServerName() : exchange.getRequestServerName() + ":" + port;
+			return port == 80 || port == 443 ? exchange.getRequestServerName() : exchange.getRequestServerName() + ":" + defaultNullToString( port );
 		}
 		if ( key.equals( Key.local_addr ) ) {
 			try {
-				return InetAddress.getLocalHost().getHostAddress();
+				return defaultNullToString( InetAddress.getLocalHost().getHostAddress() );
 			} catch ( UnknownHostException e ) {
 				return "127.0.0.1";
 			}
 		}
 		if ( key.equals( Key.local_host ) ) {
 			try {
-				return InetAddress.getLocalHost().getHostName();
+				return defaultNullToString( InetAddress.getLocalHost().getHostName() );
 			} catch ( UnknownHostException e ) {
 				return "localhost";
 			}
 		}
 		if ( key.equals( Key.request_url ) ) {
-			return exchange.getRequestURL();
+			return defaultNullToString( exchange.getRequestURL() );
 		}
 		if ( key.equals( Key.remote_addr ) ) {
-			return exchange.getRequestRemoteAddr();
+			return defaultNullToString( exchange.getRequestRemoteAddr() );
 		}
 		if ( key.equals( Key.remote_host ) ) {
-			return exchange.getRequestRemoteHost();
+			return defaultNullToString( exchange.getRequestRemoteHost() );
 		}
 		if ( key.equals( Key.remote_user ) ) {
-			return exchange.getRequestRemoteUser();
+			return defaultNullToString( exchange.getRequestRemoteUser() );
 		}
 		if ( key.equals( Key.path_info ) ) {
-			String pathInfo = exchange.getRequestPathInfo();
-			return pathInfo == null ? "" : pathInfo;
+			return defaultNullToString( exchange.getRequestPathInfo() );
 		}
 		if ( key.equals( Key.query_string ) ) {
-			return exchange.getRequestQueryString();
+			return defaultNullToString( exchange.getRequestQueryString() );
 		}
 		if ( key.equals( Key.request_method ) ) {
-			return exchange.getRequestMethod();
+			return defaultNullToString( exchange.getRequestMethod() );
 		}
 		if ( key.equals( Key.script_name ) ) {
-			return exchange.getRequestURI();
+			return defaultNullToString( exchange.getRequestURI() );
 		}
 		if ( key.equals( Key.server_name ) ) {
-			return exchange.getRequestServerName();
+			return defaultNullToString( exchange.getRequestServerName() );
 		}
 		if ( key.equals( Key.server_port ) ) {
-			return exchange.getRequestServerPort();
+			return defaultNullToString( exchange.getRequestServerPort() );
 		}
 		if ( key.equals( Key.server_port_secure ) ) {
-			return exchange.isRequestSecure() ? exchange.getRequestServerPort() : 0;
+			return exchange.isRequestSecure() ? defaultNullToString( exchange.getRequestServerPort() ) : 0;
 		}
 		if ( key.equals( Key.server_protocol ) ) {
-			return exchange.getRequestProtocol();
+			return defaultNullToString( exchange.getRequestProtocol() );
 		}
 
 		// TODO: All other CGI keys
@@ -296,6 +294,9 @@ public class CGIScope extends BaseScope {
 	public Set<String> getDumpKeysAsString() {
 		// return the keys in alphabetical order
 		return this.knownKeys.stream().map( Key::getName ).collect( TreeSet::new, Set::add, Set::addAll );
+	}
 
+	private Object defaultNullToString( Object value ) {
+		return value == null ? "" : value;
 	}
 }
