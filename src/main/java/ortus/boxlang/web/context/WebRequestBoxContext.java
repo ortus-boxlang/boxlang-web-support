@@ -221,6 +221,9 @@ public class WebRequestBoxContext extends RequestBoxContext {
 	@Override
 	public ScopeSearchResult scopeFind( Key key, IScope defaultScope ) {
 
+		if ( key.equals( requestScope.getName() ) ) {
+			return new ScopeSearchResult( requestScope, requestScope, key, true );
+		}
 		if ( key.equals( CGIScope.getName() ) ) {
 			return new ScopeSearchResult( CGIScope, CGIScope, key, true );
 		}
