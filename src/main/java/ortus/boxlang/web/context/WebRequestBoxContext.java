@@ -25,7 +25,6 @@ import ortus.boxlang.runtime.context.IBoxContext;
 import ortus.boxlang.runtime.context.RequestBoxContext;
 import ortus.boxlang.runtime.scopes.IScope;
 import ortus.boxlang.runtime.scopes.Key;
-import ortus.boxlang.runtime.scopes.RequestScope;
 import ortus.boxlang.runtime.scopes.VariablesScope;
 import ortus.boxlang.runtime.types.IStruct;
 import ortus.boxlang.runtime.types.Struct;
@@ -36,6 +35,7 @@ import ortus.boxlang.web.exchange.IBoxHTTPExchange;
 import ortus.boxlang.web.scopes.CGIScope;
 import ortus.boxlang.web.scopes.CookieScope;
 import ortus.boxlang.web.scopes.FormScope;
+import ortus.boxlang.web.scopes.RequestScope;
 import ortus.boxlang.web.scopes.URLScope;
 
 /**
@@ -60,7 +60,7 @@ public class WebRequestBoxContext extends RequestBoxContext {
 	/**
 	 * The request scope
 	 */
-	protected IScope			requestScope	= new RequestScope();
+	protected IScope			requestScope;
 
 	/**
 	 * The URL scope
@@ -111,7 +111,7 @@ public class WebRequestBoxContext extends RequestBoxContext {
 		formScope			= new FormScope( httpExchange );
 		CGIScope			= new CGIScope( httpExchange );
 		cookieScope			= new CookieScope( httpExchange );
-
+		requestScope		= new RequestScope( httpExchange );
 	}
 
 	/**

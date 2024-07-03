@@ -34,7 +34,7 @@ import ortus.boxlang.web.exchange.IBoxHTTPExchange;
 import ortus.boxlang.web.util.KeyDictionary;
 
 /**
- * Variables scope implementation in BoxLang
+ * CGI scope implementation in BoxLang
  */
 public class CGIScope extends BaseScope {
 

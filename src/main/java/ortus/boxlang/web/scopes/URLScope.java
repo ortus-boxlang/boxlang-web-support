@@ -25,7 +25,7 @@ import ortus.boxlang.runtime.scopes.Key;
 import ortus.boxlang.web.exchange.IBoxHTTPExchange;
 
 /**
- * Variables scope implementation in BoxLang
+ * URL scope implementation in BoxLang
  */
 public class URLScope extends BaseScope {
 
