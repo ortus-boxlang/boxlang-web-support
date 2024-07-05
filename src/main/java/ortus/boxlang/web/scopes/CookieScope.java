@@ -25,7 +25,7 @@ import ortus.boxlang.web.exchange.BoxCookie;
 import ortus.boxlang.web.exchange.IBoxHTTPExchange;
 
 /**
- * Variables scope implementation in BoxLang
+ * Cookie scope implementation in BoxLang
  */
 public class CookieScope extends BaseScope {
 
