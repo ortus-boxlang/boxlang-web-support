@@ -403,7 +403,7 @@ public class WebRequestBoxContext extends RequestBoxContext {
 
 	public IStruct getConfig() {
 		var config = super.getConfig();
-		config.getAsStruct( Key.runtime ).getAsStruct( Key.mappings ).put( "/", webRoot );
+		config.getAsStruct( Key.mappings ).put( "/", webRoot );
 		return config;
 	}
 

@@ -19,6 +19,7 @@ package ortus.boxlang.web.scopes;
 
 import java.util.AbstractMap.SimpleEntry;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -135,7 +136,9 @@ public class RequestScope extends BaseScope {
 	 */
 	@Override
 	public Set<Key> keySet() {
-		var keys = wrapped.keySet();
+		// Create a new HashSet and add all keys from the wrapped map
+		Set<Key> keys = new HashSet<>( wrapped.keySet() );
+		// Add all keys from the exchange's request attribute map
 		keys.addAll( exchange.getRequestAttributeMap().keySet().stream().map( Key::of ).collect( Collectors.toSet() ) );
 		return keys;
 	}
