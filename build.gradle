@@ -46,7 +46,7 @@ dependencies {
    compileOnly files( 'src/test/resources/libs/boxlang-' + boxlangVersion + '-all.jar' )
 
 	// For HTML Parsing
-	implementation 'org.jsoup:jsoup:1.17.2'
+	implementation 'org.jsoup:jsoup:1.18.1'
 
     // Testing Dependencies
 	testImplementation files( 'src/test/resources/libs/boxlang-' + boxlangVersion + '-all.jar' )
