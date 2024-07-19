@@ -25,5 +25,8 @@ public class KeyDictionary {
 	public static final Key	htmlHead			= Key.of( "htmlHead" );
 	public static final Key	htmlFooter			= Key.of( "htmlFooter" );
 	public static final Key	onRequestEnd		= Key.of( "onRequestEnd" );
+	public static final Key	fileName			= Key.of( "fileName" );
+	public static final Key	disposition			= Key.of( "disposition" );
+	public static final Key	success				= Key.of( "success" );
 
 }

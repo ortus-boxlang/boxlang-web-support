@@ -23,14 +23,20 @@ import ortus.boxlang.runtime.components.Component.ComponentBody;
 import ortus.boxlang.runtime.components.cache.Cache;
 import ortus.boxlang.runtime.components.cache.Cache.CacheAction;
 import ortus.boxlang.runtime.context.IBoxContext;
+import ortus.boxlang.runtime.context.RequestBoxContext;
+import ortus.boxlang.runtime.dynamic.casters.BooleanCaster;
 import ortus.boxlang.runtime.dynamic.casters.DoubleCaster;
+import ortus.boxlang.runtime.dynamic.casters.StringCaster;
 import ortus.boxlang.runtime.events.InterceptionPoint;
 import ortus.boxlang.runtime.scopes.Key;
 import ortus.boxlang.runtime.services.ComponentService;
 import ortus.boxlang.runtime.types.IStruct;
 import ortus.boxlang.runtime.types.Struct;
+import ortus.boxlang.runtime.types.exceptions.AbortException;
 import ortus.boxlang.runtime.types.exceptions.BoxRuntimeException;
 import ortus.boxlang.web.context.WebRequestBoxContext;
+import ortus.boxlang.web.exchange.IBoxHTTPExchange;
+import ortus.boxlang.web.util.KeyDictionary;
 
 /**
  * Web request based interceptions
@@ -46,6 +52,69 @@ public class WebRequest {
 	 * The component service helper
 	 */
 	protected ComponentService	componentService	= BoxRuntime.getInstance().getComponentService();
+
+	/**
+	 * Writes content to the browser
+	 *
+	 * @param data The struct of data determining how the content should be written
+	 *
+	 * @data.context The context in which the interception is being made
+	 * 
+	 * @data.content The content to be written to the browser
+	 * 
+	 * @data.mimetype The MIME type of the content, defaults to text/html
+	 * 
+	 * @data.fileName An optional filename of the file to be written. When provided the content is written as an attachment
+	 * 
+	 * @data.reset A flag to determine if the buffer should be reset before writing the content
+	 * 
+	 * @data.abort A flag to determine if the request should be aborted after writing the content
+	 */
+	@InterceptionPoint
+	public void writeToBrowser( IStruct data ) {
+		String				disposition	= "inline";
+		RequestBoxContext	context		= ( RequestBoxContext ) data.get( Key.context );
+		if ( context == null ) {
+			throw new BoxRuntimeException( "A context is required in the intercept data in order to announce this interception" );
+		}
+		Object content = data.get( Key.content );
+		if ( content == null ) {
+			throw new BoxRuntimeException( "A request to write to the browser was announced, but no content to write was provided." );
+		}
+		WebRequestBoxContext	requestContext	= context.getParentOfType( WebRequestBoxContext.class );
+		IBoxHTTPExchange		exchange		= requestContext.getHTTPExchange();
+		String					fileName		= data.getAsString( KeyDictionary.fileName );
+		if ( fileName != null ) {
+			disposition = "attachment";
+		}
+		String	mimeType	= StringCaster.cast( data.getOrDefault( Key.mimetype, "text/html" ) );
+		Boolean	reset		= BooleanCaster.cast( data.getOrDefault( Key.reset, false ) );
+		Boolean	abort		= BooleanCaster.cast( data.getOrDefault( Key.abort, false ) );
+
+		if ( reset ) {
+			context.clearBuffer();
+		}
+
+		byte[] contentBytes;
+		if ( content instanceof byte[] barr ) {
+			contentBytes = barr;
+		} else {
+			contentBytes = StringCaster.cast( content ).getBytes();
+		}
+
+		exchange.setResponseHeader( "content-type", mimeType );
+		if ( disposition == "attachment" ) {
+			exchange.setResponseHeader( "content-disposition", disposition + "; filename=" + fileName );
+		}
+		exchange.sendResponseBinary( contentBytes );
+
+		if ( abort ) {
+			throw new AbortException();
+		} else {
+			data.put( KeyDictionary.success, true );
+		}
+
+	}
 
 	/**
 	 * Listens for the file component actions around web uploaads
