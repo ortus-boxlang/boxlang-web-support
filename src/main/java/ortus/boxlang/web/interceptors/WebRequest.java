@@ -18,6 +18,7 @@
 package ortus.boxlang.web.interceptors;
 
 import ortus.boxlang.runtime.BoxRuntime;
+import ortus.boxlang.runtime.bifs.BIF;
 import ortus.boxlang.runtime.components.Component;
 import ortus.boxlang.runtime.components.Component.ComponentBody;
 import ortus.boxlang.runtime.components.cache.Cache;
@@ -27,6 +28,7 @@ import ortus.boxlang.runtime.context.RequestBoxContext;
 import ortus.boxlang.runtime.dynamic.casters.BooleanCaster;
 import ortus.boxlang.runtime.dynamic.casters.DoubleCaster;
 import ortus.boxlang.runtime.dynamic.casters.StringCaster;
+import ortus.boxlang.runtime.dynamic.casters.StructCaster;
 import ortus.boxlang.runtime.events.InterceptionPoint;
 import ortus.boxlang.runtime.scopes.Key;
 import ortus.boxlang.runtime.services.ComponentService;
@@ -59,15 +61,15 @@ public class WebRequest {
 	 * @param data The struct of data determining how the content should be written
 	 *
 	 * @data.context The context in which the interception is being made
-	 * 
+	 *
 	 * @data.content The content to be written to the browser
-	 * 
+	 *
 	 * @data.mimetype The MIME type of the content, defaults to text/html
-	 * 
+	 *
 	 * @data.fileName An optional filename of the file to be written. When provided the content is written as an attachment
-	 * 
+	 *
 	 * @data.reset A flag to determine if the buffer should be reset before writing the content
-	 * 
+	 *
 	 * @data.abort A flag to determine if the request should be aborted after writing the content
 	 */
 	@InterceptionPoint
@@ -123,14 +125,30 @@ public class WebRequest {
 	 */
 	@InterceptionPoint
 	public void onFileComponentAction( IStruct data ) {
-		IStruct	arguments	= data.getAsStruct( Key.arguments );
-		Key		action		= Key.of( arguments.getAsString( Key.action ) );
+		IStruct	attributes	= data.getAsStruct( Key.attributes );
+		Key		action		= Key.of( attributes.getAsString( Key.action ) );
 
-		if ( action.equals( Key.upload ) ) {
-			throw new BoxRuntimeException( "The file action [" + action.getName() + "] is yet implemented in the web runtime" );
-		} else if ( action.equals( Key.uploadAll ) ) {
-			throw new BoxRuntimeException( "The file action [" + action.getName() + "] is not yet implemented in the web runtime" );
+		if ( !action.equals( KeyDictionary.upload ) && !action.equals( KeyDictionary.uploadAll ) ) {
+			return;
 		}
+
+		IBoxContext	context		= ( IBoxContext ) data.get( Key.context );
+		Key			BIFMethod	= null;
+		if ( action.equals( KeyDictionary.upload ) ) {
+			BIFMethod = KeyDictionary.fileUpload;
+		} else {
+			BIFMethod = KeyDictionary.fileUploadAll;
+		}
+
+		attributes.put( BIF.__functionName, BIFMethod );
+
+		data.put(
+		    Key.response,
+		    StructCaster.cast(
+		        runtime.getFunctionService().getGlobalFunction( BIFMethod ).invoke( context, attributes, false, BIFMethod )
+		    )
+		);
+
 	}
 
 	/**
