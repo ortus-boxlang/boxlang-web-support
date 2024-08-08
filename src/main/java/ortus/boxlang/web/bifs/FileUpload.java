@@ -70,12 +70,22 @@ public class FileUpload extends BIF {
 	}
 
 	/**
-	 * Describe what the invocation of your bif function does
+	 * Processes file uploads from the request
 	 *
 	 * @param context   The context in which the BIF is being invoked.
 	 * @param arguments Argument scope for the BIF.
 	 *
-	 * @argument.foo Describe any expected arguments
+	 * @argument.destination The destination directory for the uploaded files.
+	 * 
+	 * @argument.accept The accepted MIME types for the uploaded files.
+	 * 
+	 * @argument.nameconflict The action to take when a file with the same name already exists in the destination directory.
+	 * 
+	 * @argument.allowedExtensions The allowed file extensions for the uploaded files.
+	 * 
+	 * @argument.filefield The name of the file field to process.
+	 * 
+	 * @argument.strict Whether to strictly enforce the system specified upload security settings.
 	 */
 	public Object _invoke( IBoxContext context, ArgumentsScope arguments ) {
 		WebRequestBoxContext			requestContext	= context.getParentOfType( WebRequestBoxContext.class );
