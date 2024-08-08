@@ -25,7 +25,7 @@ public class GetPageContextTest extends BaseWebTest {
 		    """
 		    	result = getPageContext();
 		    """,
-		    webContext );
+		    context );
 		// @formatter:on
 
 		// Check the result

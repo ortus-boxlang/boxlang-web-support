@@ -33,7 +33,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.AfterAll;
@@ -41,31 +40,19 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
 import ortus.boxlang.runtime.BoxRuntime;
-import ortus.boxlang.runtime.application.BaseApplicationListener;
 import ortus.boxlang.runtime.dynamic.casters.StructCaster;
-import ortus.boxlang.runtime.scopes.IScope;
 import ortus.boxlang.runtime.scopes.Key;
-import ortus.boxlang.runtime.scopes.VariablesScope;
 import ortus.boxlang.runtime.types.Array;
 import ortus.boxlang.runtime.types.IStruct;
 import ortus.boxlang.runtime.types.exceptions.BoxIOException;
 import ortus.boxlang.runtime.types.exceptions.BoxRuntimeException;
 import ortus.boxlang.runtime.util.FileSystemUtil;
-import ortus.boxlang.web.context.WebRequestBoxContext;
-import ortus.boxlang.web.exchange.BoxCookie;
-import ortus.boxlang.web.exchange.IBoxHTTPExchange;
 import ortus.boxlang.web.util.KeyDictionary;
 
-public class FileUploadTest {
+public class FileUploadTest extends ortus.boxlang.web.util.BaseWebTest {
 
-	static BoxRuntime													runtime;
-	IScope																variables;
-	// Web Assets for mocking
-	public WebRequestBoxContext											context;
-	public IBoxHTTPExchange												mockExchange;
 	ArrayList<ortus.boxlang.web.exchange.IBoxHTTPExchange.FileUpload>	mockUploads;
 	public static final String											TEST_WEBROOT	= Path.of( "src/test/resources/webroot" ).toAbsolutePath().toString();
 	// Test Constants
@@ -77,7 +64,7 @@ public class FileUploadTest {
 	static String[]														testFields		= new String[] { "file1", "file2", "file3" };
 
 	@BeforeAll
-	public static void setUp() throws MalformedURLException, IOException {
+	public static void setUpTempFileSystem() throws MalformedURLException, IOException {
 		runtime = BoxRuntime.getInstance( true );
 		if ( !FileSystemUtil.exists( tmpDirectory ) ) {
 			FileSystemUtil.createDirectory( tmpDirectory, true, null );
@@ -96,15 +83,13 @@ public class FileUploadTest {
 	}
 
 	@BeforeEach
-	public void setupEach() throws IOException, URISyntaxException {
+	public void setupUploads() throws IOException, URISyntaxException {
 		if ( !FileSystemUtil.exists( testUpload ) ) {
 			BufferedInputStream urlStream = new BufferedInputStream( URI.create( testURLImage ).toURL().openStream() );
 			FileSystemUtil.write( testUpload, urlStream.readAllBytes(), true );
 		}
 
-		// Mock a connection
-		mockExchange	= Mockito.mock( IBoxHTTPExchange.class );
-		mockUploads		= new ArrayList<ortus.boxlang.web.exchange.IBoxHTTPExchange.FileUpload>();
+		mockUploads = new ArrayList<ortus.boxlang.web.exchange.IBoxHTTPExchange.FileUpload>();
 
 		Stream.of( testFields ).forEach( field -> {
 			Path fieldFile = Path.of( tmpDirectory, field + ".jpg" );
@@ -120,16 +105,6 @@ public class FileUploadTest {
 		    .toArray( new ortus.boxlang.web.exchange.IBoxHTTPExchange.FileUpload[ 0 ] );
 
 		when( mockExchange.getUploadData() ).thenReturn( uploadsArray );
-		when( mockExchange.getRequestCookies() ).thenReturn( new BoxCookie[ 0 ] );
-		when( mockExchange.getRequestHeaderMap() ).thenReturn( new HashMap<String, String[]>() );
-		// when( mockExchange.getRequestHeader( String name ) ).thenReturn( null );
-
-		// Create the mock contexts
-		context = new WebRequestBoxContext( runtime.getRuntimeContext(), mockExchange, TEST_WEBROOT );
-		context.loadApplicationDescriptor( new URI( "/" ) );
-		variables = context.getScopeNearby( VariablesScope.name );
-		BaseApplicationListener appListener = context.getApplicationListener();
-		appListener.onRequestStart( context, new Object[] { "/" } );
 
 	}
 
