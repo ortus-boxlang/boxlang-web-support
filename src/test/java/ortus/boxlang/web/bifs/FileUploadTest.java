@@ -19,12 +19,16 @@
 package ortus.boxlang.web.bifs;
 
 import static com.google.common.truth.Truth.assertThat;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
 
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -40,8 +44,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import ortus.boxlang.runtime.BoxRuntime;
-import ortus.boxlang.runtime.context.IBoxContext;
-import ortus.boxlang.runtime.context.ScriptingRequestBoxContext;
+import ortus.boxlang.runtime.application.BaseApplicationListener;
 import ortus.boxlang.runtime.dynamic.casters.StructCaster;
 import ortus.boxlang.runtime.scopes.IScope;
 import ortus.boxlang.runtime.scopes.Key;
@@ -49,6 +52,7 @@ import ortus.boxlang.runtime.scopes.VariablesScope;
 import ortus.boxlang.runtime.types.Array;
 import ortus.boxlang.runtime.types.IStruct;
 import ortus.boxlang.runtime.types.exceptions.BoxIOException;
+import ortus.boxlang.runtime.types.exceptions.BoxRuntimeException;
 import ortus.boxlang.runtime.util.FileSystemUtil;
 import ortus.boxlang.web.context.WebRequestBoxContext;
 import ortus.boxlang.web.exchange.BoxCookie;
@@ -57,25 +61,24 @@ import ortus.boxlang.web.util.KeyDictionary;
 
 public class FileUploadTest {
 
-	static BoxRuntime			runtime;
-	IBoxContext					context;
-	IScope						variables;
+	static BoxRuntime													runtime;
+	IScope																variables;
 	// Web Assets for mocking
-	public WebRequestBoxContext	webContext;
-	public IBoxHTTPExchange		mockExchange;
-	public static final String	TEST_WEBROOT	= Path.of( "src/test/resources/webroot" ).toAbsolutePath().toString();
+	public WebRequestBoxContext											context;
+	public IBoxHTTPExchange												mockExchange;
+	ArrayList<ortus.boxlang.web.exchange.IBoxHTTPExchange.FileUpload>	mockUploads;
+	public static final String											TEST_WEBROOT	= Path.of( "src/test/resources/webroot" ).toAbsolutePath().toString();
 	// Test Constants
-	static Key					result			= new Key( "result" );
-	static String				testURLImage	= "https://ortus-public.s3.amazonaws.com/logos/ortus-medium.jpg";
-	static String				tmpDirectory	= "src/test/resources/tmp/FileUpload";
-	static String				testUpload		= tmpDirectory + "/test.jpg";
+	static Key															result			= new Key( "result" );
+	static String														testURLImage	= "https://ortus-public.s3.amazonaws.com/logos/ortus-medium.jpg";
+	static String														tmpDirectory	= "src/test/resources/tmp/FileUpload";
+	static String														testUpload		= tmpDirectory + "/test.jpg";
 
-	static String[]				testFields		= new String[] { "file1", "file2", "file3" };
+	static String[]														testFields		= new String[] { "file1", "file2", "file3" };
 
 	@BeforeAll
 	public static void setUp() throws MalformedURLException, IOException {
 		runtime = BoxRuntime.getInstance( true );
-		System.out.println( "Temp Directory Exists " + FileSystemUtil.exists( tmpDirectory ) );
 		if ( !FileSystemUtil.exists( tmpDirectory ) ) {
 			FileSystemUtil.createDirectory( tmpDirectory, true, null );
 		}
@@ -93,15 +96,15 @@ public class FileUploadTest {
 	}
 
 	@BeforeEach
-	public void setupEach() throws IOException {
+	public void setupEach() throws IOException, URISyntaxException {
 		if ( !FileSystemUtil.exists( testUpload ) ) {
 			BufferedInputStream urlStream = new BufferedInputStream( URI.create( testURLImage ).toURL().openStream() );
 			FileSystemUtil.write( testUpload, urlStream.readAllBytes(), true );
 		}
 
 		// Mock a connection
-		mockExchange = Mockito.mock( IBoxHTTPExchange.class );
-		ArrayList<ortus.boxlang.web.exchange.IBoxHTTPExchange.FileUpload> mockUploads = new ArrayList<ortus.boxlang.web.exchange.IBoxHTTPExchange.FileUpload>();
+		mockExchange	= Mockito.mock( IBoxHTTPExchange.class );
+		mockUploads		= new ArrayList<ortus.boxlang.web.exchange.IBoxHTTPExchange.FileUpload>();
 
 		Stream.of( testFields ).forEach( field -> {
 			Path fieldFile = Path.of( tmpDirectory, field + ".jpg" );
@@ -122,9 +125,12 @@ public class FileUploadTest {
 		// when( mockExchange.getRequestHeader( String name ) ).thenReturn( null );
 
 		// Create the mock contexts
-		context		= new ScriptingRequestBoxContext( runtime.getRuntimeContext() );
-		webContext	= new WebRequestBoxContext( context, mockExchange, TEST_WEBROOT );
-		variables	= webContext.getScopeNearby( VariablesScope.name );
+		context = new WebRequestBoxContext( runtime.getRuntimeContext(), mockExchange, TEST_WEBROOT );
+		context.loadApplicationDescriptor( new URI( "/" ) );
+		variables = context.getScopeNearby( VariablesScope.name );
+		BaseApplicationListener appListener = context.getApplicationListener();
+		appListener.onRequestStart( context, new Object[] { "/" } );
+
 	}
 
 	@DisplayName( "It tests the BIF FileUpload" )
@@ -140,13 +146,11 @@ public class FileUploadTest {
 		    nameconflict = "makeunique"
 		      );
 		      """,
-		    webContext );
+		    context );
 
 		assertThat( variables.get( result ) ).isInstanceOf( IStruct.class );
 
 		IStruct fileInfo = variables.getAsStruct( result );
-
-		// System.out.println( fileInfo.asString() );
 
 		assertThat( fileInfo.getAsString( KeyDictionary.serverFile ) ).isInstanceOf( String.class );
 		assertThat( fileInfo.getAsString( KeyDictionary.serverFile ) ).isNotEmpty();
@@ -172,7 +176,7 @@ public class FileUploadTest {
 		    nameconflict = "makeunique"
 		      );
 		      """,
-		    webContext );
+		    context );
 
 		assertThat( variables.get( result ) ).isInstanceOf( IStruct.class );
 
@@ -191,6 +195,99 @@ public class FileUploadTest {
 
 	}
 
+	@DisplayName( "It tests the BIF FileUpload with explicitly allowed extensions" )
+	@Test
+	public void testBifFileSecurity() {
+		variables.put( Key.of( "filefield" ), testFields[ 0 ] );
+		variables.put( Key.directory, Path.of( tmpDirectory ).toAbsolutePath().toString() );
+
+		// Test with strict mode off
+		runtime.executeSource(
+		    """
+		            result = FileUpload(
+		            	filefield = filefield,
+		            	destination = directory,
+		          nameconflict = "makeunique",
+		       allowedExtensions = "png",
+		    strict=false
+		            );
+		            """,
+		    context );
+
+		assertThat( variables.get( result ) ).isInstanceOf( IStruct.class );
+
+		IStruct fileInfo = variables.getAsStruct( result );
+
+		assertThat( fileInfo.getAsString( KeyDictionary.clientFile ) )
+		    .isEqualTo( Path.of( tmpDirectory, testFields[ 0 ] + ".jpg" ).toAbsolutePath().toString() );
+		assertFalse( fileInfo.getAsBoolean( KeyDictionary.fileWasSaved ) );
+
+		// Test with strict mode on
+		assertThrows( BoxRuntimeException.class, () -> runtime.executeSource(
+		    """
+		            result = FileUpload(
+		            	filefield = filefield,
+		            	destination = directory,
+		          nameconflict = "makeunique",
+		       allowedExtensions = "png",
+		    strict=true
+		            );
+		            """,
+		    context )
+		);
+
+		mockUploads.clear();
+		// Now test with a server defined disallow
+		Stream.of( testFields ).forEach( field -> {
+			Path fieldFile = Path.of( tmpDirectory, field + ".exe" );
+			try {
+				Files.copy( Path.of( testUpload ), fieldFile, StandardCopyOption.REPLACE_EXISTING );
+			} catch ( IOException e ) {
+				throw new BoxIOException( e );
+			}
+			mockUploads.add( new ortus.boxlang.web.exchange.IBoxHTTPExchange.FileUpload( Key.of( field ), fieldFile, fieldFile.getFileName().toString() ) );
+		} );
+
+		ortus.boxlang.web.exchange.IBoxHTTPExchange.FileUpload[] uploadsArray = mockUploads
+		    .toArray( new ortus.boxlang.web.exchange.IBoxHTTPExchange.FileUpload[ 0 ] );
+
+		when( mockExchange.getUploadData() ).thenReturn( uploadsArray );
+
+		assertThrows( BoxRuntimeException.class, () -> runtime.executeSource(
+		    """
+		            result = FileUpload(
+		            	filefield = filefield,
+		            	destination = directory,
+		          nameconflict = "makeunique",
+		    strict=true
+		            );
+		            """,
+		    context )
+		);
+
+		// Now test server-level disallowed with strict off
+		// We have to change the file field because the error above will have deleted the disallowed file
+		variables.put( Key.of( "filefield" ), testFields[ 1 ] );
+		runtime.executeSource(
+		    """
+		            result = FileUpload(
+		            	filefield = filefield,
+		            	destination = directory,
+		          nameconflict = "makeunique",
+		       allowedExtensions = "exe",
+		    strict=false
+		            );
+		            """,
+		    context );
+
+		assertThat( variables.get( result ) ).isInstanceOf( IStruct.class );
+		fileInfo = variables.getAsStruct( result );
+		assertThat( fileInfo.getAsString( KeyDictionary.clientFile ) )
+		    .isEqualTo( Path.of( tmpDirectory, testFields[ 1 ] + ".exe" ).toAbsolutePath().toString() );
+		assertTrue( fileInfo.getAsBoolean( KeyDictionary.fileWasSaved ) );
+
+	}
+
 	@DisplayName( "It tests the BIF FileUploadAll" )
 	@Test
 	public void testBifFileUploadAll() {
@@ -203,7 +300,7 @@ public class FileUploadTest {
 		    nameconflict = "makeunique"
 		        );
 		        """,
-		    webContext );
+		    context );
 
 		assertThat( variables.get( result ) ).isInstanceOf( Array.class );
 

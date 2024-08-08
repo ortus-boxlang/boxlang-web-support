@@ -23,13 +23,13 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Set;
 import java.util.stream.Stream;
 
 import ortus.boxlang.compiler.parser.Parser;
 import ortus.boxlang.runtime.bifs.BIF;
 import ortus.boxlang.runtime.bifs.BoxBIF;
-import ortus.boxlang.runtime.context.ApplicationBoxContext;
 import ortus.boxlang.runtime.context.IBoxContext;
 import ortus.boxlang.runtime.context.RequestBoxContext;
 import ortus.boxlang.runtime.dynamic.casters.StringCaster;
@@ -65,7 +65,7 @@ public class FileUpload extends BIF {
 		    new Argument( false, "string", Key.nameconflict, "error", Set.of( Validator.valueOneOf( "error", "skip", "overwrite", "makeunique" ) ) ),
 		    new Argument( false, "string", KeyDictionary.allowedExtensions ),
 		    new Argument( false, "string", Key.filefield ),
-		    new Argument( false, "string", Key.strict, true )
+		    new Argument( false, "boolean", Key.strict, true )
 		};
 	}
 
@@ -278,28 +278,28 @@ public class FileUpload extends BIF {
 	@SuppressWarnings( "unchecked" )
 	public boolean processUploadSecurity( IBoxHTTPExchange.FileUpload upload, IStruct arguments, IBoxContext context ) {
 		// System and request level whitelist and blacklist settings
+		IStruct							requestSettings			= context.getParentOfType( RequestBoxContext.class ).getSettings();
+		Collection<ArrayList<String>>	allowed					= ( Collection<ArrayList<String>> ) requestSettings
+		    .getOrDefault( Key.allowedFileOperationExtensions, new ArrayList<String>() );
 
-		IBoxContext applicationContext = context.getParentOfType( ApplicationBoxContext.class );
-		System.out.println( "Application context:" + applicationContext );
-		IStruct				requestSettings			= context.getParentOfType( RequestBoxContext.class ).getSettings();
-		ArrayList<String>	allowed					= ( ArrayList<String> ) requestSettings.getOrDefault( Key.allowedFileOperationExtensions,
+		Collection<ArrayList<String>>	disallowed				= ( Collection<ArrayList<String>> ) requestSettings.getOrDefault(
+		    Key.disallowedFileOperationExtensions,
 		    new ArrayList<String>() );
-		ArrayList<String>	disallowed				= ( ArrayList<String> ) requestSettings.getOrDefault( Key.disallowedFileOperationExtensions,
-		    new ArrayList<String>() );
 
-		String				uploadMimeType			= FileSystemUtil.getMimeType( upload.tmpPath().toString() );
-		String				uploadExtension			= Parser.getFileExtension( upload.tmpPath().getFileName().toString() ).get().toLowerCase();
-		String				allowedExtensions		= arguments.getAsString( KeyDictionary.allowedExtensions );
-		String				allowedMimeTypes		= arguments.getAsString( Key.accept );
-		Boolean				strict					= arguments.getAsBoolean( Key.strict );
+		String							uploadMimeType			= FileSystemUtil.getMimeType( upload.tmpPath().toString() );
+		String							uploadExtension			= Parser.getFileExtension( upload.tmpPath().getFileName().toString() ).get().toLowerCase();
+		String							allowedExtensions		= arguments.getAsString( KeyDictionary.allowedExtensions );
+		String							allowedMimeTypes		= arguments.getAsString( Key.accept );
+		Boolean							strict					= arguments.getAsBoolean( Key.strict );
 
-		Boolean				hasServerPermission		= true;
-		Boolean				hasRequestPermission	= true;
+		Boolean							hasServerPermission		= true;
+		Boolean							hasRequestPermission	= true;
 
 		if ( allowedExtensions != null ) {
 			hasRequestPermission = ListUtil.asList( allowedExtensions, ListUtil.DEFAULT_DELIMITER ).stream()
 			    .map( StringCaster::cast )
 			    .anyMatch( ext -> ext.equals( "*" ) || ext.equalsIgnoreCase( uploadExtension ) );
+
 		} else if ( allowedMimeTypes != null ) {
 			hasRequestPermission = ListUtil.asList( allowedMimeTypes, ListUtil.DEFAULT_DELIMITER ).stream()
 			    .map( StringCaster::cast )
@@ -310,9 +310,9 @@ public class FileUpload extends BIF {
 
 		return strict
 		    ? hasServerPermission && hasRequestPermission
-		    : ( !hasServerPermission
-		        ? false
-		        : hasRequestPermission );
+		    : ( allowedExtensions != null || allowedMimeTypes != null
+		        ? hasRequestPermission
+		        : hasServerPermission );
 
 	}
 
