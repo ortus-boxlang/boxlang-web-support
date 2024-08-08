@@ -62,7 +62,6 @@ public class FileTest extends ortus.boxlang.web.util.BaseWebTest {
 
 	@BeforeEach
 	public void setupUploads() throws IOException, URISyntaxException {
-		System.out.println( "Setting up uploads" );
 		if ( !FileSystemUtil.exists( testUpload ) ) {
 			BufferedInputStream urlStream = new BufferedInputStream( URI.create( testURLImage ).toURL().openStream() );
 			FileSystemUtil.write( testUpload, urlStream.readAllBytes(), true );
@@ -120,7 +119,6 @@ public class FileTest extends ortus.boxlang.web.util.BaseWebTest {
 	@DisplayName( "It tests the file component with uploadAll" )
 	@Test
 	public void testComponentUploadAll() {
-		System.out.println( mockUploads );
 		mockUploads.stream().forEach( upload -> {
 			assertTrue( Files.exists( upload.tmpPath() ) );
 		} );
