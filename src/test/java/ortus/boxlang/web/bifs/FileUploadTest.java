@@ -41,7 +41,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import ortus.boxlang.runtime.BoxRuntime;
 import ortus.boxlang.runtime.dynamic.casters.StructCaster;
 import ortus.boxlang.runtime.scopes.Key;
 import ortus.boxlang.runtime.types.Array;
@@ -54,18 +53,17 @@ import ortus.boxlang.web.util.KeyDictionary;
 public class FileUploadTest extends ortus.boxlang.web.util.BaseWebTest {
 
 	ArrayList<ortus.boxlang.web.exchange.IBoxHTTPExchange.FileUpload>	mockUploads;
-	public static final String											TEST_WEBROOT	= Path.of( "src/test/resources/webroot" ).toAbsolutePath().toString();
+	public final String													TEST_WEBROOT	= Path.of( "src/test/resources/webroot" ).toAbsolutePath().toString();
 	// Test Constants
-	static Key															result			= new Key( "result" );
-	static String														testURLImage	= "https://ortus-public.s3.amazonaws.com/logos/ortus-medium.jpg";
-	static String														tmpDirectory	= "src/test/resources/tmp/FileUpload";
-	static String														testUpload		= tmpDirectory + "/test.jpg";
+	final Key															result			= new Key( "result" );
+	final String														testURLImage	= "https://ortus-public.s3.amazonaws.com/logos/ortus-medium.jpg";
+	final String														tmpDirectory	= "src/test/resources/tmp/FileUpload";
+	final String														testUpload		= tmpDirectory + "/test.jpg";
 
-	static String[]														testFields		= new String[] { "file1", "file2", "file3" };
+	final String[]														testFields		= new String[] { "file1", "file2", "file3" };
 
 	@BeforeAll
-	public static void setUpTempFileSystem() throws MalformedURLException, IOException {
-		runtime = BoxRuntime.getInstance( true );
+	public void setUpTempFileSystem() throws MalformedURLException, IOException {
 		if ( !FileSystemUtil.exists( tmpDirectory ) ) {
 			FileSystemUtil.createDirectory( tmpDirectory, true, null );
 		}
@@ -76,7 +74,7 @@ public class FileUploadTest extends ortus.boxlang.web.util.BaseWebTest {
 	}
 
 	@AfterAll
-	public static void teardown() {
+	public void teardown() {
 		if ( FileSystemUtil.exists( tmpDirectory ) ) {
 			FileSystemUtil.deleteDirectory( tmpDirectory, true );
 		}

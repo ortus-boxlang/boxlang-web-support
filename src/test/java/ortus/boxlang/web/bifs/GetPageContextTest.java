@@ -29,8 +29,7 @@ public class GetPageContextTest extends BaseWebTest {
 		// @formatter:on
 
 		// Check the result
-		var result = variables.get( BaseWebTest.result );
-		assertThat( result ).isInstanceOf( GetPageContext.PageContext.class );
+		assertThat( variables.get( result ) ).isInstanceOf( GetPageContext.PageContext.class );
 	}
 
 }

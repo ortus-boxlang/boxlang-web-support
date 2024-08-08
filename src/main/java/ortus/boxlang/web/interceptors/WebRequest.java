@@ -28,7 +28,7 @@ import ortus.boxlang.runtime.context.RequestBoxContext;
 import ortus.boxlang.runtime.dynamic.casters.BooleanCaster;
 import ortus.boxlang.runtime.dynamic.casters.DoubleCaster;
 import ortus.boxlang.runtime.dynamic.casters.StringCaster;
-import ortus.boxlang.runtime.dynamic.casters.StructCaster;
+import ortus.boxlang.runtime.events.BaseInterceptor;
 import ortus.boxlang.runtime.events.InterceptionPoint;
 import ortus.boxlang.runtime.scopes.Key;
 import ortus.boxlang.runtime.services.ComponentService;
@@ -43,7 +43,7 @@ import ortus.boxlang.web.util.KeyDictionary;
 /**
  * Web request based interceptions
  */
-public class WebRequest {
+public class WebRequest extends BaseInterceptor {
 
 	/**
 	 * The runtime instance
@@ -144,9 +144,7 @@ public class WebRequest {
 
 		data.put(
 		    Key.response,
-		    StructCaster.cast(
-		        runtime.getFunctionService().getGlobalFunction( BIFMethod ).invoke( context, attributes, false, BIFMethod )
-		    )
+		    runtime.getFunctionService().getGlobalFunction( BIFMethod ).invoke( context, attributes, false, BIFMethod )
 		);
 
 	}
