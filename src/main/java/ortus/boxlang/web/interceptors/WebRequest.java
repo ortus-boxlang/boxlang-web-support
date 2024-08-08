@@ -149,7 +149,7 @@ public class WebRequest {
 			IStruct				attributes	= data.getAsStruct( Key.attributes );
 			ComponentBody		body		= ( ComponentBody ) data.get( Key.body );
 			Cache.CacheAction	cacheAction	= Cache.CacheAction.fromString( attributes.getAsString( Key.action ) );
-			Double				timespan	= attributes.getAsDouble( Key.timespan );
+			Double				timespan	= DoubleCaster.cast( attributes.get( Key.timespan ) );
 
 			if ( context.getParentOfType( WebRequestBoxContext.class ) == null ) {
 				throw new BoxRuntimeException(
