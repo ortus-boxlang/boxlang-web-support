@@ -29,7 +29,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.AfterAll;
@@ -42,13 +42,16 @@ import org.mockito.Mockito;
 import ortus.boxlang.runtime.BoxRuntime;
 import ortus.boxlang.runtime.context.IBoxContext;
 import ortus.boxlang.runtime.context.ScriptingRequestBoxContext;
+import ortus.boxlang.runtime.dynamic.casters.StructCaster;
 import ortus.boxlang.runtime.scopes.IScope;
 import ortus.boxlang.runtime.scopes.Key;
 import ortus.boxlang.runtime.scopes.VariablesScope;
+import ortus.boxlang.runtime.types.Array;
 import ortus.boxlang.runtime.types.IStruct;
 import ortus.boxlang.runtime.types.exceptions.BoxIOException;
 import ortus.boxlang.runtime.util.FileSystemUtil;
 import ortus.boxlang.web.context.WebRequestBoxContext;
+import ortus.boxlang.web.exchange.BoxCookie;
 import ortus.boxlang.web.exchange.IBoxHTTPExchange;
 import ortus.boxlang.web.util.KeyDictionary;
 
@@ -98,7 +101,7 @@ public class FileUploadTest {
 
 		// Mock a connection
 		mockExchange = Mockito.mock( IBoxHTTPExchange.class );
-		List<ortus.boxlang.web.exchange.IBoxHTTPExchange.FileUpload> fileUploads = new ArrayList<ortus.boxlang.web.exchange.IBoxHTTPExchange.FileUpload>();
+		ArrayList<ortus.boxlang.web.exchange.IBoxHTTPExchange.FileUpload> mockUploads = new ArrayList<ortus.boxlang.web.exchange.IBoxHTTPExchange.FileUpload>();
 
 		Stream.of( testFields ).forEach( field -> {
 			Path fieldFile = Path.of( tmpDirectory, field + ".jpg" );
@@ -107,10 +110,16 @@ public class FileUploadTest {
 			} catch ( IOException e ) {
 				throw new BoxIOException( e );
 			}
-			fileUploads.add( new ortus.boxlang.web.exchange.IBoxHTTPExchange.FileUpload( Key.of( field ), fieldFile, fieldFile.getFileName().toString() ) );
+			mockUploads.add( new ortus.boxlang.web.exchange.IBoxHTTPExchange.FileUpload( Key.of( field ), fieldFile, fieldFile.getFileName().toString() ) );
 		} );
 
-		when( mockExchange.getUploadData() ).thenReturn( ( ortus.boxlang.web.exchange.IBoxHTTPExchange.FileUpload[] ) fileUploads.toArray() );
+		ortus.boxlang.web.exchange.IBoxHTTPExchange.FileUpload[] uploadsArray = mockUploads
+		    .toArray( new ortus.boxlang.web.exchange.IBoxHTTPExchange.FileUpload[ 0 ] );
+
+		when( mockExchange.getUploadData() ).thenReturn( uploadsArray );
+		when( mockExchange.getRequestCookies() ).thenReturn( new BoxCookie[ 0 ] );
+		when( mockExchange.getRequestHeaderMap() ).thenReturn( new HashMap<String, String[]>() );
+		// when( mockExchange.getRequestHeader( String name ) ).thenReturn( null );
 
 		// Create the mock contexts
 		context		= new ScriptingRequestBoxContext( runtime.getRuntimeContext() );
@@ -120,25 +129,94 @@ public class FileUploadTest {
 
 	@DisplayName( "It tests the BIF FileUpload" )
 	@Test
-	public void testBif() {
-		variables.put( Key.of( "filefield" ), testFields[ 0 ] );
+	public void testBifFileUpload() {
+		variables.put( Key.of( "filefield" ), testFields[ 1 ] );
 		variables.put( Key.directory, Path.of( tmpDirectory ).toAbsolutePath().toString() );
 		runtime.executeSource(
 		    """
-		    result = FileUpload(
-		    	filefield = filefield,
-		    	directory = directory
-		    );
-		    """,
-		    context );
+		      result = FileUpload(
+		      	filefield = filefield,
+		      	destination = directory,
+		    nameconflict = "makeunique"
+		      );
+		      """,
+		    webContext );
 
 		assertThat( variables.get( result ) ).isInstanceOf( IStruct.class );
 
-		assertThat( variables.getAsStruct( result ).getAsString( KeyDictionary.serverFile ) )
-		    .isEqualTo( Path.of( tmpDirectory, testFields[ 0 ] + ".jpg" ).toAbsolutePath().toString() );
+		IStruct fileInfo = variables.getAsStruct( result );
 
-		// Statement execution only and return the result:
-		// assertThat( ( Boolean ) instance.executeStatement( "FileUpload( ' + "foo" +' )" ) ).isTrue();
+		// System.out.println( fileInfo.asString() );
+
+		assertThat( fileInfo.getAsString( KeyDictionary.serverFile ) ).isInstanceOf( String.class );
+		assertThat( fileInfo.getAsString( KeyDictionary.serverFile ) ).isNotEmpty();
+		assertThat( fileInfo.getAsString( KeyDictionary.clientFile ) )
+		    .isEqualTo( Path.of( tmpDirectory, testFields[ 1 ] + ".jpg" ).toAbsolutePath().toString() );
+		assertThat( fileInfo.getAsString( KeyDictionary.clientFile ) )
+		    .isNotEqualTo( fileInfo.getAsString( KeyDictionary.serverFile ) );
+		assertThat( fileInfo.get( KeyDictionary.clientFileExt ) ).isEqualTo( "jpg" );
+		assertThat( fileInfo.get( KeyDictionary.contentType ) ).isEqualTo( "image/jpeg" );
+		assertThat( fileInfo.get( KeyDictionary.contentSubType ) ).isEqualTo( "jpeg" );
+		assertThat( fileInfo.get( KeyDictionary.fileSize ) ).isEqualTo( fileInfo.get( KeyDictionary.oldFileSize ) );
+
+	}
+
+	@DisplayName( "It tests the BIF FileUpload without a FileField" )
+	@Test
+	public void testBifFileUploadNoField() {
+		variables.put( Key.directory, Path.of( tmpDirectory ).toAbsolutePath().toString() );
+		runtime.executeSource(
+		    """
+		      result = FileUpload(
+		      	destination = directory,
+		    nameconflict = "makeunique"
+		      );
+		      """,
+		    webContext );
+
+		assertThat( variables.get( result ) ).isInstanceOf( IStruct.class );
+
+		IStruct fileInfo = variables.getAsStruct( result );
+
+		assertThat( fileInfo.getAsString( KeyDictionary.serverFile ) ).isInstanceOf( String.class );
+		assertThat( fileInfo.getAsString( KeyDictionary.serverFile ) ).isNotEmpty();
+		assertThat( fileInfo.getAsString( KeyDictionary.clientFile ) )
+		    .isEqualTo( Path.of( tmpDirectory, testFields[ 0 ] + ".jpg" ).toAbsolutePath().toString() );
+		assertThat( fileInfo.getAsString( KeyDictionary.clientFile ) )
+		    .isNotEqualTo( fileInfo.getAsString( KeyDictionary.serverFile ) );
+		assertThat( fileInfo.get( KeyDictionary.clientFileExt ) ).isEqualTo( "jpg" );
+		assertThat( fileInfo.get( KeyDictionary.contentType ) ).isEqualTo( "image/jpeg" );
+		assertThat( fileInfo.get( KeyDictionary.contentSubType ) ).isEqualTo( "jpeg" );
+		assertThat( fileInfo.get( KeyDictionary.fileSize ) ).isEqualTo( fileInfo.get( KeyDictionary.oldFileSize ) );
+
+	}
+
+	@DisplayName( "It tests the BIF FileUploadAll" )
+	@Test
+	public void testBifFileUploadAll() {
+		variables.put( Key.of( "filefield" ), testFields[ 1 ] );
+		variables.put( Key.directory, Path.of( tmpDirectory ).toAbsolutePath().toString() );
+		runtime.executeSource(
+		    """
+		        result = FileUploadAll(
+		        	destination = directory,
+		    nameconflict = "makeunique"
+		        );
+		        """,
+		    webContext );
+
+		assertThat( variables.get( result ) ).isInstanceOf( Array.class );
+
+		variables.getAsArray( result ).stream().map( StructCaster::cast ).forEach( fileInfo -> {
+			assertThat( fileInfo.getAsString( KeyDictionary.serverFile ) ).isInstanceOf( String.class );
+			assertThat( fileInfo.getAsString( KeyDictionary.serverFile ) ).isNotEmpty();
+			assertThat( fileInfo.getAsString( KeyDictionary.clientFile ) )
+			    .isNotEqualTo( fileInfo.getAsString( KeyDictionary.serverFile ) );
+			assertThat( fileInfo.get( KeyDictionary.clientFileExt ) ).isEqualTo( "jpg" );
+			assertThat( fileInfo.get( KeyDictionary.contentType ) ).isEqualTo( "image/jpeg" );
+			assertThat( fileInfo.get( KeyDictionary.contentSubType ) ).isEqualTo( "jpeg" );
+			assertThat( fileInfo.get( KeyDictionary.fileSize ) ).isEqualTo( fileInfo.get( KeyDictionary.oldFileSize ) );
+		} );
 
 	}
 

@@ -22,13 +22,17 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
+import java.util.ArrayList;
 import java.util.Set;
 import java.util.stream.Stream;
 
 import ortus.boxlang.compiler.parser.Parser;
 import ortus.boxlang.runtime.bifs.BIF;
 import ortus.boxlang.runtime.bifs.BoxBIF;
+import ortus.boxlang.runtime.context.ApplicationBoxContext;
 import ortus.boxlang.runtime.context.IBoxContext;
+import ortus.boxlang.runtime.context.RequestBoxContext;
+import ortus.boxlang.runtime.dynamic.casters.StringCaster;
 import ortus.boxlang.runtime.scopes.ArgumentsScope;
 import ortus.boxlang.runtime.scopes.Key;
 import ortus.boxlang.runtime.types.Argument;
@@ -61,7 +65,7 @@ public class FileUpload extends BIF {
 		    new Argument( false, "string", Key.nameconflict, "error", Set.of( Validator.valueOneOf( "error", "skip", "overwrite", "makeunique" ) ) ),
 		    new Argument( false, "string", KeyDictionary.allowedExtensions ),
 		    new Argument( false, "string", Key.filefield ),
-		    new Argument( false, "string", Key.strict )
+		    new Argument( false, "string", Key.strict, true )
 		};
 	}
 
@@ -74,28 +78,21 @@ public class FileUpload extends BIF {
 	 * @argument.foo Describe any expected arguments
 	 */
 	public Object _invoke( IBoxContext context, ArgumentsScope arguments ) {
-		Key						action			= Key.of( arguments.getAsString( Key.action ) );
-		WebRequestBoxContext	requestContext	= context.getParentOfType( WebRequestBoxContext.class );
-		String					variable		= arguments.getAsString( Key.variable );
-		Key						bifMethodKey	= arguments.getAsKey( BIF.__functionName );
+		WebRequestBoxContext			requestContext	= context.getParentOfType( WebRequestBoxContext.class );
+		Key								bifMethodKey	= arguments.getAsKey( BIF.__functionName );
 
-		if ( variable == null && arguments.containsKey( Key.result ) ) {
-			variable = arguments.getAsString( Key.result );
-		}
+		IBoxHTTPExchange				exchange		= requestContext.getHTTPExchange();
 
-		if ( requestContext == null ) {
-			throw new BoxRuntimeException(
-			    String.format( "The specified file action [%s] is is not valid in a non-web runtime", action.getName() ) );
-		}
-
-		IBoxHTTPExchange				exchange	= requestContext.getHTTPExchange();
-
-		IBoxHTTPExchange.FileUpload[]	uploads		= exchange.getUploadData();
+		IBoxHTTPExchange.FileUpload[]	uploads			= exchange.getUploadData();
 
 		if ( uploads == null ) {
 			throw new BoxRuntimeException( "No file uploads were found in the request" );
 		} else if ( bifMethodKey.equals( KeyDictionary.fileUpload ) ) {
-			Key							fieldKey	= Key.of( arguments.getAsString( Key.filefield ) );
+			String field = arguments.getAsString( Key.filefield );
+			if ( field == null ) {
+				field = uploads[ 0 ].formFieldName().getName();
+			}
+			Key							fieldKey	= Key.of( field );
 			IBoxHTTPExchange.FileUpload	upload		= null;
 			if ( fieldKey == null ) {
 				upload = uploads[ 0 ];
@@ -143,7 +140,7 @@ public class FileUpload extends BIF {
 		String	fileName		= upload.originalFileName();
 		String	extension		= Parser.getFileExtension( fileName ).get();
 		Path	filePath		= destinationPath.resolve( fileName );
-		String	nameConflict	= arguments.getAsString( Key.nameconflict );
+		String	nameConflict	= arguments.getAsString( Key.nameconflict ).toLowerCase();
 
 		IStruct	uploadRecord	= newUploadRecord();
 		uploadRecord.put( KeyDictionary.clientDirectory, destinationPath.toString() );
@@ -151,10 +148,30 @@ public class FileUpload extends BIF {
 		uploadRecord.put( KeyDictionary.clientFileExt, extension );
 		uploadRecord.put( KeyDictionary.clientFileName, fileName );
 		uploadRecord.put( KeyDictionary.attemptedServerFile, filePath.toString() );
+
 		try {
 			uploadRecord.put( KeyDictionary.fileSize, Files.size( upload.tmpPath() ) );
 		} catch ( IOException e ) {
 			throw new BoxIOException( "The size of the uploaded file [" + fileName + "] could not be determined", e );
+		}
+
+		Boolean uploadPermitted = processUploadSecurity( upload, arguments, context );
+
+		if ( !uploadPermitted ) {
+			try {
+				// Delete the file since it's been marked as unsafe
+				Files.delete( upload.tmpPath() );
+			} catch ( IOException e ) {
+				throw new BoxIOException( "The uploaded file [" + upload.tmpPath().toString() + "] was marked as unsafe but could not be deleted.", e );
+			}
+
+			// If strict mode is enabled, we throw an exception to notify that the settings are
+			if ( arguments.getAsBoolean( Key.strict ) ) {
+				throw new BoxRuntimeException(
+				    "The the upload of file [" + fileName + "] is not permitted by the server, application or request file security settings" );
+			} else {
+				return uploadRecord;
+			}
 		}
 
 		DateTime operationDate = new DateTime();
@@ -247,6 +264,56 @@ public class FileUpload extends BIF {
 		    KeyDictionary.timeCreated, null, // Time the uploaded file was created
 		    KeyDictionary.timeLastModified, null // Date and time of the last modification to the uploaded file
 		);
+	}
+
+	/**
+	 * Determines if the upload is permitted based on the server and request level security settings
+	 *
+	 * @param upload
+	 * @param arguments
+	 * @param context
+	 *
+	 * @return
+	 */
+	@SuppressWarnings( "unchecked" )
+	public boolean processUploadSecurity( IBoxHTTPExchange.FileUpload upload, IStruct arguments, IBoxContext context ) {
+		// System and request level whitelist and blacklist settings
+
+		IBoxContext applicationContext = context.getParentOfType( ApplicationBoxContext.class );
+		System.out.println( "Application context:" + applicationContext );
+		IStruct				requestSettings			= context.getParentOfType( RequestBoxContext.class ).getSettings();
+		ArrayList<String>	allowed					= ( ArrayList<String> ) requestSettings.getOrDefault( Key.allowedFileOperationExtensions,
+		    new ArrayList<String>() );
+		ArrayList<String>	disallowed				= ( ArrayList<String> ) requestSettings.getOrDefault( Key.disallowedFileOperationExtensions,
+		    new ArrayList<String>() );
+
+		String				uploadMimeType			= FileSystemUtil.getMimeType( upload.tmpPath().toString() );
+		String				uploadExtension			= Parser.getFileExtension( upload.tmpPath().getFileName().toString() ).get().toLowerCase();
+		String				allowedExtensions		= arguments.getAsString( KeyDictionary.allowedExtensions );
+		String				allowedMimeTypes		= arguments.getAsString( Key.accept );
+		Boolean				strict					= arguments.getAsBoolean( Key.strict );
+
+		Boolean				hasServerPermission		= true;
+		Boolean				hasRequestPermission	= true;
+
+		if ( allowedExtensions != null ) {
+			hasRequestPermission = ListUtil.asList( allowedExtensions, ListUtil.DEFAULT_DELIMITER ).stream()
+			    .map( StringCaster::cast )
+			    .anyMatch( ext -> ext.equals( "*" ) || ext.equalsIgnoreCase( uploadExtension ) );
+		} else if ( allowedMimeTypes != null ) {
+			hasRequestPermission = ListUtil.asList( allowedMimeTypes, ListUtil.DEFAULT_DELIMITER ).stream()
+			    .map( StringCaster::cast )
+			    .anyMatch( ext -> ext.equals( "*" ) || ext.equalsIgnoreCase( uploadMimeType ) );
+		}
+
+		hasServerPermission = allowed.contains( uploadExtension ) || !disallowed.contains( uploadExtension );
+
+		return strict
+		    ? hasServerPermission && hasRequestPermission
+		    : ( !hasServerPermission
+		        ? false
+		        : hasRequestPermission );
+
 	}
 
 }
