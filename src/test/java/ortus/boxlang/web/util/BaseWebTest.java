@@ -1,51 +1,74 @@
 package ortus.boxlang.web.util;
 
-import java.nio.file.Path;
+import static org.mockito.Mockito.when;
 
-import org.junit.jupiter.api.AfterAll;
+import java.io.OutputStream;
+import java.io.PrintWriter;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.nio.file.Path;
+import java.util.HashMap;
+
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.TestInstance;
 import org.mockito.Mockito;
 
 import ortus.boxlang.runtime.BoxRuntime;
-import ortus.boxlang.runtime.context.IBoxContext;
-import ortus.boxlang.runtime.context.ScriptingRequestBoxContext;
+import ortus.boxlang.runtime.application.BaseApplicationListener;
+import ortus.boxlang.runtime.interop.DynamicObject;
 import ortus.boxlang.runtime.scopes.IScope;
 import ortus.boxlang.runtime.scopes.Key;
 import ortus.boxlang.runtime.scopes.VariablesScope;
+import ortus.boxlang.runtime.types.exceptions.BoxRuntimeException;
 import ortus.boxlang.web.context.WebRequestBoxContext;
+import ortus.boxlang.web.exchange.BoxCookie;
 import ortus.boxlang.web.exchange.IBoxHTTPExchange;
+import ortus.boxlang.web.interceptors.WebRequest;
 
+@TestInstance( TestInstance.Lifecycle.PER_CLASS )
 public class BaseWebTest {
 
-	public static BoxRuntime	runtime;
-	public static Key			result			= new Key( "result" );
-	public static final String	TEST_WEBROOT	= Path.of( "src/test/resources/webroot" ).toAbsolutePath().toString();
-	public IBoxContext			context;
+	public BoxRuntime			runtime;
+	public Key					result			= new Key( "result" );
+	public final String			TEST_WEBROOT	= Path.of( "src/test/resources/webroot" ).toAbsolutePath().toString();
+	public WebRequestBoxContext	context;
 	public IScope				variables;
-	// Web Assets for mocking
-	public WebRequestBoxContext	webContext;
 	public IBoxHTTPExchange		mockExchange;
+	public String				requestURI		= "/";
 
 	@BeforeAll
-	public static void setUp() {
+	public void setUp() {
 		runtime = BoxRuntime.getInstance( true );
-	}
 
-	@AfterAll
-	public static void teardown() {
+		// We need to unregister in the setup because the runtime is a singleton in the cli request
+		runtime.getInterceptorService().unregister( DynamicObject.of( new WebRequest() ) );
 
+		// Manually register our interceptor as it doesn't automatically get registered in the test environment
+		runtime.getInterceptorService().register( new WebRequest() );
 	}
 
 	@BeforeEach
 	public void setupEach() {
 		// Mock a connection
-		mockExchange	= Mockito.mock( IBoxHTTPExchange.class );
+		mockExchange = Mockito.mock( IBoxHTTPExchange.class );
+		// Mock some objects which are used in the context
+		when( mockExchange.getRequestCookies() ).thenReturn( new BoxCookie[ 0 ] );
+		when( mockExchange.getRequestHeaderMap() ).thenReturn( new HashMap<String, String[]>() );
+		when( mockExchange.getResponseWriter() ).thenReturn( new PrintWriter( OutputStream.nullOutputStream() ) );
 
 		// Create the mock contexts
-		context			= new ScriptingRequestBoxContext( runtime.getRuntimeContext() );
-		webContext		= new WebRequestBoxContext( context, mockExchange, TEST_WEBROOT );
-		variables		= webContext.getScopeNearby( VariablesScope.name );
+		context		= new WebRequestBoxContext( runtime.getRuntimeContext(), mockExchange, TEST_WEBROOT );
+		variables	= context.getScopeNearby( VariablesScope.name );
+
+		try {
+			context.loadApplicationDescriptor( new URI( requestURI ) );
+		} catch ( URISyntaxException e ) {
+			throw new BoxRuntimeException( "Invalid URI", e );
+		}
+
+		BaseApplicationListener appListener = context.getApplicationListener();
+		appListener.onRequestStart( context, new Object[] { requestURI } );
 	}
 
 }

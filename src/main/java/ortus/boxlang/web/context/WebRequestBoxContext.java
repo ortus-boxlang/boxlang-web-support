@@ -320,7 +320,6 @@ public class WebRequestBoxContext extends RequestBoxContext {
 		return getScope( name );
 	}
 
-	@Override
 	public void registerUDF( UDF udf, boolean override ) {
 		if ( override || !variablesScope.containsKey( udf.getName() ) ) {
 			variablesScope.put( udf.getName(), udf );
@@ -376,7 +375,7 @@ public class WebRequestBoxContext extends RequestBoxContext {
 
 	/**
 	 * Get the HTTP exchange
-	 * 
+	 *
 	 * @return The HTTP exchange
 	 */
 	public IBoxHTTPExchange getHTTPExchange() {
@@ -411,7 +410,7 @@ public class WebRequestBoxContext extends RequestBoxContext {
 
 	/**
 	 * Get the web root for this request
-	 * 
+	 *
 	 * @return The web root
 	 */
 	public String getWebRoot() {
