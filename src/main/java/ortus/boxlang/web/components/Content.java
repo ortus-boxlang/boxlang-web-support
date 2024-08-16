@@ -33,7 +33,7 @@ import ortus.boxlang.runtime.validation.Validator;
 import ortus.boxlang.web.context.WebRequestBoxContext;
 import ortus.boxlang.web.exchange.IBoxHTTPExchange;
 
-@BoxComponent
+@BoxComponent( allowsBody = true )
 public class Content extends Component {
 
 	public Content() {
@@ -90,12 +90,12 @@ public class Content extends Component {
 		WebRequestBoxContext	requestContext	= context.getParentOfType( WebRequestBoxContext.class );
 		IBoxHTTPExchange		exchange		= requestContext.getHTTPExchange();
 
+		if ( type != null ) {
+			exchange.setResponseHeader( "content-type", type );
+		}
 		if ( file != null ) {
 			file = FileSystemUtil.expandPath( context, file ).absolutePath().toString();
 			context.clearBuffer();
-			if ( type != null ) {
-				exchange.setResponseHeader( "content-type", type );
-			}
 			exchange.sendResponseFile( new File( file ) );
 			if ( deleteFile ) {
 				FileSystemUtil.deleteFile( file );
@@ -115,9 +115,6 @@ public class Content extends Component {
 			} else {
 				bytesToWrite = StringCaster.cast( variable ).getBytes();
 			}
-			if ( type != null ) {
-				exchange.setResponseHeader( "content-type", type );
-			}
 			exchange.sendResponseBinary( bytesToWrite );
 			// I'm not sure CF actually aborts here if. If not, we need a flag in the context
 			// to stop writing to the output buffer
@@ -125,6 +122,12 @@ public class Content extends Component {
 		} else {
 			if ( reset ) {
 				context.clearBuffer();
+			}
+		}
+		if ( body != null ) {
+			BodyResult bodyResult = processBody( context, body );
+			if ( bodyResult.isEarlyExit() ) {
+				return bodyResult;
 			}
 		}
 		return DEFAULT_RETURN;
