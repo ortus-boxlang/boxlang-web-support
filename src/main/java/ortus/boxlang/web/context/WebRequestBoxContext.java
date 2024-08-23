@@ -321,9 +321,7 @@ public class WebRequestBoxContext extends RequestBoxContext {
 	}
 
 	public void registerUDF( UDF udf, boolean override ) {
-		if ( override || !variablesScope.containsKey( udf.getName() ) ) {
-			variablesScope.put( udf.getName(), udf );
-		}
+		registerUDF( variablesScope, udf, override );
 	}
 
 	/**
