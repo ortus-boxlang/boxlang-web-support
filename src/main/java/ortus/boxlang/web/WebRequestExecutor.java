@@ -128,6 +128,7 @@ public class WebRequestExecutor {
 			context.flushBuffer( false );
 		} catch ( AbortException e ) {
 			ensureContentType( exchange, DEFAULT_CONTENT_TYPE );
+
 			if ( appListener != null ) {
 				try {
 					appListener.onAbort( context, new Object[] { requestString } );
@@ -136,8 +137,11 @@ public class WebRequestExecutor {
 					errorToHandle = ae;
 				}
 			}
-			if ( context != null )
+
+			if ( context != null ) {
 				context.flushBuffer( true );
+			}
+
 			if ( e.getCause() != null ) {
 				// This will always be an instance of CustomException
 				throw ( RuntimeException ) e.getCause();
@@ -157,8 +161,10 @@ public class WebRequestExecutor {
 				// Opps, an error while handling the missing template error
 				errorToHandle = t;
 			}
-			if ( context != null )
+
+			if ( context != null ) {
 				context.flushBuffer( false );
+			}
 		} catch ( Throwable e ) {
 			errorToHandle = e;
 		} finally {
@@ -171,8 +177,10 @@ public class WebRequestExecutor {
 					errorToHandle = e;
 				}
 			}
-			if ( context != null )
+
+			if ( context != null ) {
 				context.flushBuffer( false );
+			}
 
 			if ( errorToHandle != null ) {
 				try {
