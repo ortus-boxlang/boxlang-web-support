@@ -44,10 +44,15 @@ import ortus.boxlang.web.scopes.URLScope;
 public class WebRequestExecutor {
 
 	// TODO: make this configurable and move cf extensions to compat
-	static private Set<String> validClassExtensions = Set.of( "cfc", "bx" );
+	private static final Set<String> VALID_REMOTE_REQUEST_EXTENSIONS = Set.of( "cfc", "bx" );
 
+	/**
+	 * Execute a web request
+	 *
+	 * @param exchange The exchange object to use for the request
+	 * @param webRoot  The web root of the application
+	 */
 	public static void execute( IBoxHTTPExchange exchange, String webRoot, Boolean manageFullReqestLifecycle ) {
-
 		WebRequestBoxContext	context			= null;
 		DynamicObject			trans			= null;
 		FRTransService			frTransService	= null;
@@ -56,19 +61,17 @@ public class WebRequestExecutor {
 		String					requestString	= "";
 
 		try {
+			// Debug tracking
 			frTransService	= FRTransService.getInstance( manageFullReqestLifecycle );
-
 			requestString	= exchange.getRequestURI();
-
 			trans			= frTransService.startTransaction( "Web Request", requestString );
+
+			// Load up the runtime, context and app listener
 			context			= new WebRequestBoxContext( BoxRuntime.getInstance().getRuntimeContext(), exchange, webRoot );
-			// Set default content type to text/html
-			exchange.setResponseHeader( "Content-Type", "text/html;charset=UTF-8" );
-			// exchange.getResponseHeaders().put( new HttpString( "Content-Encoding" ),
-			// "UTF-8" );
 			context.loadApplicationDescriptor( new URI( requestString ) );
 			appListener = context.getApplicationListener();
 
+			// Target Detection
 			String	ext			= "";
 			Path	requestPath	= Path.of( requestString );
 			String	fileName	= Path.of( requestString ).getFileName().toString().toLowerCase();
@@ -76,9 +79,12 @@ public class WebRequestExecutor {
 				ext = fileName.substring( fileName.lastIndexOf( "." ) + 1 );
 			}
 
+			// Pass through to the Application.bx onRequestStart method
 			boolean result = appListener.onRequestStart( context, new Object[] { requestString } );
+
+			// If we have a result, then we can continue
 			if ( result ) {
-				if ( validClassExtensions.contains( ext ) ) {
+				if ( VALID_REMOTE_REQUEST_EXTENSIONS.contains( ext ) ) {
 					Struct args = new Struct();
 					// URL vars override form vars
 					args.addAll( context.getScope( FormScope.name ) );
@@ -102,21 +108,27 @@ public class WebRequestExecutor {
 						    .orElse( "plain" );
 					}
 
-					// Set the content type based on the return format
-					exchange.setResponseHeader( "Content-Type", switch ( returnFormat ) {
-						case "json" -> "application/json;charset=UTF-8";
-						case "xml", "wddx" -> "application/xml;charset=UTF-8";
-						case "plain" -> "text/html;charset=UTF-8";
-						case null, default -> "text/html;charset=UTF-8";
-					} );
-
+					// If the content type is set, the user has already set it, so don't override it
+					// It's their responsibility to set it correctly
+					if ( exchange.getResponseHeader( "Content-Type" ) == null ) {
+						// Set the content type based on the return format
+						exchange.setResponseHeader( "Content-Type", switch ( returnFormat ) {
+							case "json" -> "application/json;charset=UTF-8";
+							case "xml", "wddx" -> "application/xml;charset=UTF-8";
+							case "plain" -> "text/html;charset=UTF-8";
+							case null, default -> "text/html;charset=UTF-8";
+						} );
+					}
 				} else {
 					appListener.onRequest( context, new Object[] { requestString } );
 				}
 			}
 
+			// Ensure content and request flush
+			ensureContentType( exchange );
 			context.flushBuffer( false );
 		} catch ( AbortException e ) {
+			ensureContentType( exchange );
 			if ( appListener != null ) {
 				try {
 					appListener.onAbort( context, new Object[] { requestString } );
@@ -132,6 +144,7 @@ public class WebRequestExecutor {
 				throw ( RuntimeException ) e.getCause();
 			}
 		} catch ( MissingIncludeException e ) {
+			ensureContentType( exchange );
 			try {
 				// A return of true means the error has been "handled". False means the default
 				// error handling should be used
@@ -150,6 +163,7 @@ public class WebRequestExecutor {
 		} catch ( Throwable e ) {
 			errorToHandle = e;
 		} finally {
+			ensureContentType( exchange );
 			if ( appListener != null ) {
 				try {
 					appListener.onRequestEnd( context, new Object[] { requestString } );
@@ -183,6 +197,18 @@ public class WebRequestExecutor {
 			if ( frTransService != null ) {
 				frTransService.endTransaction( trans );
 			}
+		}
+	}
+
+	/**
+	 * Ensure the content type is set if it is not already
+	 *
+	 * @param exchange The exchange object to use for the request
+	 */
+	private static void ensureContentType( IBoxHTTPExchange exchange ) {
+		var contentType = exchange.getRequestHeader( "Content-Type" );
+		if ( contentType == null ) {
+			exchange.setResponseHeader( "Content-Type", "text/html;charset=UTF-8" );
 		}
 	}
 

@@ -158,6 +158,10 @@ public class WebRequestBoxContext extends RequestBoxContext {
 		}
 	}
 
+	/**
+	 * @inheritDoc
+	 */
+	@Override
 	public IStruct getVisibleScopes( IStruct scopes, boolean nearby, boolean shallow ) {
 		if ( hasParent() && !shallow ) {
 			getParent().getVisibleScopes( scopes, false, false );
@@ -320,6 +324,10 @@ public class WebRequestBoxContext extends RequestBoxContext {
 		return getScope( name );
 	}
 
+	/**
+	 * @inheritDoc
+	 */
+	@Override
 	public void registerUDF( UDF udf, boolean override ) {
 		registerUDF( variablesScope, udf, override );
 	}
