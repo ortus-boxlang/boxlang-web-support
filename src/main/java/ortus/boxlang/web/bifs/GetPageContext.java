@@ -14,6 +14,8 @@
  */
 package ortus.boxlang.web.bifs;
 
+import java.util.Map;
+
 import ortus.boxlang.runtime.bifs.BIF;
 import ortus.boxlang.runtime.bifs.BoxBIF;
 import ortus.boxlang.runtime.context.IBoxContext;
@@ -136,6 +138,14 @@ public class GetPageContext extends BIF {
 
 		public void addHeader( String name, String value ) {
 			setHeader( name, value );
+		}
+
+		public Map<String, String[]> getRequestHeaderMap() {
+			return exchange.getRequestHeaderMap();
+		}
+
+		public String getRequestHeader( String name ) {
+			return exchange.getRequestHeader( name );
 		}
 
 	}
