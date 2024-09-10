@@ -119,12 +119,12 @@ public class WebRequestExecutor {
 						case null, default -> "text/html;charset=UTF-8";
 					} );
 				} else {
+					ensureContentType( exchange, DEFAULT_CONTENT_TYPE );
 					appListener.onRequest( context, new Object[] { requestString } );
 				}
 			}
 
-			// Ensure content and request flush
-			ensureContentType( exchange, DEFAULT_CONTENT_TYPE );
+			// Finally flush the buffer
 			context.flushBuffer( false );
 		} catch ( AbortException e ) {
 			ensureContentType( exchange, DEFAULT_CONTENT_TYPE );
