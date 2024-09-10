@@ -140,6 +140,14 @@ public class GetPageContext extends BIF {
 			setHeader( name, value );
 		}
 
+		public Map<String, String[]> getResponseHeaderMap() {
+			return exchange.getResponseHeaderMap();
+		}
+
+		public String getResponseHeader( String name ) {
+			return exchange.getResponseHeader( name );
+		}
+
 		public Map<String, String[]> getRequestHeaderMap() {
 			return exchange.getRequestHeaderMap();
 		}
