@@ -44,7 +44,9 @@ import ortus.boxlang.web.scopes.URLScope;
 public class WebRequestExecutor {
 
 	// TODO: make this configurable and move cf extensions to compat
-	private static final Set<String> VALID_REMOTE_REQUEST_EXTENSIONS = Set.of( "cfc", "bx" );
+	private static final Set<String>	VALID_REMOTE_REQUEST_EXTENSIONS	= Set.of( "cfc", "bx" );
+
+	private static final String			DEFAULT_CONTENT_TYPE			= "text/html;charset=UTF-8";
 
 	/**
 	 * Execute a web request
@@ -110,25 +112,22 @@ public class WebRequestExecutor {
 
 					// If the content type is set, the user has already set it, so don't override it
 					// It's their responsibility to set it correctly
-					if ( exchange.getResponseHeader( "Content-Type" ) == null ) {
-						// Set the content type based on the return format
-						exchange.setResponseHeader( "Content-Type", switch ( returnFormat ) {
-							case "json" -> "application/json;charset=UTF-8";
-							case "xml", "wddx" -> "application/xml;charset=UTF-8";
-							case "plain" -> "text/html;charset=UTF-8";
-							case null, default -> "text/html;charset=UTF-8";
-						} );
-					}
+					ensureContentType( exchange, switch ( returnFormat ) {
+						case "json" -> "application/json;charset=UTF-8";
+						case "xml", "wddx" -> "application/xml;charset=UTF-8";
+						case "plain" -> "text/html;charset=UTF-8";
+						case null, default -> "text/html;charset=UTF-8";
+					} );
 				} else {
 					appListener.onRequest( context, new Object[] { requestString } );
 				}
 			}
 
 			// Ensure content and request flush
-			ensureContentType( exchange );
+			ensureContentType( exchange, DEFAULT_CONTENT_TYPE );
 			context.flushBuffer( false );
 		} catch ( AbortException e ) {
-			ensureContentType( exchange );
+			ensureContentType( exchange, DEFAULT_CONTENT_TYPE );
 			if ( appListener != null ) {
 				try {
 					appListener.onAbort( context, new Object[] { requestString } );
@@ -144,7 +143,7 @@ public class WebRequestExecutor {
 				throw ( RuntimeException ) e.getCause();
 			}
 		} catch ( MissingIncludeException e ) {
-			ensureContentType( exchange );
+			ensureContentType( exchange, DEFAULT_CONTENT_TYPE );
 			try {
 				// A return of true means the error has been "handled". False means the default
 				// error handling should be used
@@ -163,7 +162,7 @@ public class WebRequestExecutor {
 		} catch ( Throwable e ) {
 			errorToHandle = e;
 		} finally {
-			ensureContentType( exchange );
+			ensureContentType( exchange, DEFAULT_CONTENT_TYPE );
 			if ( appListener != null ) {
 				try {
 					appListener.onRequestEnd( context, new Object[] { requestString } );
@@ -203,11 +202,12 @@ public class WebRequestExecutor {
 	/**
 	 * Ensure the content type is set if it is not already
 	 *
-	 * @param exchange The exchange object to use for the request
+	 * @param exchange           The exchange object to use for the request
+	 * @param defaultContentType The default content type to use if none is set
 	 */
-	private static void ensureContentType( IBoxHTTPExchange exchange ) {
+	private static void ensureContentType( IBoxHTTPExchange exchange, String defaultContentType ) {
 		var contentType = exchange.getRequestHeader( "Content-Type" );
-		if ( contentType == null ) {
+		if ( contentType == null || contentType.isEmpty() ) {
 			exchange.setResponseHeader( "Content-Type", "text/html;charset=UTF-8" );
 		}
 	}
