@@ -126,7 +126,13 @@ public class WebRequestExecutor {
 
 			// Finally flush the buffer
 			context.flushBuffer( false );
-		} catch ( AbortException e ) {
+		}
+		/**
+		 * --------------------------------------------------------------------------------
+		 * DEAL WITH BX ABORTS
+		 * --------------------------------------------------------------------------------
+		 */
+		catch ( AbortException e ) {
 			ensureContentType( exchange, DEFAULT_CONTENT_TYPE );
 
 			if ( appListener != null ) {
@@ -146,7 +152,13 @@ public class WebRequestExecutor {
 				// This will always be an instance of CustomException
 				throw ( RuntimeException ) e.getCause();
 			}
-		} catch ( MissingIncludeException e ) {
+		}
+		/**
+		 * --------------------------------------------------------------------------------
+		 * MISSING INCLUDES HANDLING
+		 * --------------------------------------------------------------------------------
+		 */
+		catch ( MissingIncludeException e ) {
 			ensureContentType( exchange, DEFAULT_CONTENT_TYPE );
 			try {
 				// A return of true means the error has been "handled". False means the default
@@ -165,9 +177,21 @@ public class WebRequestExecutor {
 			if ( context != null ) {
 				context.flushBuffer( false );
 			}
-		} catch ( Throwable e ) {
+		}
+		/**
+		 * --------------------------------------------------------------------------------
+		 * ALL OTHER ERRORS
+		 * --------------------------------------------------------------------------------
+		 */
+		catch ( Throwable e ) {
 			errorToHandle = e;
-		} finally {
+		}
+		/**
+		 * --------------------------------------------------------------------------------
+		 * DEAL WITH ALL THE ERRORS HERE
+		 * --------------------------------------------------------------------------------
+		 */
+		finally {
 			ensureContentType( exchange, DEFAULT_CONTENT_TYPE );
 			if ( appListener != null ) {
 				try {
