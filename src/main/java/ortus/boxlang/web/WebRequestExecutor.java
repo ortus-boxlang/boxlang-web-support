@@ -18,21 +18,33 @@
 package ortus.boxlang.web;
 
 import java.net.URI;
+import java.nio.file.Path;
+import java.util.Optional;
+import java.util.Set;
 
 import ortus.boxlang.runtime.BoxRuntime;
 import ortus.boxlang.runtime.application.BaseApplicationListener;
+import ortus.boxlang.runtime.context.RequestBoxContext;
 import ortus.boxlang.runtime.interop.DynamicObject;
+import ortus.boxlang.runtime.scopes.Key;
+import ortus.boxlang.runtime.types.Struct;
 import ortus.boxlang.runtime.types.exceptions.AbortException;
 import ortus.boxlang.runtime.types.exceptions.MissingIncludeException;
+import ortus.boxlang.runtime.util.FQN;
 import ortus.boxlang.runtime.util.FRTransService;
 import ortus.boxlang.web.context.WebRequestBoxContext;
 import ortus.boxlang.web.exchange.IBoxHTTPExchange;
 import ortus.boxlang.web.handlers.WebErrorHandler;
+import ortus.boxlang.web.scopes.FormScope;
+import ortus.boxlang.web.scopes.URLScope;
 
 /**
  * I handle running a web request
  */
 public class WebRequestExecutor {
+
+	// TODO: make this configurable and move cf extensions to compat
+	static private Set<String> validClassExtensions = Set.of( "cfc", "bx" );
 
 	public static void execute( IBoxHTTPExchange exchange, String webRoot, Boolean manageFullReqestLifecycle ) {
 
@@ -41,30 +53,73 @@ public class WebRequestExecutor {
 		FRTransService			frTransService	= null;
 		BaseApplicationListener	appListener		= null;
 		Throwable				errorToHandle	= null;
-		String					requestPath		= "";
+		String					requestString	= "";
 
 		try {
 			frTransService	= FRTransService.getInstance( manageFullReqestLifecycle );
 
-			requestPath		= exchange.getRequestURI();
+			requestString	= exchange.getRequestURI();
 
-			trans			= frTransService.startTransaction( "Web Request", requestPath );
+			trans			= frTransService.startTransaction( "Web Request", requestString );
 			context			= new WebRequestBoxContext( BoxRuntime.getInstance().getRuntimeContext(), exchange, webRoot );
 			// Set default content type to text/html
 			exchange.setResponseHeader( "Content-Type", "text/html;charset=UTF-8" );
-			// exchange.getResponseHeaders().put( new HttpString( "Content-Encoding" ), "UTF-8" );
-			context.loadApplicationDescriptor( new URI( requestPath ) );
+			// exchange.getResponseHeaders().put( new HttpString( "Content-Encoding" ),
+			// "UTF-8" );
+			context.loadApplicationDescriptor( new URI( requestString ) );
 			appListener = context.getApplicationListener();
-			boolean result = appListener.onRequestStart( context, new Object[] { requestPath } );
+
+			String	ext			= "";
+			Path	requestPath	= Path.of( requestString );
+			String	fileName	= Path.of( requestString ).getFileName().toString().toLowerCase();
+			if ( fileName.contains( "." ) ) {
+				ext = fileName.substring( fileName.lastIndexOf( "." ) + 1 );
+			}
+
+			boolean result = appListener.onRequestStart( context, new Object[] { requestString } );
 			if ( result ) {
-				appListener.onRequest( context, new Object[] { requestPath } );
+				if ( validClassExtensions.contains( ext ) ) {
+					Struct args = new Struct();
+					// URL vars override form vars
+					args.addAll( context.getScope( FormScope.name ) );
+					args.addAll( context.getScope( URLScope.name ) );
+					String	methodName		= null;
+					String	returnFormat	= null;
+					if ( args.containsKey( Key.method ) ) {
+						methodName = args.get( Key.method ).toString();
+						args.remove( Key.method );
+					}
+					if ( args.containsKey( Key.returnFormat ) ) {
+						returnFormat = args.get( Key.returnFormat ).toString();
+						args.remove( Key.returnFormat );
+					}
+					appListener.onClassRequest( context, new Object[] { new FQN( requestPath ).toString(), methodName, args, returnFormat } );
+					// If return format was passed in the URL, then we know it was chosen. If none in the URL, one may have been set on the remote functions
+					// annotations
+					if ( returnFormat == null ) {
+						returnFormat = Optional.ofNullable( context.getParentOfType( RequestBoxContext.class ).getAttachment( Key.returnFormat ) )
+						    .map( Object::toString )
+						    .orElse( "plain" );
+					}
+
+					// Set the content type based on the return format
+					exchange.setResponseHeader( "Content-Type", switch ( returnFormat ) {
+						case "json" -> "application/json;charset=UTF-8";
+						case "xml", "wddx" -> "application/xml;charset=UTF-8";
+						case "plain" -> "text/html;charset=UTF-8";
+						case null, default -> "text/html;charset=UTF-8";
+					} );
+
+				} else {
+					appListener.onRequest( context, new Object[] { requestString } );
+				}
 			}
 
 			context.flushBuffer( false );
 		} catch ( AbortException e ) {
 			if ( appListener != null ) {
 				try {
-					appListener.onAbort( context, new Object[] { requestPath } );
+					appListener.onAbort( context, new Object[] { requestString } );
 				} catch ( Throwable ae ) {
 					// Opps, an error while handling onAbort
 					errorToHandle = ae;
@@ -78,9 +133,12 @@ public class WebRequestExecutor {
 			}
 		} catch ( MissingIncludeException e ) {
 			try {
-				// A return of true means the error has been "handled". False means the default error handling should be used
-				if ( appListener == null || !appListener.onMissingTemplate( context, new Object[] { e.getMissingFileName() } ) ) {
-					// If the Application listener didn't "handle" it, then let the default handling kick in below
+				// A return of true means the error has been "handled". False means the default
+				// error handling should be used
+				if ( appListener == null
+				    || !appListener.onMissingTemplate( context, new Object[] { e.getMissingFileName() } ) ) {
+					// If the Application listener didn't "handle" it, then let the default handling
+					// kick in below
 					errorToHandle = e;
 				}
 			} catch ( Throwable t ) {
@@ -94,7 +152,7 @@ public class WebRequestExecutor {
 		} finally {
 			if ( appListener != null ) {
 				try {
-					appListener.onRequestEnd( context, new Object[] { requestPath } );
+					appListener.onRequestEnd( context, new Object[] { requestString } );
 				} catch ( Throwable e ) {
 					// Opps, an error while handling onRequestEnd
 					errorToHandle = e;
@@ -105,7 +163,8 @@ public class WebRequestExecutor {
 
 			if ( errorToHandle != null ) {
 				try {
-					// A return of true means the error has been "handled". False means the default error handling should be used
+					// A return of true means the error has been "handled". False means the default
+					// error handling should be used
 					if ( appListener == null || !appListener.onError( context, new Object[] { errorToHandle, "" } ) ) {
 						WebErrorHandler.handleError( errorToHandle, exchange, context, frTransService, trans );
 					}
