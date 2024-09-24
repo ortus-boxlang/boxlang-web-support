@@ -238,9 +238,9 @@ public class WebRequestExecutor {
 	 * @param defaultContentType The default content type to use if none is set
 	 */
 	private static void ensureContentType( IBoxHTTPExchange exchange, String defaultContentType ) {
-		var contentType = exchange.getRequestHeader( "Content-Type" );
+		var contentType = exchange.getResponseHeader( "Content-Type" );
 		if ( contentType == null || contentType.isEmpty() ) {
-			exchange.setResponseHeader( "Content-Type", "text/html;charset=UTF-8" );
+			exchange.setResponseHeader( "Content-Type", defaultContentType );
 		}
 	}
 
