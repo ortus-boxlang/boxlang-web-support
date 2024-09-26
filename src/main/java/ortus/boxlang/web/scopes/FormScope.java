@@ -29,12 +29,14 @@ import ortus.boxlang.web.exchange.IBoxHTTPExchange;
  */
 public class FormScope extends BaseScope {
 
+	public static Key		fieldNames	= Key.of( "fieldNames" );
+
 	/**
 	 * --------------------------------------------------------------------------
 	 * Public Properties
 	 * --------------------------------------------------------------------------
 	 */
-	public static final Key name = Key.of( "form" );
+	public static final Key	name		= Key.of( "form" );
 
 	/**
 	 * --------------------------------------------------------------------------
@@ -47,6 +49,9 @@ public class FormScope extends BaseScope {
 		exchange.getRequestFormMap().forEach( ( key, value ) -> {
 			this.put( Key.of( key ), Arrays.stream( value ).collect( Collectors.joining( "," ) ) );
 		} );
+		// add form.fieldNames from our internal keys
+		this.put( fieldNames, Arrays.stream( this.keySet().toArray() ).map( Object::toString ).collect( Collectors.joining( "," ) ) );
+
 	}
 
 	/**
