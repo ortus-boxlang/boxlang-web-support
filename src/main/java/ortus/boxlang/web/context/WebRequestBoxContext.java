@@ -423,4 +423,11 @@ public class WebRequestBoxContext extends RequestBoxContext {
 		return webRoot;
 	}
 
+	/**
+	 * Get cookie scope
+	 */
+	public IScope getCookieScope() {
+		return cookieScope;
+	}
+
 }

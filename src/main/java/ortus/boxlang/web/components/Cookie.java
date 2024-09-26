@@ -139,7 +139,11 @@ public class Cookie extends Component {
 			cookieInstance.setDomain( domain );
 		}
 
+		// Add to the actual HTTP reponse
 		exchange.addResponseCookie( cookieInstance );
+
+		// Keep the cookie scope in sync
+		requestContext.getCookieScope().put( name, value );
 
 		return DEFAULT_RETURN;
 	}
