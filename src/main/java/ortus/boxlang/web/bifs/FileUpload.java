@@ -61,11 +61,11 @@ public class FileUpload extends BIF {
 		super();
 		declaredArguments = new Argument[] {
 		    new Argument( true, "string", Key.destination ),
+		    new Argument( false, "string", Key.filefield ),
 		    new Argument( false, "string", Key.accept ),
 		    new Argument( false, "string", Key.nameconflict, "error", Set.of( Validator.valueOneOf( "error", "skip", "overwrite", "makeunique" ) ) ),
-		    new Argument( false, "string", KeyDictionary.allowedExtensions ),
-		    new Argument( false, "string", Key.filefield ),
-		    new Argument( false, "boolean", Key.strict, true )
+		    new Argument( false, "boolean", Key.strict, true ),
+		    new Argument( false, "string", KeyDictionary.allowedExtensions )
 		};
 	}
 
