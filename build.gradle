@@ -124,9 +124,9 @@ publishing {
 					}
 				}
 				scm {
-					connection = 'scm:git:https://github.com/ortus-boxlang/boxlang.git'
+					connection = 'scm:git:https://github.com/ortus-boxlang/boxlang-web-support.git'
 					developerConnection = 'scm:git:ssh://github.com/ortus-boxlang/boxlang.git'
-					url = 'https://github.com/ortus-boxlang/boxlang'
+					url = 'https://github.com/ortus-boxlang/boxlang-web-support'
 				}
 				developers{
 					developer {
