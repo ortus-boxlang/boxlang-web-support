@@ -31,6 +31,7 @@ import ortus.boxlang.runtime.types.Struct;
 import ortus.boxlang.runtime.types.exceptions.AbortException;
 import ortus.boxlang.runtime.types.exceptions.MissingIncludeException;
 import ortus.boxlang.runtime.util.FQN;
+import ortus.boxlang.runtime.util.BoxFQN;
 import ortus.boxlang.runtime.util.FRTransService;
 import ortus.boxlang.web.context.WebRequestBoxContext;
 import ortus.boxlang.web.exchange.IBoxHTTPExchange;
@@ -101,7 +102,7 @@ public class WebRequestExecutor {
 						returnFormat = args.get( Key.returnFormat ).toString();
 						args.remove( Key.returnFormat );
 					}
-					appListener.onClassRequest( context, new Object[] { new FQN( requestPath ).toString(), methodName, args, returnFormat } );
+					appListener.onClassRequest( context, new Object[] { new BoxFQN( requestPath ).toString(), methodName, args, returnFormat } );
 					// If return format was passed in the URL, then we know it was chosen. If none in the URL, one may have been set on the remote functions
 					// annotations
 					if ( returnFormat == null ) {
