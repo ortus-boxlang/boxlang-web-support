@@ -38,7 +38,6 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -171,7 +170,6 @@ public class FileUploadTest extends ortus.boxlang.web.util.BaseWebTest {
 
 	@DisplayName( "It tests the BIF FileUpload with explicitly allowed extensions" )
 	@Test
-	@Disabled
 	public void testBifFileSecurity() {
 		variables.put( Key.of( "filefield" ), testFields[ 0 ] );
 		variables.put( Key.directory, Path.of( tmpDirectory ).toAbsolutePath().toString() );

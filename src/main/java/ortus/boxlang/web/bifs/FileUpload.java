@@ -22,8 +22,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -76,15 +74,15 @@ public class FileUpload extends BIF {
 	 * @param arguments Argument scope for the BIF.
 	 *
 	 * @argument.destination The destination directory for the uploaded files.
-	 * 
+	 *
 	 * @argument.accept The accepted MIME types for the uploaded files.
-	 * 
+	 *
 	 * @argument.nameconflict The action to take when a file with the same name already exists in the destination directory.
-	 * 
+	 *
 	 * @argument.allowedExtensions The allowed file extensions for the uploaded files.
-	 * 
+	 *
 	 * @argument.filefield The name of the file field to process.
-	 * 
+	 *
 	 * @argument.strict Whether to strictly enforce the system specified upload security settings.
 	 */
 	public Object _invoke( IBoxContext context, ArgumentsScope arguments ) {
@@ -288,22 +286,16 @@ public class FileUpload extends BIF {
 	@SuppressWarnings( "unchecked" )
 	public boolean processUploadSecurity( IBoxHTTPExchange.FileUpload upload, IStruct arguments, IBoxContext context ) {
 		// System and request level whitelist and blacklist settings
-		IStruct							requestSettings			= context.getParentOfType( RequestBoxContext.class ).getSettings();
-		Collection<ArrayList<String>>	allowed					= ( Collection<ArrayList<String>> ) requestSettings
-		    .getOrDefault( Key.allowedFileOperationExtensions, new ArrayList<String>() );
+		IStruct	requestSettings			= context.getParentOfType( RequestBoxContext.class ).getSettings();
 
-		Collection<ArrayList<String>>	disallowed				= ( Collection<ArrayList<String>> ) requestSettings.getOrDefault(
-		    Key.disallowedFileOperationExtensions,
-		    new ArrayList<String>() );
+		String	uploadMimeType			= FileSystemUtil.getMimeType( upload.tmpPath().toString() );
+		String	uploadExtension			= Parser.getFileExtension( upload.tmpPath().getFileName().toString() ).get().toLowerCase();
+		String	allowedExtensions		= arguments.getAsString( KeyDictionary.allowedExtensions );
+		String	allowedMimeTypes		= arguments.getAsString( Key.accept );
+		Boolean	strict					= arguments.getAsBoolean( Key.strict );
 
-		String							uploadMimeType			= FileSystemUtil.getMimeType( upload.tmpPath().toString() );
-		String							uploadExtension			= Parser.getFileExtension( upload.tmpPath().getFileName().toString() ).get().toLowerCase();
-		String							allowedExtensions		= arguments.getAsString( KeyDictionary.allowedExtensions );
-		String							allowedMimeTypes		= arguments.getAsString( Key.accept );
-		Boolean							strict					= arguments.getAsBoolean( Key.strict );
-
-		Boolean							hasServerPermission		= true;
-		Boolean							hasRequestPermission	= true;
+		Boolean	hasServerPermission		= true;
+		Boolean	hasRequestPermission	= true;
 
 		if ( allowedExtensions != null ) {
 			hasRequestPermission = ListUtil.asList( allowedExtensions, ListUtil.DEFAULT_DELIMITER ).stream()
@@ -316,7 +308,7 @@ public class FileUpload extends BIF {
 			    .anyMatch( ext -> ext.equals( "*" ) || ext.equalsIgnoreCase( uploadMimeType ) );
 		}
 
-		hasServerPermission = allowed.contains( uploadExtension ) || !disallowed.contains( uploadExtension );
+		hasServerPermission = runtime.getConfiguration().security.isExtensionAllowed( uploadExtension );
 
 		return strict
 		    ? hasServerPermission && hasRequestPermission
