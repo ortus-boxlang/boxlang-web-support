@@ -30,7 +30,6 @@ import ortus.boxlang.runtime.scopes.Key;
 import ortus.boxlang.runtime.types.Struct;
 import ortus.boxlang.runtime.types.exceptions.AbortException;
 import ortus.boxlang.runtime.types.exceptions.MissingIncludeException;
-import ortus.boxlang.runtime.util.FQN;
 import ortus.boxlang.runtime.util.BoxFQN;
 import ortus.boxlang.runtime.util.FRTransService;
 import ortus.boxlang.web.context.WebRequestBoxContext;
@@ -71,6 +70,7 @@ public class WebRequestExecutor {
 
 			// Load up the runtime, context and app listener
 			context			= new WebRequestBoxContext( BoxRuntime.getInstance().getRuntimeContext(), exchange, webRoot );
+			RequestBoxContext.setCurrent( context );
 			context.loadApplicationDescriptor( new URI( requestString ) );
 			appListener = context.getApplicationListener();
 
@@ -102,11 +102,15 @@ public class WebRequestExecutor {
 						returnFormat = args.get( Key.returnFormat ).toString();
 						args.remove( Key.returnFormat );
 					}
-					appListener.onClassRequest( context, new Object[] { new BoxFQN( requestPath ).toString(), methodName, args, returnFormat } );
-					// If return format was passed in the URL, then we know it was chosen. If none in the URL, one may have been set on the remote functions
+					appListener.onClassRequest( context,
+					    new Object[] { new BoxFQN( requestPath ).toString(), methodName, args, returnFormat } );
+					// If return format was passed in the URL, then we know it was chosen. If none
+					// in the URL, one may have been set on the remote functions
 					// annotations
 					if ( returnFormat == null ) {
-						returnFormat = Optional.ofNullable( context.getParentOfType( RequestBoxContext.class ).getAttachment( Key.returnFormat ) )
+						returnFormat = Optional
+						    .ofNullable( context.getParentOfType( RequestBoxContext.class )
+						        .getAttachment( Key.returnFormat ) )
 						    .map( Object::toString )
 						    .orElse( "plain" );
 					}
@@ -229,6 +233,7 @@ public class WebRequestExecutor {
 			if ( frTransService != null ) {
 				frTransService.endTransaction( trans );
 			}
+			RequestBoxContext.removeCurrent();
 		}
 	}
 
