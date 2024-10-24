@@ -158,7 +158,10 @@ public class WebRequestBoxContext extends RequestBoxContext {
 						// Otherwise generate a new one
 						this.sessionID = Key.of( UUID.randomUUID().toString() );
 						// TODO: secure, domain, etc
-						httpExchange.addResponseCookie( new BoxCookie( "jsessionid", sessionID.getName() ) );
+						httpExchange.addResponseCookie(
+						    new BoxCookie( "jsessionid", sessionID.getName() )
+						        .setPath( "/" )
+						);
 					}
 				}
 			}
