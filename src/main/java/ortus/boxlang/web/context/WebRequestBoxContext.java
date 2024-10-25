@@ -89,7 +89,15 @@ public class WebRequestBoxContext extends RequestBoxContext {
 	 */
 	protected Object			requestBody		= null;
 
+	/**
+	 * The web root for this request
+	 */
 	protected String			webRoot;
+
+	/**
+	 * The session ID for this request
+	 */
+	protected Key				sessionID		= null;
 
 	/**
 	 * --------------------------------------------------------------------------
@@ -130,22 +138,36 @@ public class WebRequestBoxContext extends RequestBoxContext {
 	 */
 
 	/**
-	 * Get the session key for this request
+	 * Get the session key for this request, creating if neccessary
 	 *
 	 * @return The session key
 	 */
 	public Key getSessionID() {
-		// TODO: make this logic configurable
-		BoxCookie	sessionCookie	= httpExchange.getRequestCookie( "jsessionid" );
-		String		sessionID;
-		if ( sessionCookie != null ) {
-			sessionID = sessionCookie.getValue();
-		} else {
-			sessionID = UUID.randomUUID().toString();
-			// TODO: secure, domain, etc
-			httpExchange.addResponseCookie( new BoxCookie( "jsessionid", sessionID ) );
+		// Only look if this is the first time for this request
+		if ( this.sessionID == null ) {
+			// Double check lock pattern for threading safety
+			synchronized ( this ) {
+				// double check...
+				if ( this.sessionID == null ) {
+					// Look in a request cookie
+					// TODO: make cookie name configurable
+					BoxCookie sessionCookie = httpExchange.getRequestCookie( "jsessionid" );
+					if ( sessionCookie != null ) {
+						this.sessionID = Key.of( sessionCookie.getValue() );
+					} else {
+						// Otherwise generate a new one
+						this.sessionID = Key.of( UUID.randomUUID().toString() );
+						// TODO: secure, domain, etc
+						httpExchange.addResponseCookie(
+						    new BoxCookie( "jsessionid", sessionID.getName() )
+						        .setPath( "/" )
+						);
+					}
+				}
+			}
 		}
-		return Key.of( sessionID );
+		// assert the sessionID has been defined now
+		return this.sessionID;
 	}
 
 	/**
@@ -153,6 +175,7 @@ public class WebRequestBoxContext extends RequestBoxContext {
 	 */
 	public void resetSession() {
 		synchronized ( this ) {
+			this.sessionID = null;
 			httpExchange.addResponseCookie( new BoxCookie( "jsessionid", null ) );
 			getApplicationListener().invalidateSession( getSessionID() );
 		}
