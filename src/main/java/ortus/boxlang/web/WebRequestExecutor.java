@@ -19,6 +19,8 @@ package ortus.boxlang.web;
 
 import java.net.URI;
 import java.nio.file.Path;
+import java.security.Key;
+import java.sql.Struct;
 import java.util.Optional;
 import java.util.Set;
 
@@ -26,8 +28,6 @@ import ortus.boxlang.runtime.BoxRuntime;
 import ortus.boxlang.runtime.application.BaseApplicationListener;
 import ortus.boxlang.runtime.context.RequestBoxContext;
 import ortus.boxlang.runtime.interop.DynamicObject;
-import ortus.boxlang.runtime.scopes.Key;
-import ortus.boxlang.runtime.types.Struct;
 import ortus.boxlang.runtime.types.exceptions.AbortException;
 import ortus.boxlang.runtime.types.exceptions.MissingIncludeException;
 import ortus.boxlang.runtime.util.BoxFQN;
@@ -61,6 +61,7 @@ public class WebRequestExecutor {
 		BaseApplicationListener	appListener		= null;
 		Throwable				errorToHandle	= null;
 		String					requestString	= "";
+		ClassLoader				oldClassLoader	= Thread.currentThread().getContextClassLoader();
 
 		try {
 			// Debug tracking
@@ -234,6 +235,7 @@ public class WebRequestExecutor {
 				frTransService.endTransaction( trans );
 			}
 			RequestBoxContext.removeCurrent();
+			Thread.currentThread().setContextClassLoader( oldClassLoader );
 		}
 	}
 
