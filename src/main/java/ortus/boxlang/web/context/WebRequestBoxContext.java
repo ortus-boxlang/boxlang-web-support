@@ -222,7 +222,7 @@ public class WebRequestBoxContext extends RequestBoxContext {
 		// In Variables scope? (thread-safe lookup and get)
 		Object result = variablesScope.getRaw( key );
 		// Null means not found
-		if ( result != null ) {
+		if ( isDefined( result ) ) {
 			// Unwrap the value now in case it was really actually null for real
 			return new ScopeSearchResult( variablesScope, Struct.unWrapNull( result ), key );
 		}
@@ -265,21 +265,21 @@ public class WebRequestBoxContext extends RequestBoxContext {
 		}
 		Object result = CGIScope.getRaw( key );
 		// Null means not found
-		if ( result != null ) {
+		if ( isDefined( result ) ) {
 			// Unwrap the value now in case it was really actually null for real
 			return new ScopeSearchResult( CGIScope, Struct.unWrapNull( result ), key );
 		}
 
 		result = URLScope.getRaw( key );
 		// Null means not found
-		if ( result != null ) {
+		if ( isDefined( result ) ) {
 			// Unwrap the value now in case it was really actually null for real
 			return new ScopeSearchResult( URLScope, Struct.unWrapNull( result ), key );
 		}
 
 		result = formScope.getRaw( key );
 		// Null means not found
-		if ( result != null ) {
+		if ( isDefined( result ) ) {
 			// Unwrap the value now in case it was really actually null for real
 			return new ScopeSearchResult( formScope, Struct.unWrapNull( result ), key );
 		}

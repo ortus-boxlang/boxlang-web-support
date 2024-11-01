@@ -61,6 +61,7 @@ public class WebRequestExecutor {
 		BaseApplicationListener	appListener		= null;
 		Throwable				errorToHandle	= null;
 		String					requestString	= "";
+		ClassLoader				oldClassLoader	= Thread.currentThread().getContextClassLoader();
 
 		try {
 			// Debug tracking
@@ -234,6 +235,7 @@ public class WebRequestExecutor {
 				frTransService.endTransaction( trans );
 			}
 			RequestBoxContext.removeCurrent();
+			Thread.currentThread().setContextClassLoader( oldClassLoader );
 		}
 	}
 
