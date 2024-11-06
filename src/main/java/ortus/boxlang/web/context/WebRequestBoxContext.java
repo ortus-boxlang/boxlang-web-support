@@ -23,6 +23,7 @@ import java.util.UUID;
 import ortus.boxlang.runtime.BoxRuntime;
 import ortus.boxlang.runtime.context.IBoxContext;
 import ortus.boxlang.runtime.context.RequestBoxContext;
+import ortus.boxlang.runtime.dynamic.casters.BooleanCaster;
 import ortus.boxlang.runtime.scopes.IScope;
 import ortus.boxlang.runtime.scopes.Key;
 import ortus.boxlang.runtime.scopes.VariablesScope;
@@ -451,6 +452,24 @@ public class WebRequestBoxContext extends RequestBoxContext {
 	 */
 	public IScope getCookieScope() {
 		return cookieScope;
+	}
+
+	/**
+	 * Check if whitespace compression is enabled.
+	 * Return true if the content-type is HTML and the compression is enabled in the config
+	 */
+	public boolean isWhitespaceCompressionEnabled() {
+		IStruct config = getConfig();
+		// If the global setting is disabled, return false
+		if ( !BooleanCaster.cast( config.getOrDefault( "whitespaceCompressionEnabled", true ) ) ) {
+			return false;
+		}
+		// If the response is HTML, return true
+		if ( httpExchange.getResponseHeader( "Content-Type" ).startsWith( "text/html" ) ) {
+			return true;
+		}
+		// It's another content type like binary or JSON, etc
+		return false;
 	}
 
 }
