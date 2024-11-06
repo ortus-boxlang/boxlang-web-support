@@ -461,7 +461,7 @@ public class WebRequestBoxContext extends RequestBoxContext {
 	public boolean isWhitespaceCompressionEnabled() {
 		IStruct config = getConfig();
 		// If the global setting is disabled, return false
-		if ( !BooleanCaster.cast( config.getOrDefault( "whitespaceCompressionEnabled", true ) ) ) {
+		if ( !BooleanCaster.cast( config.getOrDefault( Key.whitespaceCompressionEnabled, true ) ) ) {
 			return false;
 		}
 		// If the response is HTML, return true
