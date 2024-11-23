@@ -107,7 +107,8 @@ public class WebRequestBoxContext extends RequestBoxContext {
 	 */
 
 	/**
-	 * Creates a new execution context with a bounded execution template and parent context
+	 * Creates a new execution context with a bounded execution template and parent
+	 * context
 	 *
 	 * @param parent The parent context
 	 */
@@ -124,7 +125,8 @@ public class WebRequestBoxContext extends RequestBoxContext {
 	}
 
 	/**
-	 * Creates a new execution context with a bounded execution template and parent context
+	 * Creates a new execution context with a bounded execution template and parent
+	 * context
 	 *
 	 * @param parent The parent context
 	 */
@@ -161,8 +163,7 @@ public class WebRequestBoxContext extends RequestBoxContext {
 						// TODO: secure, domain, etc
 						httpExchange.addResponseCookie(
 						    new BoxCookie( "jsessionid", sessionID.getName() )
-						        .setPath( "/" )
-						);
+						        .setPath( "/" ) );
 					}
 				}
 			}
@@ -323,8 +324,7 @@ public class WebRequestBoxContext extends RequestBoxContext {
 
 		// Not found anywhere
 		throw new ScopeNotFoundException(
-		    String.format( "The requested scope name [%s] was not located in any context", name.getName() )
-		);
+		    String.format( "The requested scope name [%s] was not located in any context", name.getName() ) );
 
 	}
 
@@ -456,7 +456,8 @@ public class WebRequestBoxContext extends RequestBoxContext {
 
 	/**
 	 * Check if whitespace compression is enabled.
-	 * Return true if the content-type is HTML and the compression is enabled in the config
+	 * Return true if the content-type is HTML and the compression is enabled in the
+	 * config
 	 */
 	public boolean isWhitespaceCompressionEnabled() {
 		IStruct config = getConfig();
@@ -465,7 +466,8 @@ public class WebRequestBoxContext extends RequestBoxContext {
 			return false;
 		}
 		// If the response is HTML, return true
-		if ( httpExchange.getResponseHeader( "Content-Type" ).startsWith( "text/html" ) ) {
+		String contentTypeHeader = httpExchange.getResponseHeader( "Content-Type" );
+		if ( contentTypeHeader != null && contentTypeHeader.startsWith( "text/html" ) ) {
 			return true;
 		}
 		// It's another content type like binary or JSON, etc

@@ -299,4 +299,13 @@ public class CGIScope extends BaseScope {
 	private Object defaultNullToString( Object value ) {
 		return value == null ? "" : value;
 	}
+
+	/**
+	 * Returns a {@link Set} view of the keys contained in this map.
+	 */
+	@Override
+	public Set<Key> keySet() {
+		return knownKeys;
+	}
+
 }
