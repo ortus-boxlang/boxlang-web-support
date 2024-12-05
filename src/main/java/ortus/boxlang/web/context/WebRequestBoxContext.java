@@ -18,6 +18,8 @@
 package ortus.boxlang.web.context;
 
 import java.net.URI;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Date;
 import java.util.UUID;
 
@@ -191,7 +193,12 @@ public class WebRequestBoxContext extends RequestBoxContext {
 					}
 
 					// Keepalive the session
-					sessionCookie.setExpires( Date.from( sessionCookieSettings.getAsDateTime( Key.timeout ).toInstant() ) );
+					Object expiration = sessionCookieSettings.get( Key.timeout );
+					if ( expiration instanceof DateTime expireDateTime ) {
+						sessionCookie.setExpires( Date.from( expireDateTime.toInstant() ) );
+					} else if ( expiration instanceof Duration expireDuration ) {
+						sessionCookie.setExpires( Date.from( Instant.now().plus( expireDuration ) ) );
+					}
 					httpExchange.addResponseCookie( sessionCookie );
 				}
 			}
