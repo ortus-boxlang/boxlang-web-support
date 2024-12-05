@@ -191,7 +191,7 @@ public class WebRequestBoxContext extends RequestBoxContext {
 					}
 
 					// Keepalive the session
-					sessionCookie.setExpires( Date.from( sessionCookieSettings.getAsDateTime( Key.expires ).toInstant() ) );
+					sessionCookie.setExpires( Date.from( sessionCookieSettings.getAsDateTime( Key.timeout ).toInstant() ) );
 					httpExchange.addResponseCookie( sessionCookie );
 				}
 			}
