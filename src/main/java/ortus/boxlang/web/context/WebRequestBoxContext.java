@@ -138,12 +138,6 @@ public class WebRequestBoxContext extends RequestBoxContext {
 		CGIScope			= new CGIScope( httpExchange );
 		cookieScope			= new CookieScope( httpExchange );
 		requestScope		= new RequestScope( httpExchange );
-		appSettings			= getApplicationListener().getSettings();
-		appSettings.putIfAbsent( KeyDictionary.sessionCookie, new Struct() );
-		IStruct sessionCookieSettings = appSettings.getAsStruct( KeyDictionary.sessionCookie );
-		sessionCookieDefaults.entrySet().stream().forEach( entry -> {
-			sessionCookieSettings.putIfAbsent( entry.getKey(), entry.getValue() );
-		} );
 	}
 
 	/**
@@ -168,10 +162,17 @@ public class WebRequestBoxContext extends RequestBoxContext {
 	 * @return The session key
 	 */
 	public Key getSessionID() {
+
+		IStruct appSettings = getConfig().getAsStruct( Key.applicationSettings );
+
+		appSettings.putIfAbsent( KeyDictionary.sessionCookie, new Struct() );
+		IStruct sessionCookieSettings = appSettings.getAsStruct( KeyDictionary.sessionCookie );
+		sessionCookieDefaults.entrySet().stream().forEach( entry -> {
+			sessionCookieSettings.putIfAbsent( entry.getKey(), entry.getValue() );
+		} );
+
 		// Only look if this is the first time for this request
 		if ( this.sessionID == null ) {
-			// Double check lock pattern for threading safety
-			IStruct sessionCookieSettings = appSettings.getAsStruct( KeyDictionary.sessionCookie );
 			synchronized ( this ) {
 				// double check...
 				if ( this.sessionID == null ) {
@@ -190,16 +191,21 @@ public class WebRequestBoxContext extends RequestBoxContext {
 						    .setDomain( sessionCookieSettings.getAsString( Key.domain ) )
 						    .setSameSiteMode( sessionCookieSettings.getAsString( KeyDictionary.sameSiteMode ) );
 
-					}
+						if ( sessionCookieSettings.getAsBoolean( KeyDictionary.sameSite ) != null ) {
+							sessionCookie.setSameSite( sessionCookieSettings.getAsBoolean( KeyDictionary.sameSite ) );
+						}
 
-					// Keepalive the session
-					Object expiration = sessionCookieSettings.get( Key.timeout );
-					if ( expiration instanceof DateTime expireDateTime ) {
-						sessionCookie.setExpires( Date.from( expireDateTime.toInstant() ) );
-					} else if ( expiration instanceof Duration expireDuration ) {
-						sessionCookie.setExpires( Date.from( Instant.now().plus( expireDuration ) ) );
+						Object expiration = sessionCookieSettings.get( Key.timeout );
+						if ( expiration instanceof DateTime expireDateTime ) {
+							sessionCookie.setExpires( Date.from( expireDateTime.toInstant() ) );
+						} else if ( expiration instanceof Duration expireDuration ) {
+							sessionCookie.setExpires( Date.from( Instant.now().plus( expireDuration ) ) );
+						} else {
+							sessionCookie.setExpires( Date.from( sessionCookieDefaults.getAsDateTime( Key.timeout ).toInstant() ) );
+						}
+
+						httpExchange.addResponseCookie( sessionCookie );
 					}
-					httpExchange.addResponseCookie( sessionCookie );
 				}
 			}
 		}
