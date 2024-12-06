@@ -254,7 +254,7 @@ public class WebRequestBoxContext extends RequestBoxContext {
 	 *
 	 */
 	@Override
-	public ScopeSearchResult scopeFindNearby( Key key, IScope defaultScope, boolean shallow ) {
+	public ScopeSearchResult scopeFindNearby( Key key, IScope defaultScope, boolean shallow, boolean forAssign ) {
 
 		// In query loop?
 		var querySearch = queryFindNearby( key );
@@ -265,7 +265,7 @@ public class WebRequestBoxContext extends RequestBoxContext {
 		// In Variables scope? (thread-safe lookup and get)
 		Object result = variablesScope.getRaw( key );
 		// Null means not found
-		if ( isDefined( result ) ) {
+		if ( isDefined( result, forAssign ) ) {
 			// Unwrap the value now in case it was really actually null for real
 			return new ScopeSearchResult( variablesScope, Struct.unWrapNull( result ), key );
 		}
@@ -274,7 +274,7 @@ public class WebRequestBoxContext extends RequestBoxContext {
 			return null;
 		}
 
-		return scopeFind( key, defaultScope );
+		return scopeFind( key, defaultScope, forAssign );
 	}
 
 	/**
@@ -289,7 +289,7 @@ public class WebRequestBoxContext extends RequestBoxContext {
 	 *
 	 */
 	@Override
-	public ScopeSearchResult scopeFind( Key key, IScope defaultScope ) {
+	public ScopeSearchResult scopeFind( Key key, IScope defaultScope, boolean forAssign ) {
 
 		if ( key.equals( requestScope.getName() ) ) {
 			return new ScopeSearchResult( requestScope, requestScope, key, true );
@@ -308,26 +308,26 @@ public class WebRequestBoxContext extends RequestBoxContext {
 		}
 		Object result = CGIScope.getRaw( key );
 		// Null means not found
-		if ( isDefined( result ) ) {
+		if ( isDefined( result, forAssign ) ) {
 			// Unwrap the value now in case it was really actually null for real
 			return new ScopeSearchResult( CGIScope, Struct.unWrapNull( result ), key );
 		}
 
 		result = URLScope.getRaw( key );
 		// Null means not found
-		if ( isDefined( result ) ) {
+		if ( isDefined( result, forAssign ) ) {
 			// Unwrap the value now in case it was really actually null for real
 			return new ScopeSearchResult( URLScope, Struct.unWrapNull( result ), key );
 		}
 
 		result = formScope.getRaw( key );
 		// Null means not found
-		if ( isDefined( result ) ) {
+		if ( isDefined( result, forAssign ) ) {
 			// Unwrap the value now in case it was really actually null for real
 			return new ScopeSearchResult( formScope, Struct.unWrapNull( result ), key );
 		}
 
-		return super.scopeFind( key, defaultScope );
+		return super.scopeFind( key, defaultScope, forAssign );
 	}
 
 	/**
