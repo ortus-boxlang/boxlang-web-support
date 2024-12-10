@@ -66,7 +66,9 @@ public class CookieScope extends BaseScope {
 	 */
 	@Override
 	public Object assign( IBoxContext context, Key key, Object value ) {
-		exchange.addResponseCookie( new BoxCookie( key.getName(), StringCaster.cast( value ) ) );
+		String castedValue = StringCaster.cast( value );
+		this.put( key, castedValue );
+		exchange.addResponseCookie( new BoxCookie( key.getName(), castedValue ) );
 		return value;
 	}
 }
