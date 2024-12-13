@@ -18,6 +18,9 @@
 package ortus.boxlang.web.context;
 
 import java.net.URI;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.Date;
 import java.util.UUID;
 
 import ortus.boxlang.runtime.BoxRuntime;
@@ -27,6 +30,7 @@ import ortus.boxlang.runtime.dynamic.casters.BooleanCaster;
 import ortus.boxlang.runtime.scopes.IScope;
 import ortus.boxlang.runtime.scopes.Key;
 import ortus.boxlang.runtime.scopes.VariablesScope;
+import ortus.boxlang.runtime.types.DateTime;
 import ortus.boxlang.runtime.types.IStruct;
 import ortus.boxlang.runtime.types.Struct;
 import ortus.boxlang.runtime.types.UDF;
@@ -38,6 +42,7 @@ import ortus.boxlang.web.scopes.CookieScope;
 import ortus.boxlang.web.scopes.FormScope;
 import ortus.boxlang.web.scopes.RequestScope;
 import ortus.boxlang.web.scopes.URLScope;
+import ortus.boxlang.web.util.KeyDictionary;
 
 /**
  * This context represents the context of a web/HTTP site in BoxLang
@@ -45,7 +50,7 @@ import ortus.boxlang.web.scopes.URLScope;
  */
 public class WebRequestBoxContext extends RequestBoxContext {
 
-	private static BoxRuntime	runtime			= BoxRuntime.getInstance();
+	private static BoxRuntime	runtime					= BoxRuntime.getInstance();
 
 	/**
 	 * --------------------------------------------------------------------------
@@ -56,7 +61,7 @@ public class WebRequestBoxContext extends RequestBoxContext {
 	/**
 	 * The variables scope
 	 */
-	protected IScope			variablesScope	= new VariablesScope();
+	protected IScope			variablesScope			= new VariablesScope();
 
 	/**
 	 * The request scope
@@ -88,7 +93,7 @@ public class WebRequestBoxContext extends RequestBoxContext {
 	/**
 	 * The request body can only be read once, so we cache it here
 	 */
-	protected Object			requestBody		= null;
+	protected Object			requestBody				= null;
 
 	/**
 	 * The web root for this request
@@ -98,7 +103,18 @@ public class WebRequestBoxContext extends RequestBoxContext {
 	/**
 	 * The session ID for this request
 	 */
-	protected Key				sessionID		= null;
+	protected Key				sessionID				= null;
+
+	protected IStruct			appSettings;
+
+	protected IStruct			sessionCookieDefaults	= Struct.of(
+	    Key._NAME, "jsessionid",
+	    KeyDictionary.secure, false,
+	    KeyDictionary.httpOnly, true,
+	    KeyDictionary.disableUpdate, false,
+	    Key.timeout, new DateTime().modify( "yyyy", 30l ),
+	    KeyDictionary.sameSiteMode, "Lax"
+	);
 
 	/**
 	 * --------------------------------------------------------------------------
@@ -146,24 +162,49 @@ public class WebRequestBoxContext extends RequestBoxContext {
 	 * @return The session key
 	 */
 	public Key getSessionID() {
+
+		IStruct appSettings = getConfig().getAsStruct( Key.applicationSettings );
+
+		appSettings.putIfAbsent( KeyDictionary.sessionCookie, new Struct() );
+		IStruct sessionCookieSettings = appSettings.getAsStruct( KeyDictionary.sessionCookie );
+		sessionCookieDefaults.entrySet().stream().forEach( entry -> {
+			sessionCookieSettings.putIfAbsent( entry.getKey(), entry.getValue() );
+		} );
+
 		// Only look if this is the first time for this request
 		if ( this.sessionID == null ) {
-			// Double check lock pattern for threading safety
 			synchronized ( this ) {
 				// double check...
 				if ( this.sessionID == null ) {
-					// Look in a request cookie
-					// TODO: make cookie name configurable
-					BoxCookie sessionCookie = httpExchange.getRequestCookie( "jsessionid" );
+					// Check for existing request cookie
+					BoxCookie sessionCookie = httpExchange.getRequestCookie( sessionCookieDefaults.getAsString( Key._NAME ) );
 					if ( sessionCookie != null ) {
 						this.sessionID = Key.of( sessionCookie.getValue() );
 					} else {
 						// Otherwise generate a new one
-						this.sessionID = Key.of( UUID.randomUUID().toString() );
-						// TODO: secure, domain, etc
-						httpExchange.addResponseCookie(
-						    new BoxCookie( "jsessionid", sessionID.getName() )
-						        .setPath( "/" ) );
+						this.sessionID	= Key.of( UUID.randomUUID().toString() );
+
+						sessionCookie	= new BoxCookie( sessionCookieDefaults.getAsString( Key._NAME ), this.sessionID.getName() )
+						    .setPath( "/" )
+						    .setHttpOnly( sessionCookieSettings.getAsBoolean( KeyDictionary.httpOnly ) )
+						    .setSecure( sessionCookieSettings.getAsBoolean( Key.secure ) )
+						    .setDomain( sessionCookieSettings.getAsString( Key.domain ) )
+						    .setSameSiteMode( sessionCookieSettings.getAsString( KeyDictionary.sameSiteMode ) );
+
+						if ( sessionCookieSettings.getAsBoolean( KeyDictionary.sameSite ) != null ) {
+							sessionCookie.setSameSite( sessionCookieSettings.getAsBoolean( KeyDictionary.sameSite ) );
+						}
+
+						Object expiration = sessionCookieSettings.get( Key.timeout );
+						if ( expiration instanceof DateTime expireDateTime ) {
+							sessionCookie.setExpires( Date.from( expireDateTime.toInstant() ) );
+						} else if ( expiration instanceof Duration expireDuration ) {
+							sessionCookie.setExpires( Date.from( Instant.now().plus( expireDuration ) ) );
+						} else {
+							sessionCookie.setExpires( Date.from( sessionCookieDefaults.getAsDateTime( Key.timeout ).toInstant() ) );
+						}
+
+						httpExchange.addResponseCookie( sessionCookie );
 					}
 				}
 			}
@@ -178,7 +219,7 @@ public class WebRequestBoxContext extends RequestBoxContext {
 	public void resetSession() {
 		synchronized ( this ) {
 			this.sessionID = null;
-			httpExchange.addResponseCookie( new BoxCookie( "jsessionid", null ) );
+			httpExchange.addResponseCookie( new BoxCookie( sessionCookieDefaults.getAsString( Key._NAME ), null ) );
 			getApplicationListener().invalidateSession( getSessionID() );
 		}
 	}
@@ -213,7 +254,7 @@ public class WebRequestBoxContext extends RequestBoxContext {
 	 *
 	 */
 	@Override
-	public ScopeSearchResult scopeFindNearby( Key key, IScope defaultScope, boolean shallow ) {
+	public ScopeSearchResult scopeFindNearby( Key key, IScope defaultScope, boolean shallow, boolean forAssign ) {
 
 		// In query loop?
 		var querySearch = queryFindNearby( key );
@@ -224,7 +265,7 @@ public class WebRequestBoxContext extends RequestBoxContext {
 		// In Variables scope? (thread-safe lookup and get)
 		Object result = variablesScope.getRaw( key );
 		// Null means not found
-		if ( isDefined( result ) ) {
+		if ( isDefined( result, forAssign ) ) {
 			// Unwrap the value now in case it was really actually null for real
 			return new ScopeSearchResult( variablesScope, Struct.unWrapNull( result ), key );
 		}
@@ -233,7 +274,7 @@ public class WebRequestBoxContext extends RequestBoxContext {
 			return null;
 		}
 
-		return scopeFind( key, defaultScope );
+		return scopeFind( key, defaultScope, forAssign );
 	}
 
 	/**
@@ -248,7 +289,7 @@ public class WebRequestBoxContext extends RequestBoxContext {
 	 *
 	 */
 	@Override
-	public ScopeSearchResult scopeFind( Key key, IScope defaultScope ) {
+	public ScopeSearchResult scopeFind( Key key, IScope defaultScope, boolean forAssign ) {
 
 		if ( key.equals( requestScope.getName() ) ) {
 			return new ScopeSearchResult( requestScope, requestScope, key, true );
@@ -267,26 +308,26 @@ public class WebRequestBoxContext extends RequestBoxContext {
 		}
 		Object result = CGIScope.getRaw( key );
 		// Null means not found
-		if ( isDefined( result ) ) {
+		if ( isDefined( result, forAssign ) ) {
 			// Unwrap the value now in case it was really actually null for real
 			return new ScopeSearchResult( CGIScope, Struct.unWrapNull( result ), key );
 		}
 
 		result = URLScope.getRaw( key );
 		// Null means not found
-		if ( isDefined( result ) ) {
+		if ( isDefined( result, forAssign ) ) {
 			// Unwrap the value now in case it was really actually null for real
 			return new ScopeSearchResult( URLScope, Struct.unWrapNull( result ), key );
 		}
 
 		result = formScope.getRaw( key );
 		// Null means not found
-		if ( isDefined( result ) ) {
+		if ( isDefined( result, forAssign ) ) {
 			// Unwrap the value now in case it was really actually null for real
 			return new ScopeSearchResult( formScope, Struct.unWrapNull( result ), key );
 		}
 
-		return super.scopeFind( key, defaultScope );
+		return super.scopeFind( key, defaultScope, forAssign );
 	}
 
 	/**

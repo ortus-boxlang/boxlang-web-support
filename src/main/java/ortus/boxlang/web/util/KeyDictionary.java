@@ -57,4 +57,12 @@ public class KeyDictionary {
 	public static final Key	timeCreated			= Key.of( "timeCreated" );
 	public static final Key	timeLastModified	= Key.of( "timeLastModified" );
 
+	// Session Cookie Settings
+	public static final Key	sessionCookie		= Key.of( "sessionCookie" );
+	public static final Key	secure				= Key.of( "secure" );
+	public static final Key	httpOnly			= Key.of( "httponly" );
+	public static final Key	sameSite			= Key.of( "sameSite" );
+	public static final Key	sameSiteMode		= Key.of( "sameSiteMode" );
+	public static final Key	disableUpdate		= Key.of( "disableUpdate" );
+
 }
