@@ -1,6 +1,6 @@
 package ortus.boxlang.web.interceptors;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static com.google.common.truth.Truth.assertThat;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -26,12 +26,17 @@ public class WebRequestTest extends ortus.boxlang.web.util.BaseWebTest {
 		        Key.abort, true
 		    )
 		);
-		assertDoesNotThrow( () -> runtime.executeSource(
-		    """
-		    getBoxRuntime().getInterceptorService().announce( "writeToBrowser", interceptData );
-		    """,
-		    context )
-		);
 
+		// @formatter:off
+		runtime.executeSource(
+		    """
+		      getBoxRuntime().getInterceptorService().announce( "writeToBrowser", interceptData )
+		   	  result = "foo"
+		      """,
+		    context );
+		// @formatter:on
+
+		// This should have never fired. We can't trap for an abort exception, because the executeSource traps it.
+		assertThat( variables.get( result ) ).isEqualTo( null );
 	}
 }
