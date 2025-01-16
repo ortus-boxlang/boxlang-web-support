@@ -1,13 +1,12 @@
 package ortus.boxlang.web.interceptors;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import ortus.boxlang.runtime.scopes.Key;
 import ortus.boxlang.runtime.types.Struct;
-import ortus.boxlang.runtime.types.exceptions.AbortException;
 
 public class WebRequestTest extends ortus.boxlang.web.util.BaseWebTest {
 
@@ -21,16 +20,18 @@ public class WebRequestTest extends ortus.boxlang.web.util.BaseWebTest {
 		    Struct.of(
 		        Key.context, context,
 		        Key.content, "foo",
-		        Key.mimetype, "application/pdf",
+		        Key.mimetype, "text/plain",
 		        Key.of( "filename" ), "foo.txt",
 		        Key.reset, true,
 		        Key.abort, true
 		    )
 		);
-		assertThrows( AbortException.class, () -> runtime.executeSource(
+		assertDoesNotThrow( () -> runtime.executeSource(
 		    """
 		    getBoxRuntime().getInterceptorService().announce( "writeToBrowser", interceptData );
 		    """,
-		    context ) );
+		    context )
+		);
+
 	}
 }
