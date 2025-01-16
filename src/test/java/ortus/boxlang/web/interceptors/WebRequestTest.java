@@ -2,7 +2,6 @@ package ortus.boxlang.web.interceptors;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -16,7 +15,6 @@ public class WebRequestTest extends ortus.boxlang.web.util.BaseWebTest {
 
 	@DisplayName( "Tests writeToBrowser with an abort directive" )
 	@Test
-	@Disabled
 	public void testWriteToBrowserAbort() {
 		variables.put(
 		    Key.of( "interceptData" ),
