@@ -20,14 +20,16 @@ package ortus.boxlang.web.scopes;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.file.Path;
+import java.util.AbstractMap.SimpleEntry;
 import java.util.Arrays;
+import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.stream.Collectors;
 
 import ortus.boxlang.runtime.context.IBoxContext;
 import ortus.boxlang.runtime.scopes.BaseScope;
 import ortus.boxlang.runtime.scopes.Key;
-import ortus.boxlang.runtime.types.exceptions.BoxRuntimeException;
 import ortus.boxlang.runtime.types.meta.BoxMeta;
 import ortus.boxlang.web.context.WebRequestBoxContext;
 import ortus.boxlang.web.exchange.IBoxHTTPExchange;
@@ -122,17 +124,6 @@ public class CGIScope extends BaseScope {
 	 */
 
 	/**
-	 * Assign a value to a key
-	 *
-	 * @param key   The key to assign
-	 * @param value The value to assign
-	 */
-	@Override
-	public Object assign( IBoxContext context, Key key, Object value ) {
-		throw new BoxRuntimeException( "Cannot assign to the CGI scope" );
-	}
-
-	/**
 	 * Get the absolute path to the template
 	 *
 	 * @param context The current context
@@ -167,71 +158,109 @@ public class CGIScope extends BaseScope {
 			return getBoxMeta();
 		}
 
+		Object value = getRaw( key );
+		if ( value == null ) {
+			// CGI scope NEVER errors. It simply returns empty string if the key is not
+			// found
+			return "";
+		}
+		return unWrapNullInternal( value );
+	}
+
+	/**
+	 * Returns the value to which the specified Key is mapped
+	 *
+	 * @param key the key whose associated value is to be returned
+	 *
+	 * @return the value to which the specified key is mapped or null if not found
+	 */
+	@Override
+	public Object get( String key ) {
+		Key keyObj = Key.of( key );
+		return unWrapNullInternal( getRaw( keyObj ) );
+	}
+
+	/**
+	 * Returns the value of the key safely, nulls will be wrapped in a NullValue still.
+	 *
+	 * @param key The key to look for
+	 *
+	 * @return The value of the key or a NullValue object, null means the key didn't exist *
+	 */
+	@Override
+	public Object getRaw( Key key ) {
+		Object value = wrapped.get( key );
+		// If we've already gotten this key once, it's cached
+		if ( value != null ) {
+			return value;
+		}
+
 		if ( key.equals( Key.content_type ) ) {
-			return defaultNullToString( exchange.getRequestHeader( "Content-Type" ) );
+			return putAndReturn( key, defaultNullToString( exchange.getRequestHeader( "Content-Type" ) ) );
 		}
 		if ( key.equals( Key.content_length ) ) {
-			return defaultNullToString( exchange.getRequestContentLength() );
+			return putAndReturn( key, defaultNullToString( exchange.getRequestContentLength() ) );
 		}
 		if ( key.equals( Key.cf_template_path ) || key.equals( KeyDictionary.bx_template_path ) || key.equals( Key.path_translated ) ) {
-			return defaultNullToString( getTemplatePath( context ) );
+			return putAndReturn( key, defaultNullToString( getTemplatePath( exchange.getWebContext() ) ) );
 		}
 		if ( key.equals( Key.https ) ) {
-			return defaultNullToString( exchange.isRequestSecure() );
+			return putAndReturn( key, defaultNullToString( exchange.isRequestSecure() ) );
 		}
 		if ( key.equals( Key.http_host ) ) {
 			int port = exchange.getRequestServerPort();
-			return port == 80 || port == 443 ? exchange.getRequestServerName() : exchange.getRequestServerName() + ":" + defaultNullToString( port );
+			return putAndReturn( key,
+			    port == 80 || port == 443 ? exchange.getRequestServerName() : exchange.getRequestServerName() + ":" + defaultNullToString( port ) );
 		}
 		if ( key.equals( Key.local_addr ) ) {
 			try {
-				return defaultNullToString( InetAddress.getLocalHost().getHostAddress() );
+				return putAndReturn( key, defaultNullToString( InetAddress.getLocalHost().getHostAddress() ) );
 			} catch ( UnknownHostException e ) {
-				return "127.0.0.1";
+				return putAndReturn( key, "127.0.0.1" );
 			}
 		}
 		if ( key.equals( Key.local_host ) ) {
 			try {
-				return defaultNullToString( InetAddress.getLocalHost().getHostName() );
+				return putAndReturn( key, defaultNullToString( InetAddress.getLocalHost().getHostName() ) );
 			} catch ( UnknownHostException e ) {
-				return "localhost";
+				return putAndReturn( key, "localhost" );
 			}
 		}
 		if ( key.equals( Key.request_url ) ) {
-			return defaultNullToString( exchange.getRequestURL() );
+			return putAndReturn( key, defaultNullToString( exchange.getRequestURL() ) );
 		}
 		if ( key.equals( Key.remote_addr ) ) {
-			return defaultNullToString( exchange.getRequestRemoteAddr() );
+			return putAndReturn( key, defaultNullToString( exchange.getRequestRemoteAddr() ) );
 		}
 		if ( key.equals( Key.remote_host ) ) {
-			return defaultNullToString( exchange.getRequestRemoteHost() );
+			return putAndReturn( key, defaultNullToString( exchange.getRequestRemoteHost() ) );
 		}
 		if ( key.equals( Key.remote_user ) ) {
-			return defaultNullToString( exchange.getRequestRemoteUser() );
+			return putAndReturn( key, defaultNullToString( exchange.getRequestRemoteUser() ) );
 		}
 		if ( key.equals( Key.path_info ) ) {
-			return defaultNullToString( exchange.getRequestPathInfo() );
+			return putAndReturn( key, defaultNullToString( exchange.getRequestPathInfo() ) );
 		}
 		if ( key.equals( Key.query_string ) ) {
-			return defaultNullToString( exchange.getRequestQueryString() );
+			return putAndReturn( key, defaultNullToString( exchange.getRequestQueryString() ) );
 		}
 		if ( key.equals( Key.request_method ) ) {
-			return defaultNullToString( exchange.getRequestMethod() );
+			return putAndReturn( key, defaultNullToString( exchange.getRequestMethod() ) );
 		}
 		if ( key.equals( Key.script_name ) ) {
-			return defaultNullToString( exchange.getRequestURI() );
+			return putAndReturn( key, defaultNullToString( exchange.getRequestURI() ) );
 		}
 		if ( key.equals( Key.server_name ) ) {
-			return defaultNullToString( exchange.getRequestServerName() );
+			return putAndReturn( key, defaultNullToString( exchange.getRequestServerName() ) );
 		}
 		if ( key.equals( Key.server_port ) ) {
-			return defaultNullToString( exchange.getRequestServerPort() );
+			return putAndReturn( key, defaultNullToString( exchange.getRequestServerPort() ) );
 		}
 		if ( key.equals( Key.server_port_secure ) ) {
-			return exchange.isRequestSecure() ? defaultNullToString( exchange.getRequestServerPort() ) : 0;
+			return putAndReturn( key, exchange.isRequestSecure() ? defaultNullToString( exchange.getRequestServerPort() ) : 0 );
 		}
 		if ( key.equals( Key.server_protocol ) ) {
-			return defaultNullToString( exchange.getRequestProtocol() );
+			return putAndReturn( key, defaultNullToString( exchange.getRequestProtocol() ) );
 		}
 
 		// TODO: All other CGI keys
@@ -261,18 +290,29 @@ public class CGIScope extends BaseScope {
 		// HTTP header fallbacks
 		String header = exchange.getRequestHeader( key.getName() );
 		if ( header != null ) {
-			return header;
+			return putAndReturn( key, header );
 		}
 		if ( key.getName().toLowerCase().startsWith( "http" ) ) {
 			header = exchange.getRequestHeader( key.getName().substring( 5 ).replace( "_", "-" ) );
 			if ( header != null ) {
-				return header;
+				return putAndReturn( key, header );
 			}
 		}
 
-		// CGI scope NEVER errors. It simply returns empty string if the key is not
-		// found
-		return "";
+		return null;
+	}
+
+	/**
+	 * Returns a {@link Set} view of the mappings contained in this map.
+	 */
+	@Override
+	public Set<Entry<Key, Object>> entrySet() {
+		// combine the known keys
+		Set<Key> allKeys = new LinkedHashSet<>( knownKeys );
+		// with any additional keys added after the fact
+		allKeys.addAll( wrapped.keySet() );
+		return allKeys.stream().map( key -> new SimpleEntry<>( key, unWrapNullInternal( getRaw( key ) ) ) )
+		    .collect( Collectors.toCollection( LinkedHashSet::new ) );
 	}
 
 	/**
@@ -298,6 +338,11 @@ public class CGIScope extends BaseScope {
 
 	private Object defaultNullToString( Object value ) {
 		return value == null ? "" : value;
+	}
+
+	private Object putAndReturn( Key key, Object value ) {
+		wrapped.put( key, wrapNull( value ) );
+		return value;
 	}
 
 	/**

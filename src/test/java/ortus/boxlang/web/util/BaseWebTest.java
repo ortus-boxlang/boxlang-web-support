@@ -50,16 +50,24 @@ public class BaseWebTest {
 
 	@BeforeEach
 	public void setupEach() {
-		// Mock a connection
+		// Create the mock contexts
 		mockExchange = Mockito.mock( IBoxHTTPExchange.class );
+
 		// Mock some objects which are used in the context
 		when( mockExchange.getRequestCookies() ).thenReturn( new BoxCookie[ 0 ] );
 		when( mockExchange.getRequestHeaderMap() ).thenReturn( new HashMap<String, String[]>() );
+		when( mockExchange.getRequestServerName() ).thenReturn( "localhost" );
 		when( mockExchange.getResponseWriter() ).thenReturn( new PrintWriter( OutputStream.nullOutputStream() ) );
+		when( mockExchange.getRequestCookies() ).thenReturn( new BoxCookie[ 0 ] );
 
-		// Create the mock contexts
-		context		= new WebRequestBoxContext( runtime.getRuntimeContext(), mockExchange, TEST_WEBROOT );
-		variables	= context.getScopeNearby( VariablesScope.name );
+		context = new WebRequestBoxContext( runtime.getRuntimeContext(), mockExchange, TEST_WEBROOT );
+
+		// This must run after the set above due to how Mockito binds
+		when( mockExchange.getWebContext() ).thenReturn( context );
+
+		// Mock a connection
+		context.setHTTPExchange( mockExchange );
+		variables = context.getScopeNearby( VariablesScope.name );
 
 		try {
 			context.loadApplicationDescriptor( new URI( requestURI ) );

@@ -110,8 +110,12 @@ public class GetPageContext extends BIF {
 			context.clearBuffer();
 		}
 
+		public void clearBuffer() {
+			reset();
+		}
+
 		public void resetHTMLHead() {
-			context.clearBuffer();
+			reset();
 		}
 
 		public PageContext getOut() {

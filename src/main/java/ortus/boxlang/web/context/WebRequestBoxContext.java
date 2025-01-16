@@ -454,6 +454,15 @@ public class WebRequestBoxContext extends RequestBoxContext {
 	}
 
 	/**
+	 * Set the HTTP exchange
+	 *
+	 * @return The HTTP exchange
+	 */
+	public void setHTTPExchange( IBoxHTTPExchange httpExchange ) {
+		this.httpExchange = httpExchange;
+	}
+
+	/**
 	 * Get the request body as a byte array
 	 *
 	 * @return The request body
