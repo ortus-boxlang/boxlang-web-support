@@ -16,7 +16,6 @@ import org.mockito.Mockito;
 
 import ortus.boxlang.runtime.BoxRuntime;
 import ortus.boxlang.runtime.application.BaseApplicationListener;
-import ortus.boxlang.runtime.interop.DynamicObject;
 import ortus.boxlang.runtime.scopes.IScope;
 import ortus.boxlang.runtime.scopes.Key;
 import ortus.boxlang.runtime.scopes.VariablesScope;
@@ -24,7 +23,6 @@ import ortus.boxlang.runtime.types.exceptions.BoxRuntimeException;
 import ortus.boxlang.web.context.WebRequestBoxContext;
 import ortus.boxlang.web.exchange.BoxCookie;
 import ortus.boxlang.web.exchange.IBoxHTTPExchange;
-import ortus.boxlang.web.interceptors.WebRequest;
 
 @TestInstance( TestInstance.Lifecycle.PER_CLASS )
 public class BaseWebTest {
@@ -42,10 +40,10 @@ public class BaseWebTest {
 		runtime = BoxRuntime.getInstance( true );
 
 		// We need to unregister in the setup because the runtime is a singleton in the cli request
-		runtime.getInterceptorService().unregister( DynamicObject.of( new WebRequest() ) );
+		// runtime.getInterceptorService().unregister( DynamicObject.of( new WebRequest() ) );
 
 		// Manually register our interceptor as it doesn't automatically get registered in the test environment
-		runtime.getInterceptorService().register( new WebRequest() );
+		// runtime.getInterceptorService().register( new WebRequest() );
 	}
 
 	@BeforeEach
