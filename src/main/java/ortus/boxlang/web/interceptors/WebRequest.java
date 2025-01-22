@@ -24,7 +24,6 @@ import ortus.boxlang.runtime.components.Component.ComponentBody;
 import ortus.boxlang.runtime.components.cache.Cache;
 import ortus.boxlang.runtime.components.cache.Cache.CacheAction;
 import ortus.boxlang.runtime.context.IBoxContext;
-import ortus.boxlang.runtime.context.RequestBoxContext;
 import ortus.boxlang.runtime.dynamic.casters.BooleanCaster;
 import ortus.boxlang.runtime.dynamic.casters.DoubleCaster;
 import ortus.boxlang.runtime.dynamic.casters.StringCaster;
@@ -74,8 +73,8 @@ public class WebRequest extends BaseInterceptor {
 	 */
 	@InterceptionPoint
 	public void writeToBrowser( IStruct data ) {
-		String				disposition	= "inline";
-		RequestBoxContext	context		= ( RequestBoxContext ) data.get( Key.context );
+		String		disposition	= "inline";
+		IBoxContext	context		= ( IBoxContext ) data.get( Key.context );
 		if ( context == null ) {
 			throw new BoxRuntimeException( "A context is required in the intercept data in order to announce this interception" );
 		}
