@@ -336,21 +336,52 @@ public class CGIScope extends BaseScope {
 		return this.knownKeys.stream().map( Key::getName ).collect( TreeSet::new, Set::add, Set::addAll );
 	}
 
-	private Object defaultNullToString( Object value ) {
-		return value == null ? "" : value;
-	}
-
-	private Object putAndReturn( Key key, Object value ) {
-		wrapped.put( key, wrapNull( value ) );
-		return value;
-	}
-
 	/**
 	 * Returns a {@link Set} view of the keys contained in this map.
 	 */
 	@Override
 	public Set<Key> keySet() {
-		return knownKeys;
+		return this.knownKeys;
+	}
+
+	/**
+	 * Override the size since we are a virtual scope
+	 *
+	 * @return The size of the scope
+	 */
+	@Override
+	public int size() {
+		return this.knownKeys.size();
+	}
+
+	/**
+	 * --------------------------------------------------------------------------
+	 * Private Helpers
+	 * --------------------------------------------------------------------------
+	 */
+
+	/**
+	 * Wraps a null value in a NullValue object
+	 *
+	 * @param value The value to wrap
+	 *
+	 * @return The wrapped value
+	 */
+	private Object defaultNullToString( Object value ) {
+		return value == null ? "" : value;
+	}
+
+	/**
+	 * Wraps a null value in a NullValue object
+	 *
+	 * @param key   The key to wrap
+	 * @param value The value to wrap
+	 *
+	 * @return The wrapped value
+	 */
+	private Object putAndReturn( Key key, Object value ) {
+		wrapped.put( key, wrapNull( value ) );
+		return value;
 	}
 
 }
