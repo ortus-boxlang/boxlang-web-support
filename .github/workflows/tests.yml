@@ -21,17 +21,17 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ "ubuntu-latest", "windows-latest" ]
-        jdkVersion: [ "21" ]
+        os: ["ubuntu-latest", "windows-latest"]
+        jdkVersion: ["21"]
         experimental: [false]
         #include:
-          #- jdkVersion: "21"
-          #  os: "windows-latest"
-          #  experimental: true
-          # Disabled for now until we can figure out the gradle matrix
-          #- jdkVersion: "21"
-          #  os: "ubuntu-latest"
-          #  experimental: true
+        #- jdkVersion: "21"
+        #  os: "windows-latest"
+        #  experimental: true
+        # Disabled for now until we can figure out the gradle matrix
+        #- jdkVersion: "21"
+        #  os: "ubuntu-latest"
+        #  experimental: true
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -43,7 +43,7 @@ jobs:
           java-version: ${{ matrix.jdkVersion }}
 
       - name: Setup Gradle
-        uses: gradle/gradle-build-action@v3
+        uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: "8.7"
 
