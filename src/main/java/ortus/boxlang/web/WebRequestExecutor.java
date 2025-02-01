@@ -226,7 +226,7 @@ public class WebRequestExecutor {
 			}
 
 			if ( context != null ) {
-				context.flushBuffer( false );
+				context.flushBuffer( true );
 			} else {
 				exchange.flushResponseBuffer();
 			}

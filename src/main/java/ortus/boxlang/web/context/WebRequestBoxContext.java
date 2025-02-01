@@ -419,25 +419,16 @@ public class WebRequestBoxContext extends RequestBoxContext {
 		if ( !canOutput() && !force ) {
 			return this;
 		}
-		String output = "";
-		// If there are extra buffers registered, we ignore flush requests since someone
-		// out there is wanting to capture our buffer instead.
-		if ( buffers.size() == 1 ) {
-			StringBuffer buffer = getBuffer();
-			synchronized ( buffer ) {
-				output = buffer.toString();
-				clearBuffer();
-			}
-
-		} else if ( force ) {
+		// This will commit the response so we don't want to do it unless we're forcing a flush, or it's the end of the request
+		// in which case, the web request executor will always issue a final forced flush. Otherwise, just let the buffer keep accumulating
+		if ( force ) {
+			String output = "";
 			for ( StringBuffer buf : buffers ) {
 				synchronized ( buf ) {
 					output = output.concat( buf.toString() );
 					buf.setLength( 0 );
 				}
 			}
-		}
-		if ( !output.isEmpty() ) {
 			httpExchange.getResponseWriter().write( output );
 			httpExchange.flushResponseBuffer();
 		}
