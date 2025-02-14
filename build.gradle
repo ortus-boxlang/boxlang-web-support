@@ -35,7 +35,6 @@ if (branch == 'development') {
 	boxlangVersion = boxlangVersion.contains('-') ? boxlangVersion.replaceAll(/-.*/, '-snapshot') : "${boxlangVersion}-snapshot"
 }
 
-
 repositories {
     mavenLocal()
     mavenCentral()
@@ -45,7 +44,6 @@ dependencies {
 	// LOCAL DEVELOPMENT ONLY
 	// CHOOSE THE RIGHT LOCATION FOR YOUR LOCAL DEPENDENCIES
     compileOnly files( '../boxlang/build/libs/boxlang-' + boxlangVersion + '.jar' )
-
 	// Production Dependency
    	compileOnly files( 'src/test/resources/libs/boxlang-' + boxlangVersion + '.jar' )
 
@@ -53,12 +51,15 @@ dependencies {
 	implementation 'org.jsoup:jsoup:1.18.3'
 
     // Testing Dependencies
-	testImplementation files( 'src/test/resources/libs/boxlang-' + boxlangVersion + '.jar' )
     testImplementation files( '../boxlang/build/libs/boxlang-' + boxlangVersion + '.jar' )
-	// Pin this for now as there is a problem finding the tests with 5.11.4
-    testImplementation "org.junit.jupiter:junit-jupiter:5.11.3"
+	testImplementation files( 'src/test/resources/libs/boxlang-' + boxlangVersion + '.jar' )
+
+	// Testing Frameworks
+	testImplementation "org.junit.jupiter:junit-jupiter:5.+"
 	testImplementation "org.mockito:mockito-core:5.+"
 	testImplementation "com.google.truth:truth:1.+"
+	// Explicitly declare the JUnit platform launcher (to avoid deprecation)
+    testRuntimeOnly "org.junit.platform:junit-platform-launcher"
 }
 
 java {
