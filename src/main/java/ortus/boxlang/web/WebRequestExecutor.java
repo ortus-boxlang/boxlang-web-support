@@ -210,6 +210,11 @@ public class WebRequestExecutor {
 
 			if ( errorToHandle != null ) {
 				try {
+					// Log it to the exception logs
+					BoxRuntime.getInstance()
+					    .getLoggingService()
+					    .getLogger( "exception" )
+					    .error( errorToHandle.getMessage(), errorToHandle );
 					// A return of true means the error has been "handled". False means the default
 					// error handling should be used
 					if ( appListener == null || !appListener.onError( context, new Object[] { errorToHandle, "" } ) ) {
