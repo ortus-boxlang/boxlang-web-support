@@ -127,12 +127,12 @@ public class WebRequestExecutor {
 				} else {
 					ensureContentType( exchange, DEFAULT_CONTENT_TYPE );
 					appListener.onRequest( context, new Object[] { requestString } );
-
-					// Any unhandled exceptions in the request, will skip onRequestEnd
-					// This includes aborts, custom exceptions, and missing file includes
-					appListener.onRequestEnd( context, new Object[] { requestString } );
 				}
 			}
+
+			// Any unhandled exceptions in the request, will skip onRequestEnd
+			// This includes aborts, custom exceptions, and missing file includes
+			appListener.onRequestEnd( context, new Object[] { requestString } );
 
 			// Finally flush the buffer
 			context.flushBuffer( false );
