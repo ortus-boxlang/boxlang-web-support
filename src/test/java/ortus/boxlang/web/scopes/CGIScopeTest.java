@@ -6,6 +6,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import ortus.boxlang.runtime.scopes.IScope;
 import ortus.boxlang.runtime.scopes.Key;
 import ortus.boxlang.runtime.types.IStruct;
 import ortus.boxlang.runtime.util.DuplicationUtil;
@@ -64,6 +65,13 @@ public class CGIScopeTest extends BaseWebTest {
 		var dumpKeys = cgiScope.getDumpKeys();
 		assertThat( dumpKeys ).isNotNull();
 		assertThat( dumpKeys ).isNotEmpty();
+	}
+
+	@DisplayName( "It returns true from containsKey() for known keys" )
+	@Test
+	public void testContainsKey() {
+		IScope cgiScope = new CGIScope( mockExchange );
+		assertThat( cgiScope.containsKey( Key.of( "server_name" ) ) ).isTrue();
 	}
 
 }
