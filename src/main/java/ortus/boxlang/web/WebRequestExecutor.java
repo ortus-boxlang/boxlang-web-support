@@ -130,6 +130,10 @@ public class WebRequestExecutor {
 				}
 			}
 
+			// Any unhandled exceptions in the request, will skip onRequestEnd
+			// This includes aborts, custom exceptions, and missing file includes
+			appListener.onRequestEnd( context, new Object[] { requestString } );
+
 			// Finally flush the buffer
 			context.flushBuffer( false );
 		}
@@ -199,20 +203,18 @@ public class WebRequestExecutor {
 		 */
 		finally {
 			ensureContentType( exchange, DEFAULT_CONTENT_TYPE );
-			if ( appListener != null ) {
-				try {
-					appListener.onRequestEnd( context, new Object[] { requestString } );
-				} catch ( Throwable e ) {
-					// Opps, an error while handling onRequestEnd
-					errorToHandle = e;
-				}
-			}
 
 			if ( context != null ) {
 				context.flushBuffer( false );
 			}
 
 			if ( errorToHandle != null ) {
+				// Log it to the exception logs no matter what
+				BoxRuntime.getInstance()
+				    .getLoggingService()
+				    .getLogger( "exception" )
+				    .error( errorToHandle.getMessage(), errorToHandle );
+
 				try {
 					// A return of true means the error has been "handled". False means the default
 					// error handling should be used
@@ -226,7 +228,7 @@ public class WebRequestExecutor {
 			}
 
 			if ( context != null ) {
-				context.flushBuffer( false );
+				context.flushBuffer( true );
 			} else {
 				exchange.flushResponseBuffer();
 			}

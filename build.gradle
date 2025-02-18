@@ -35,7 +35,6 @@ if (branch == 'development') {
 	boxlangVersion = boxlangVersion.contains('-') ? boxlangVersion.replaceAll(/-.*/, '-snapshot') : "${boxlangVersion}-snapshot"
 }
 
-
 repositories {
     mavenLocal()
     mavenCentral()
@@ -44,21 +43,23 @@ repositories {
 dependencies {
 	// LOCAL DEVELOPMENT ONLY
 	// CHOOSE THE RIGHT LOCATION FOR YOUR LOCAL DEPENDENCIES
-    compileOnly files( '../boxlang/build/libs/boxlang-' + boxlangVersion + '-all.jar' )
-
+    compileOnly files( '../boxlang/build/libs/boxlang-' + boxlangVersion + '.jar' )
 	// Production Dependency
-   compileOnly files( 'src/test/resources/libs/boxlang-' + boxlangVersion + '-all.jar' )
+   	compileOnly files( 'src/test/resources/libs/boxlang-' + boxlangVersion + '.jar' )
 
 	// For HTML Parsing
 	implementation 'org.jsoup:jsoup:1.18.3'
 
     // Testing Dependencies
-	testImplementation files( 'src/test/resources/libs/boxlang-' + boxlangVersion + '-all.jar' )
-    testImplementation files( '../boxlang/build/libs/boxlang-' + boxlangVersion + '-all.jar' )
-	// Pin this for now as there is a problem finding the tests with 5.11.4
-    testImplementation "org.junit.jupiter:junit-jupiter:5.11.3"
+    testImplementation files( '../boxlang/build/libs/boxlang-' + boxlangVersion + '.jar' )
+	testImplementation files( 'src/test/resources/libs/boxlang-' + boxlangVersion + '.jar' )
+
+	// Testing Frameworks
+	testImplementation "org.junit.jupiter:junit-jupiter:5.+"
 	testImplementation "org.mockito:mockito-core:5.+"
 	testImplementation "com.google.truth:truth:1.+"
+	// Explicitly declare the JUnit platform launcher (to avoid deprecation)
+    testRuntimeOnly "org.junit.platform:junit-platform-launcher"
 }
 
 java {
@@ -309,7 +310,7 @@ test {
 
 /**
  * TEMPORARY until we publish to maven
- * Task to download the latest jar from https://ortus-temp.s3.amazonaws.com/jericho/libs/boxlang-1.0.0-all.jar
+ * Task to download the latest jar from https://ortus-temp.s3.amazonaws.com/jericho/libs/boxlang-1.0.0.jar
  */
 task downloadBoxLang( type: Download ) {
 	// Create the destination directory
@@ -317,9 +318,9 @@ task downloadBoxLang( type: Download ) {
 		file( "src/test/resources/libs" ).mkdirs()
 	}
     // Configure the URL of the file to download
-    src "https://downloads.ortussolutions.com/ortussolutions/boxlang/${boxlangVersion}/boxlang-${boxlangVersion}-all.jar"
+    src "https://downloads.ortussolutions.com/ortussolutions/boxlang/${boxlangVersion}/boxlang-${boxlangVersion}.jar"
     // Specify the destination directory for the downloaded file
-    dest "src/test/resources/libs/boxlang-${boxlangVersion}-all.jar"
+    dest "src/test/resources/libs/boxlang-${boxlangVersion}.jar"
     overwrite true
     onlyIfModified false
 }
@@ -333,15 +334,18 @@ project.ext.bumpVersion = {
 	boolean minor = false,
 	boolean patch = false,
 	boolean beta = false,
-	property = "version" ->
+	boolean rc = false ->
 
 	def propertiesFile = file( './gradle.properties' );
 	def properties = new Properties();
 
 	properties.load( propertiesFile.newDataInputStream() )
-	def versionTarget = major ? 0 : minor ? 1 : 2
+	def versionTarget = major ? 0 : minor ? 1 : beta ? 2 : 3
 
-	def currentVersion = properties.getProperty( property )
+	def currentVersion = properties.getProperty( 'version' )
+	// 1.1.0 -> -> [ 1, 1, 0 ]
+	// 1.0.0-beta1 -> [ 1, 0, 0-beta1 ]
+	// 1.0.0-rc.1 -> [ 1, 0, 0-rc, 1 ]
 	def versionParts = currentVersion.split( '\\.' )
 	if( !beta ){
 		def newPathVersion = versionParts[ versionTarget ].toInteger() + 1
@@ -360,9 +364,11 @@ project.ext.bumpVersion = {
 		// Now we get the beta number
 		def betaNumber = betaString.split( 'beta' )[ 1 ].toInteger() + 1
 		newVersion = currentVersion.split( '-' )[ 0 ] + "-beta${betaNumber}"
+	} else if( rc ){
+		newVersion = "${versionParts[ 0 ]}.${versionParts[ 1 ]}.${versionParts[ 2 ]}.${versionParts[3]}"
 	}
 
-	properties.setProperty( property, newVersion )
+	properties.setProperty( 'version', newVersion )
 	properties.store( propertiesFile.newWriter(), null )
 
 	println "Bumped version from ${currentVersion} to ${newVersion}"
@@ -373,8 +379,7 @@ project.ext.bumpVersion = {
  */
 task bumpMajorVersion {
 	doLast{
-		bumpVersion( true, false, false, false, "version" )
-		bumpVersion( true, false, false, false, "boxlangVersion" )
+		bumpVersion( true )
 	}
 }
 
@@ -383,8 +388,7 @@ task bumpMajorVersion {
  */
 task bumpMinorVersion {
 	doLast{
-		bumpVersion( false, true, false, false, "version" )
-		bumpVersion( false, true, false, false, "boxlangVersion" )
+		bumpVersion( false, true )
 	}
 }
 
@@ -393,8 +397,7 @@ task bumpMinorVersion {
  */
 task bumpPatchVersion {
 	doLast{
-		bumpVersion( false, false, true, false, "version" )
-		bumpVersion( false, false, true, false, "boxlangVersion" )
+		bumpVersion( false, false, true, false, false )
 	}
 }
 
@@ -403,7 +406,14 @@ task bumpPatchVersion {
  */
 task bumpBetaVersion {
 	doLast{
-		bumpVersion( false, false, false, true, "version" )
-		bumpVersion( false, false, false, true, "boxlangVersion" )
+		bumpVersion( false, false, false, true, false )
+	}
+}
+/**
+ * Bump the rc version number
+ */
+task bumpRCVersion {
+	doLast{
+		bumpVersion( false, false, false, false, true )
 	}
 }

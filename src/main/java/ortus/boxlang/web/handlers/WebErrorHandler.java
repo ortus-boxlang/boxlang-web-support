@@ -54,6 +54,8 @@ public class WebErrorHandler {
 	    DynamicObject trans ) {
 		try {
 			e.printStackTrace();
+			// Return 500 status code
+			exchange.setResponseStatus( 500 );
 
 			if ( frTransService != null ) {
 				if ( e instanceof Exception ee ) {
@@ -77,7 +79,7 @@ public class WebErrorHandler {
 			}
 
 		} catch ( Throwable t ) {
-			e.printStackTrace();
+			// Something terrible happened and a blank page will probably be what the user sees.
 			t.printStackTrace();
 		}
 	}
