@@ -151,6 +151,13 @@ public class BoxCookie {
 		return sameSiteMode;
 	}
 
+	/**
+	 * Set the SameSite mode for the cookie. This will automatically set the SameSite flag to true.
+	 * 
+	 * @param mode One of the strings Strict, Lax, or None
+	 * 
+	 * @return
+	 */
 	public BoxCookie setSameSiteMode( final String mode ) {
 		if ( mode == null ) {
 			return this;
