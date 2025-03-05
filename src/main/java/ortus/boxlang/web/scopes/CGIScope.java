@@ -354,6 +354,20 @@ public class CGIScope extends BaseScope {
 		return this.knownKeys.size();
 	}
 
+	// overide containskey()
+	/**
+	 * Returns true if this map contains a mapping for the specified key.
+	 * 
+	 * @param value The key whose presence in this map is to be tested
+	 * 
+	 * @return true if this map contains a mapping for the specified key.
+	 */
+	@Override
+	public boolean containsKey( Key key ) {
+		// Always return true for known keys which are created on-access
+		return this.knownKeys.contains( key ) ? true : wrapped.containsKey( key );
+	}
+
 	/**
 	 * --------------------------------------------------------------------------
 	 * Private Helpers
