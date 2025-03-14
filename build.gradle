@@ -43,16 +43,17 @@ repositories {
 dependencies {
 	// LOCAL DEVELOPMENT ONLY
 	// CHOOSE THE RIGHT LOCATION FOR YOUR LOCAL DEPENDENCIES
-    compileOnly files( '../boxlang/build/libs/boxlang-' + boxlangVersion + '.jar' )
-	// Production Dependency
-   	compileOnly files( 'src/test/resources/libs/boxlang-' + boxlangVersion + '.jar' )
+	if ( file( '../boxlang/build/libs/boxlang-' + boxlangVersion + '.jar' ).exists() ) {
+    	compileOnly files( '../boxlang/build/libs/boxlang-' + boxlangVersion + '.jar' )
+		testImplementation files( '../boxlang/build/libs/boxlang-' + boxlangVersion + '.jar' )
+	} else {
+		// Production Dependency
+   		compileOnly files( 'src/test/resources/libs/boxlang-' + boxlangVersion + '.jar' )
+		testImplementation files( 'src/test/resources/libs/boxlang-' + boxlangVersion + '.jar' )
+	}
 
 	// For HTML Parsing
 	implementation 'org.jsoup:jsoup:1.19.1'
-
-    // Testing Dependencies
-    testImplementation files( '../boxlang/build/libs/boxlang-' + boxlangVersion + '.jar' )
-	testImplementation files( 'src/test/resources/libs/boxlang-' + boxlangVersion + '.jar' )
 
 	// Testing Frameworks
 	testImplementation "org.junit.jupiter:junit-jupiter:5.+"
