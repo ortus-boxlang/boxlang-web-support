@@ -79,7 +79,7 @@ public class GetPageContext extends BIF {
 
 		/**
 		 * Sets a response header. If the response has already been started, this method does nothing.
-		 * 
+		 *
 		 * @param name
 		 * @param value
 		 */
@@ -258,7 +258,7 @@ public class GetPageContext extends BIF {
 		 *
 		 * @return
 		 */
-		public String geHeader( String name ) {
+		public String getHeader( String name ) {
 			return exchange.getRequestHeader( name );
 		}
 
