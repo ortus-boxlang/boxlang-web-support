@@ -64,7 +64,7 @@ jobs:
 
       - name: Upload Anchore Report
         if: always()
-        uses: github/codeql-action/upload-sarif@v4
+        uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: ${{ steps.securityscan.outputs.sarif }}
           category: "BoxLang-Servlet-${{ github.env.BRANCH }}"
