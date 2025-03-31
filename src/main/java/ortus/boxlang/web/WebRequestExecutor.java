@@ -93,28 +93,21 @@ public class WebRequestExecutor {
 					// URL vars override form vars
 					args.addAll( context.getScope( FormScope.name ) );
 					args.addAll( context.getScope( URLScope.name ) );
-					String	methodName		= null;
-					String	returnFormat	= null;
 					if ( args.containsKey( Key.method ) ) {
-						methodName = args.get( Key.method ).toString();
 						args.remove( Key.method );
 					}
 					if ( args.containsKey( Key.returnFormat ) ) {
-						returnFormat = args.get( Key.returnFormat ).toString();
 						args.remove( Key.returnFormat );
 					}
+
+					// Fire it!
 					appListener.onClassRequest( context,
-					    new Object[] { new BoxFQN( requestPath ).toString(), methodName, args, returnFormat } );
-					// If return format was passed in the URL, then we know it was chosen. If none
-					// in the URL, one may have been set on the remote functions
-					// annotations
-					if ( returnFormat == null ) {
-						returnFormat = Optional
-						    .ofNullable( context.getParentOfType( RequestBoxContext.class )
-						        .getAttachment( Key.returnFormat ) )
-						    .map( Object::toString )
-						    .orElse( "plain" );
-					}
+					    new Object[] { new BoxFQN( requestPath ).toString(), args } );
+
+					// This will have been set during the request, either by a URL variable, a param in the code, or a function annotation.
+					String returnFormat = Optional.ofNullable( context.getRequestContext().getAttachment( Key.returnFormat ) )
+					    .map( Object::toString )
+					    .orElse( "plain" );
 
 					// If the content type is set, the user has already set it, so don't override it
 					// It's their responsibility to set it correctly
