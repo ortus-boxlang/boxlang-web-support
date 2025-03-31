@@ -358,7 +358,7 @@ public class CGIScope extends BaseScope {
 	/**
 	 * Returns true if this map contains a mapping for the specified key.
 	 * 
-	 * @param value The key whose presence in this map is to be tested
+	 * @param key The key whose presence in this map is to be tested
 	 * 
 	 * @return true if this map contains a mapping for the specified key.
 	 */

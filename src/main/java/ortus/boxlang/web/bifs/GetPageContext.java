@@ -147,7 +147,6 @@ public class GetPageContext extends BIF {
 		/**
 		 * Clears the response buffer, if any, and resets the response status code and headers.
 		 *
-		 * @return
 		 */
 		public void reset() {
 			context.clearBuffer();
@@ -269,10 +268,6 @@ public class GetPageContext extends BIF {
 		 *
 		 * @return a boolean indicating if the response has been committed
 		 *
-		 * @see #setBufferSize
-		 * @see #getBufferSize
-		 * @see #flushBuffer
-		 * @see #reset
 		 */
 		public boolean isCommitted() {
 			return exchange.isResponseStarted();
