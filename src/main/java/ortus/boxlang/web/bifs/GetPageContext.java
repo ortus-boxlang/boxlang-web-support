@@ -149,6 +149,7 @@ public class GetPageContext extends BIF {
 		 *
 		 */
 		public void reset() {
+			exchange.reset();
 			context.clearBuffer();
 		}
 
@@ -157,14 +158,14 @@ public class GetPageContext extends BIF {
 		 * This method is provided for backward compatibility
 		 */
 		public void clearBuffer() {
-			reset();
+			context.clearBuffer();
 		}
 
 		/**
 		 * Clears the response buffer, if any, and resets the response status code and headers.
 		 */
 		public void resetHTMLHead() {
-			reset();
+			context.clearBuffer();
 		}
 
 		/**

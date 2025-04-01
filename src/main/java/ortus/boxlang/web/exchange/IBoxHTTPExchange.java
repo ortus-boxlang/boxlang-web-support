@@ -405,6 +405,11 @@ public interface IBoxHTTPExchange {
 	 */
 	public void resetResponseBuffer();
 
+	/**
+	 * Clear all reponse headers, status code, and buffer
+	 */
+	public void reset();
+
 	public static record FileUpload( Key formFieldName, Path tmpPath, String originalFileName ) {
 	}
 
