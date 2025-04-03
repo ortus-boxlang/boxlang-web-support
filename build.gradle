@@ -366,7 +366,7 @@ project.ext.bumpVersion = {
 		def betaNumber = betaString.split( 'beta' )[ 1 ].toInteger() + 1
 		newVersion = currentVersion.split( '-' )[ 0 ] + "-beta${betaNumber}"
 	} else if( rc ){
-		newVersion = "${versionParts[ 0 ]}.${versionParts[ 1 ]}.${versionParts[ 2 ]}.${newPathVersion}"
+		newVersion = "${versionParts[ 0 ]}.${versionParts[ 1 ]}.${versionParts[ 2 ]}.${versionParts[ 3 ]}"
 	}
 
 	properties.setProperty( 'version', newVersion )
