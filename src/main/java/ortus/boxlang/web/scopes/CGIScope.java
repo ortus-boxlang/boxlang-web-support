@@ -292,7 +292,7 @@ public class CGIScope extends BaseScope {
 		if ( header != null ) {
 			return putAndReturn( key, header );
 		}
-		if ( key.getName().toLowerCase().startsWith( "http" ) ) {
+		if ( key.getName().toLowerCase().startsWith( "http_" ) && key.getName().length() > 5 ) {
 			header = exchange.getRequestHeader( key.getName().substring( 5 ).replace( "_", "-" ) );
 			if ( header != null ) {
 				return putAndReturn( key, header );
@@ -358,7 +358,7 @@ public class CGIScope extends BaseScope {
 	/**
 	 * Returns true if this map contains a mapping for the specified key.
 	 * 
-	 * @param value The key whose presence in this map is to be tested
+	 * @param key The key whose presence in this map is to be tested
 	 * 
 	 * @return true if this map contains a mapping for the specified key.
 	 */

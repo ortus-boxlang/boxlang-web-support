@@ -57,6 +57,7 @@ public class BaseWebTest {
 		when( mockExchange.getRequestServerName() ).thenReturn( "localhost" );
 		when( mockExchange.getResponseWriter() ).thenReturn( new PrintWriter( OutputStream.nullOutputStream() ) );
 		when( mockExchange.getRequestCookies() ).thenReturn( new BoxCookie[ 0 ] );
+		when( mockExchange.getRequestMethod() ).thenReturn( "GET" );
 
 		context = new WebRequestBoxContext( runtime.getRuntimeContext(), mockExchange, TEST_WEBROOT );
 

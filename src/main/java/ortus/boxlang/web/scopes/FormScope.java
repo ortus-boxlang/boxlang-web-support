@@ -49,8 +49,12 @@ public class FormScope extends BaseScope {
 		exchange.getRequestFormMap().forEach( ( key, value ) -> {
 			this.put( Key.of( key ), Arrays.stream( value ).collect( Collectors.joining( "," ) ) );
 		} );
-		// add form.fieldNames from our internal keys
-		this.put( fieldNames, Arrays.stream( this.keySet().toArray() ).map( Object::toString ).collect( Collectors.joining( "," ) ) );
+
+		// Only for POST requests
+		if ( exchange.getRequestMethod().equalsIgnoreCase( "POST" ) ) {
+			// add form.fieldNames from our internal keys
+			this.put( fieldNames, Arrays.stream( this.keySet().toArray() ).map( Object::toString ).collect( Collectors.joining( "," ) ) );
+		}
 
 	}
 

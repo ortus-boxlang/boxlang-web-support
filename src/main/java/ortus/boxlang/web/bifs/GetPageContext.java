@@ -59,14 +59,30 @@ public class GetPageContext extends BIF {
 			this.exchange	= this.context.getHTTPExchange();
 		}
 
+		/**
+		 * Returns the current context object. This method is provided for backward compatibility
+		 *
+		 * @return
+		 */
 		public PageContext getResponse() {
 			return this;
 		}
 
+		/**
+		 * Returns the current request object. This method is provided for backward compatibility
+		 *
+		 * @return
+		 */
 		public PageContext getRequest() {
 			return this;
 		}
 
+		/**
+		 * Sets a response header. If the response has already been started, this method does nothing.
+		 *
+		 * @param name
+		 * @param value
+		 */
 		public void setHeader( String name, String value ) {
 			if ( exchange.isResponseStarted() ) {
 				return;
@@ -74,6 +90,11 @@ public class GetPageContext extends BIF {
 			exchange.setResponseHeader( name, value );
 		}
 
+		/**
+		 * Sets the response content type header. If the response has already been started, this method does nothing.
+		 *
+		 * @param value
+		 */
 		public void setContentType( String value ) {
 			if ( exchange.isResponseStarted() ) {
 				return;
@@ -91,6 +112,13 @@ public class GetPageContext extends BIF {
 			setStatus( code.intValue() );
 		}
 
+		/**
+		 * Sets the response status code and message. If the response has already
+		 * been started, this method does nothing.
+		 *
+		 * @param code
+		 * @param text
+		 */
 		public void setStatus( int code, String text ) {
 			if ( exchange.isResponseStarted() ) {
 				return;
@@ -98,26 +126,53 @@ public class GetPageContext extends BIF {
 			exchange.setResponseStatus( code, text );
 		}
 
+		/**
+		 * Sets the response status code.
+		 *
+		 * @param code
+		 */
 		public void setStatus( int code ) {
 			setStatus( code, "" );
 		}
 
+		/**
+		 * Returns the current response status code. This method is provided for backward compatibility
+		 *
+		 * @return
+		 */
 		public int getStatus() {
 			return exchange.getResponseStatus();
 		}
 
+		/**
+		 * Clears the response buffer, if any, and resets the response status code and headers.
+		 *
+		 */
 		public void reset() {
+			exchange.reset();
 			context.clearBuffer();
 		}
 
+		/**
+		 * Clears the response buffer, if any, and resets the response status code and headers.
+		 * This method is provided for backward compatibility
+		 */
 		public void clearBuffer() {
-			reset();
+			context.clearBuffer();
 		}
 
+		/**
+		 * Clears the response buffer, if any, and resets the response status code and headers.
+		 */
 		public void resetHTMLHead() {
-			reset();
+			context.clearBuffer();
 		}
 
+		/**
+		 * Returns the current PageContext object. This method is provided for backward compatibility
+		 *
+		 * @return
+		 */
 		public PageContext getOut() {
 			return this;
 		}
@@ -126,6 +181,11 @@ public class GetPageContext extends BIF {
 			return false;
 		}
 
+		/**
+		 * Returns the request URL as a StringBuffer. This is the full URL
+		 *
+		 * @return
+		 */
 		public StringBuffer getRequestURL() {
 			return new StringBuffer( exchange.getRequestURL() );
 		}
@@ -140,23 +200,65 @@ public class GetPageContext extends BIF {
 			}
 		}
 
+		/**
+		 * Adds a response header to the response. If the response has already
+		 * been committed, this method does nothing.
+		 *
+		 * @param name
+		 * @param value
+		 */
 		public void addHeader( String name, String value ) {
 			setHeader( name, value );
 		}
 
+		/**
+		 * Returns a map of all the response headers.
+		 *
+		 * @return
+		 */
 		public Map<String, String[]> getResponseHeaderMap() {
 			return exchange.getResponseHeaderMap();
 		}
 
+		/**
+		 * Returns the value of the specified response header as a String.
+		 *
+		 * @param name
+		 *
+		 * @return
+		 */
 		public String getResponseHeader( String name ) {
 			return exchange.getResponseHeader( name );
 		}
 
+		/**
+		 * Returns a map of all the request headers.
+		 *
+		 * @return
+		 */
 		public Map<String, String[]> getRequestHeaderMap() {
 			return exchange.getRequestHeaderMap();
 		}
 
+		/**
+		 * Returns the value of the specified request header as a String.
+		 *
+		 * @param name
+		 *
+		 * @return
+		 */
 		public String getRequestHeader( String name ) {
+			return exchange.getRequestHeader( name );
+		}
+
+		/**
+		 * Alias for getRequestHeader - for compat
+		 *
+		 * @param name
+		 *
+		 * @return
+		 */
+		public String getHeader( String name ) {
 			return exchange.getRequestHeader( name );
 		}
 
@@ -167,10 +269,6 @@ public class GetPageContext extends BIF {
 		 *
 		 * @return a boolean indicating if the response has been committed
 		 *
-		 * @see #setBufferSize
-		 * @see #getBufferSize
-		 * @see #flushBuffer
-		 * @see #reset
 		 */
 		public boolean isCommitted() {
 			return exchange.isResponseStarted();

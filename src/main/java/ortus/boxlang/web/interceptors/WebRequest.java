@@ -172,9 +172,9 @@ public class WebRequest extends BaseInterceptor {
 			} else {
 				String cacheDirective = null;
 				if ( cacheAction.equals( CacheAction.SERVERCACHE ) ) {
-					cacheDirective = timespan == null ? "server" : "s-max-age=" + DoubleCaster.cast( timespan * Cache.secondsInDay ).intValue();
+					cacheDirective = timespan == null ? "server" : "s-max-age=" + DoubleCaster.cast( timespan * Cache.SECONDS_IN_DAY ).intValue();
 				} else if ( cacheAction.equals( CacheAction.CLIENTCACHE ) ) {
-					cacheDirective = timespan == null ? "private" : "max-age=" + DoubleCaster.cast( timespan * Cache.secondsInDay ).intValue();
+					cacheDirective = timespan == null ? "private" : "max-age=" + DoubleCaster.cast( timespan * Cache.SECONDS_IN_DAY ).intValue();
 				}
 				if ( cacheDirective != null ) {
 					componentService.getComponent( Key.header ).invoke(

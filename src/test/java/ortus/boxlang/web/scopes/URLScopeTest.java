@@ -65,6 +65,7 @@ public class URLScopeTest {
 		when( mockExchange.getRequestCookies() ).thenReturn( new BoxCookie[ 0 ] );
 		when( mockExchange.getRequestHeaderMap() ).thenReturn( new HashMap<String, String[]>() );
 		when( mockExchange.getResponseWriter() ).thenReturn( new PrintWriter( OutputStream.nullOutputStream() ) );
+		when( mockExchange.getRequestMethod() ).thenReturn( "GET" );
 		context		= new WebRequestBoxContext( instance.getRuntimeContext(), mockExchange, "/" );
 		urlScope	= context.getScopeNearby( URLScope.name );
 	}

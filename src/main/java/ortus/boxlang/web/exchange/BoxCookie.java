@@ -30,7 +30,7 @@ public class BoxCookie {
 	private boolean			discard;
 	private boolean			secure;
 	private boolean			httpOnly;
-	private int				version	= 0;
+	private int				version	= 1;
 	private String			comment;
 	private boolean			sameSite;
 	private String			sameSiteMode;
@@ -153,9 +153,9 @@ public class BoxCookie {
 
 	/**
 	 * Set the SameSite mode for the cookie. This will automatically set the SameSite flag to true.
-	 * 
+	 *
 	 * @param mode One of the strings Strict, Lax, or None
-	 * 
+	 *
 	 * @return
 	 */
 	public BoxCookie setSameSiteMode( final String mode ) {

@@ -447,7 +447,6 @@ public class WebRequestBoxContext extends RequestBoxContext {
 	/**
 	 * Set the HTTP exchange
 	 *
-	 * @return The HTTP exchange
 	 */
 	public void setHTTPExchange( IBoxHTTPExchange httpExchange ) {
 		this.httpExchange = httpExchange;
