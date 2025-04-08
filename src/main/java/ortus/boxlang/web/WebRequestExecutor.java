@@ -111,7 +111,7 @@ public class WebRequestExecutor {
 
 					// If the content type is set, the user has already set it, so don't override it
 					// It's their responsibility to set it correctly
-					ensureContentType( exchange, switch ( returnFormat ) {
+					ensureContentType( exchange, switch ( returnFormat.toLowerCase() ) {
 						case "json" -> "application/json;charset=UTF-8";
 						case "xml", "wddx" -> "application/xml;charset=UTF-8";
 						case "plain" -> "text/html;charset=UTF-8";
