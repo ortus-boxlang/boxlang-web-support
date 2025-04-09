@@ -19,6 +19,8 @@ package ortus.boxlang.web.exchange;
 
 import java.util.Date;
 
+import ortus.boxlang.runtime.util.EncryptionUtil;
+
 public class BoxCookie {
 
 	private final String	name;
@@ -53,7 +55,9 @@ public class BoxCookie {
 	}
 
 	public BoxCookie setValue( final String value ) {
-		this.value = value;
+		this.value = getVersion() == 0
+		    ? EncryptionUtil.urlDecode( value )
+		    : value;
 		return this;
 	}
 
