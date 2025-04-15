@@ -75,21 +75,21 @@ public class HtmlHead extends BIF {
 	 * @param text    Text to add to the head area of an HTML page.
 	 */
 	public static void addToHead( IBoxContext context, String text ) {
+		RequestBoxContext requestContext = context.getParentOfType( RequestBoxContext.class );
 		// Init it if it doesn't exist to an array
-		if ( !context.hasAttachment( KeyDictionary.htmlHead ) ) {
+		if ( !requestContext.hasAttachment( KeyDictionary.htmlHead ) ) {
 			// Init the html head array
-			context.putAttachment( KeyDictionary.htmlHead, new Array() );
+			requestContext.putAttachment( KeyDictionary.htmlHead, new Array() );
 
 			// Init a new interceptor for the application
-			context
-			    .getParentOfType( RequestBoxContext.class )
+			requestContext
 			    .getApplicationListener()
 			    .getInterceptorPool()
 			    .register( data -> {
 				    IBoxContext dataContext = ( IBoxContext ) data.get( Key.context );
 				    // Only if the attachment exists use it
-				    if ( dataContext.hasAttachment( KeyDictionary.htmlHead ) ) {
-					    Array		headArray	= dataContext.getAttachment( KeyDictionary.htmlHead );
+				    if ( requestContext.hasAttachment( KeyDictionary.htmlHead ) ) {
+					    Array		headArray	= requestContext.getAttachment( KeyDictionary.htmlHead );
 					    StringBuffer buffer		= dataContext.getBuffer();
 					    Document	doc			= Jsoup.parse( buffer.toString() );
 
@@ -118,7 +118,7 @@ public class HtmlHead extends BIF {
 		}
 
 		// Append the text to the head array
-		Array head = context.getAttachment( KeyDictionary.htmlHead );
+		Array head = requestContext.getAttachment( KeyDictionary.htmlHead );
 		head.append( text );
 	}
 }
