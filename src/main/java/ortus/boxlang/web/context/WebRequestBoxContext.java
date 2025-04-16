@@ -473,8 +473,13 @@ public class WebRequestBoxContext extends RequestBoxContext {
 	}
 
 	public IStruct getConfig() {
-		var config = super.getConfig();
-		config.getAsStruct( Key.mappings ).put( "/", webRoot );
+		var		config		= super.getConfig();
+
+		IStruct	appMappings	= getApplicationListener().getSettings().getAsStruct( Key.mappings );
+		// Only set this if our application this.mappings doesn't already override it
+		if ( appMappings == null || appMappings.get( Key._slash ) == null ) {
+			config.getAsStruct( Key.mappings ).put( Key._slash, webRoot );
+		}
 		return config;
 	}
 
