@@ -429,6 +429,7 @@ public class WebRequestBoxContext extends RequestBoxContext {
 					buf.setLength( 0 );
 				}
 			}
+			httpExchange.ensureResponseContentType();
 			httpExchange.getResponseWriter().write( output );
 			httpExchange.flushResponseBuffer();
 		}
