@@ -35,6 +35,7 @@ import ortus.boxlang.runtime.validation.Validator;
 import ortus.boxlang.web.context.WebRequestBoxContext;
 import ortus.boxlang.web.exchange.BoxCookie;
 import ortus.boxlang.web.exchange.IBoxHTTPExchange;
+import ortus.boxlang.web.util.KeyDictionary;
 
 @BoxComponent
 public class Cookie extends Component {
@@ -49,7 +50,8 @@ public class Cookie extends Component {
 		    new Attribute( Key.expires, "any" ),
 		    new Attribute( Key.samesite, "string" ),
 		    new Attribute( Key.path, "string" ),
-		    new Attribute( Key.domain, "string" )
+		    new Attribute( Key.domain, "string" ),
+		    new Attribute( KeyDictionary.encodevalue, "boolean", true )
 		};
 	}
 
@@ -120,12 +122,13 @@ public class Cookie extends Component {
 		String					samesite		= attributes.getAsString( Key.samesite );
 		String					path			= attributes.getAsString( Key.path );
 		String					domain			= attributes.getAsString( Key.domain );
+		Boolean					encodeValue		= attributes.getAsBoolean( KeyDictionary.encodevalue );
 
 		WebRequestBoxContext	requestContext	= context.getParentOfType( WebRequestBoxContext.class );
 
 		IBoxHTTPExchange		exchange		= requestContext.getHTTPExchange();
 
-		BoxCookie				cookieInstance	= new BoxCookie( name, value );
+		BoxCookie				cookieInstance	= new BoxCookie( name, value, encodeValue );
 
 		if ( secure != null ) {
 			cookieInstance.setSecure( secure );
