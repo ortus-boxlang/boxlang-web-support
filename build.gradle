@@ -35,7 +35,7 @@ ext {
 if (branch == 'development') {
     // If the branch is 'development', ensure the version ends with '-snapshot'
     // This replaces any existing prerelease identifier with '-snapshot'
-    version = version.contains('-') ? version.replaceAll(/-.*/, '-snapshot') : "${version}-snapshot"
+    version = version.contains('-') ? version.replaceAll(/-.*/, '-snapshot') : "${version}-snapshot".toString()
 	boxlangVersion = boxlangVersion.contains('-') ? boxlangVersion.replaceAll(/-.*/, '-snapshot') : "${boxlangVersion}-snapshot".toString()
 }
 
@@ -47,14 +47,14 @@ repositories {
 dependencies {
 	// LOCAL DEVELOPMENT ONLY
 	// CHOOSE THE RIGHT LOCATION FOR YOUR LOCAL DEPENDENCIES
-	// if ( file( '../boxlang/build/libs/boxlang-' + boxlangVersion + '.jar' ).exists() ) {
-    // 	compileOnly files( '../boxlang/build/libs/boxlang-' + boxlangVersion + '.jar' )
-	// 	testImplementation files( '../boxlang/build/libs/boxlang-' + boxlangVersion + '.jar' )
-	// } else {
+	 if ( file( '../boxlang/build/libs/boxlang-' + boxlangVersion + '.jar' ).exists() ) {
+    	compileOnly files( '../boxlang/build/libs/boxlang-' + boxlangVersion + '.jar' )
+		testImplementation files( '../boxlang/build/libs/boxlang-' + boxlangVersion + '.jar' )
+	} else {
 		// Production Dependency
    		compileOnly files( 'src/test/resources/libs/boxlang-' + boxlangVersion + '.jar' )
 		testImplementation files( 'src/test/resources/libs/boxlang-' + boxlangVersion + '.jar' )
-	// }
+	}
 
 	// For HTML Parsing
 	implementation 'org.jsoup:jsoup:1.19.1'
