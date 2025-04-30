@@ -111,7 +111,7 @@ public class WebRequestExecutor {
 
 					// If the content type is set, the user has already set it, so don't override it
 					// It's their responsibility to set it correctly
-					ensureContentType( exchange, switch ( returnFormat ) {
+					ensureContentType( exchange, switch ( returnFormat.toLowerCase() ) {
 						case "json" -> "application/json;charset=UTF-8";
 						case "xml", "wddx" -> "application/xml;charset=UTF-8";
 						case "plain" -> "text/html;charset=UTF-8";
@@ -136,25 +136,8 @@ public class WebRequestExecutor {
 		 * --------------------------------------------------------------------------------
 		 */
 		catch ( AbortException e ) {
-			ensureContentType( exchange, DEFAULT_CONTENT_TYPE );
-
-			if ( appListener != null ) {
-				try {
-					appListener.onAbort( context, new Object[] { requestString } );
-				} catch ( Throwable ae ) {
-					// Opps, an error while handling onAbort
-					errorToHandle = ae;
-				}
-			}
-
-			if ( context != null ) {
-				context.flushBuffer( true );
-			}
-
-			if ( e.getCause() != null ) {
-				// This will always be an instance of CustomException
-				throw ( RuntimeException ) e.getCause();
-			}
+			// We'll handle it below
+			errorToHandle = e;
 		}
 		/**
 		 * --------------------------------------------------------------------------------
@@ -201,23 +184,60 @@ public class WebRequestExecutor {
 				context.flushBuffer( false );
 			}
 
+			// Was there an error produced above
 			if ( errorToHandle != null ) {
-				// Log it to the exception logs no matter what
-				BoxRuntime.getInstance()
-				    .getLoggingService()
-				    .getLogger( "exception" )
-				    .error( errorToHandle.getMessage(), errorToHandle );
 
-				try {
-					// A return of true means the error has been "handled". False means the default
-					// error handling should be used
-					if ( appListener == null || !appListener.onError( context, new Object[] { errorToHandle, "" } ) ) {
-						WebErrorHandler.handleError( errorToHandle, exchange, context, frTransService, trans );
+				// If the error to handle is an abort, then take care of it
+				if ( errorToHandle instanceof AbortException e ) {
+
+					ensureContentType( exchange, DEFAULT_CONTENT_TYPE );
+
+					if ( appListener != null ) {
+						try {
+							appListener.onAbort( context, new Object[] { requestString } );
+						} catch ( AbortException aae ) {
+							if ( aae.getCause() != null ) {
+								errorToHandle = aae.getCause();
+							}
+						} catch ( Throwable ae ) {
+							// Opps, an error while handling onAbort
+							errorToHandle = ae;
+						}
 					}
-					// This is a failsafe in case the onError blows up.
-				} catch ( Throwable t ) {
-					WebErrorHandler.handleError( t, exchange, context, frTransService, trans );
+
+					if ( context != null ) {
+						context.flushBuffer( true );
+					}
+
+					if ( e.getCause() != null ) {
+						errorToHandle = e.getCause();
+					}
 				}
+
+				// This could still run EVEN IF the error above WAS an abort, as the onAbort could have thrown an error or the abort could have specified a
+				// custom error to throw in its cause.
+				if ( ! ( errorToHandle instanceof AbortException ) ) {
+					// Log it to the exception logs no matter what
+					BoxRuntime.getInstance()
+					    .getLoggingService()
+					    .getLogger( "exception" )
+					    .error( errorToHandle.getMessage(), errorToHandle );
+
+					try {
+						// A return of true means the error has been "handled". False means the default
+						// error handling should be used
+						if ( appListener == null || !appListener.onError( context, new Object[] { errorToHandle, "" } ) ) {
+							WebErrorHandler.handleError( errorToHandle, exchange, context, frTransService, trans );
+						}
+						// This is a failsafe in case the onError blows up.
+					} catch ( AbortException ae ) {
+						// If we abort during our onError, it's prolly too late to output a custom exception, so we'll ignore that logic in this path.
+					} catch ( Throwable t ) {
+						WebErrorHandler.handleError( t, exchange, context, frTransService, trans );
+					}
+
+				}
+
 			}
 
 			if ( context != null ) {

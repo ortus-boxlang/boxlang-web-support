@@ -67,6 +67,17 @@ public interface IBoxHTTPExchange {
 	}
 
 	/**
+	 * Default the response content type to text/html if not set.
+	 */
+	default void ensureResponseContentType() {
+		var contentType = getResponseHeader( "Content-Type" );
+		if ( contentType == null || contentType.isEmpty() ) {
+			addResponseHeader( "Content-Type", "text/html;charset=UTF-8" );
+		}
+
+	}
+
+	/**
 	 * Returns the name of the authentication scheme used to protect the servlet. All servlet containers support basic, form
 	 * and client certificate authentication, and may additionally support digest authentication. If the servlet is not
 	 * authenticated <code>null</code> is returned.

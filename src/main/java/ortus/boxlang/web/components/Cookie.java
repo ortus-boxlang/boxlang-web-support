@@ -23,12 +23,19 @@ import ortus.boxlang.runtime.components.Attribute;
 import ortus.boxlang.runtime.components.BoxComponent;
 import ortus.boxlang.runtime.components.Component;
 import ortus.boxlang.runtime.context.IBoxContext;
+import ortus.boxlang.runtime.dynamic.casters.CastAttempt;
+import ortus.boxlang.runtime.dynamic.casters.DateTimeCaster;
+import ortus.boxlang.runtime.dynamic.casters.NumberCaster;
+import ortus.boxlang.runtime.dynamic.casters.StringCasterStrict;
 import ortus.boxlang.runtime.scopes.Key;
+import ortus.boxlang.runtime.types.DateTime;
 import ortus.boxlang.runtime.types.IStruct;
+import ortus.boxlang.runtime.types.exceptions.BoxValidationException;
 import ortus.boxlang.runtime.validation.Validator;
 import ortus.boxlang.web.context.WebRequestBoxContext;
 import ortus.boxlang.web.exchange.BoxCookie;
 import ortus.boxlang.web.exchange.IBoxHTTPExchange;
+import ortus.boxlang.web.util.KeyDictionary;
 
 @BoxComponent
 public class Cookie extends Component {
@@ -43,7 +50,8 @@ public class Cookie extends Component {
 		    new Attribute( Key.expires, "any" ),
 		    new Attribute( Key.samesite, "string" ),
 		    new Attribute( Key.path, "string" ),
-		    new Attribute( Key.domain, "string" )
+		    new Attribute( Key.domain, "string" ),
+		    new Attribute( KeyDictionary.encodevalue, "boolean", true )
 		};
 	}
 
@@ -110,16 +118,17 @@ public class Cookie extends Component {
 		String					value			= attributes.getAsString( Key.value );
 		Boolean					secure			= attributes.getAsBoolean( Key.secure );
 		Boolean					httpOnly		= attributes.getAsBoolean( Key.httpOnly );
-		Object					expires			= attributes.get( Key.requestTimeout );
+		Object					expires			= attributes.get( Key.expires );
 		String					samesite		= attributes.getAsString( Key.samesite );
 		String					path			= attributes.getAsString( Key.path );
 		String					domain			= attributes.getAsString( Key.domain );
+		Boolean					encodeValue		= attributes.getAsBoolean( KeyDictionary.encodevalue );
 
 		WebRequestBoxContext	requestContext	= context.getParentOfType( WebRequestBoxContext.class );
 
 		IBoxHTTPExchange		exchange		= requestContext.getHTTPExchange();
 
-		BoxCookie				cookieInstance	= new BoxCookie( name, value );
+		BoxCookie				cookieInstance	= new BoxCookie( name, value, encodeValue );
 
 		if ( secure != null ) {
 			cookieInstance.setSecure( secure );
@@ -129,7 +138,40 @@ public class Cookie extends Component {
 			cookieInstance.setHttpOnly( httpOnly );
 		}
 
-		// TODO: Implement expires and same site
+		if ( expires != null ) {
+
+			// try number first
+			CastAttempt<Number> numberAttempt = NumberCaster.attempt( expires, false );
+			if ( numberAttempt.wasSuccessful() ) {
+				// convert days to seconds
+				cookieInstance.setMaxAge( ( int ) ( numberAttempt.get().doubleValue() * 24 * 60 * 60 ) );
+			} else {
+				// Now try string
+				CastAttempt<String> stringAttempt = StringCasterStrict.attempt( expires );
+				if ( stringAttempt.wasSuccessful() ) {
+					String stringValue = stringAttempt.get();
+					if ( stringValue.equalsIgnoreCase( "now" ) ) {
+						cookieInstance.setMaxAge( 0 );
+					} else if ( stringValue.equalsIgnoreCase( "never" ) ) {
+						cookieInstance.setMaxAge( 60 * 60 * 24 * 365 * 30 ); // 30 years
+					} else {
+						throw new BoxValidationException( "Invalid cookie expiration string value: " + stringValue );
+					}
+				} else {
+					// finally try date
+					CastAttempt<DateTime> dateAttempt = DateTimeCaster.attempt( expires );
+					if ( dateAttempt.wasSuccessful() ) {
+						cookieInstance.setExpires( dateAttempt.get().toDate() );
+					} else {
+						throw new BoxValidationException( "Invalid cookie expiration type: " + expires.getClass().getName() );
+					}
+				}
+			}
+		}
+
+		if ( samesite != null ) {
+			cookieInstance.setSameSiteMode( samesite );
+		}
 
 		if ( path != null ) {
 			cookieInstance.setPath( path );

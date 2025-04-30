@@ -64,5 +64,6 @@ public class KeyDictionary {
 	public static final Key	sameSite			= Key.of( "sameSite" );
 	public static final Key	sameSiteMode		= Key.of( "sameSiteMode" );
 	public static final Key	disableUpdate		= Key.of( "disableUpdate" );
+	public static final Key	encodevalue			= Key.of( "encodevalue" );
 
 }

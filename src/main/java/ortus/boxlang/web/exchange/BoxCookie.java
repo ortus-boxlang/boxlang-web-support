@@ -17,11 +17,16 @@
  */
 package ortus.boxlang.web.exchange;
 
+import java.net.URLDecoder;
+import java.net.URLEncoder;
+import java.text.SimpleDateFormat;
 import java.util.Date;
 
 public class BoxCookie {
 
 	private final String	name;
+	// This will always contain the NON-encoded value, even if encodeValue is set to true.
+	// The encoded value is returned by getEncodedValue()
 	private String			value;
 	private String			path;
 	private String			domain;
@@ -34,14 +39,20 @@ public class BoxCookie {
 	private String			comment;
 	private boolean			sameSite;
 	private String			sameSiteMode;
+	private boolean			encodeValue;
 
 	public BoxCookie( final String name, final String value ) {
-		this.name	= name;
-		this.value	= value;
+		this( name, value, true );
+	}
+
+	public BoxCookie( final String name, final String value, Boolean encodeValue ) {
+		this.name			= name;
+		this.value			= value;
+		this.encodeValue	= encodeValue;
 	}
 
 	public BoxCookie( final String name ) {
-		this.name = name;
+		this( name, null );
 	}
 
 	public String getName() {
@@ -52,6 +63,26 @@ public class BoxCookie {
 		return value;
 	}
 
+	/**
+	 * Get the encoded cookie value in a format suitable for the HTTP header.
+	 * If encodeValue is set to false, this will return the value as-is.
+	 * 
+	 * @return The cookie value, encoded if necessary
+	 */
+	public String getEncodedValue() {
+		if ( encodeValue ) {
+			return URLEncoder.encode( value, java.nio.charset.StandardCharsets.UTF_8 );
+		}
+		return value;
+	}
+
+	/**
+	 * This always returns the NON-encoded value, even if encodeValue is set to true.
+	 * 
+	 * @param value The cookie value with no encoding. Do NOT use this to set an HTTP SET-COOKIE header.
+	 * 
+	 * @return The BoxCookie instance for chaining
+	 */
 	public BoxCookie setValue( final String value ) {
 		this.value = value;
 		return this;
@@ -209,7 +240,83 @@ public class BoxCookie {
 
 	@Override
 	public final String toString() {
-		return "{BoxCookie@" + System.identityHashCode( this ) + " name=" + getName() + " path=" + getPath() + " domain=" + getDomain() + "}";
+		return "{BoxCookie@" + System.identityHashCode( this ) + " name=" + getName() + " path=" + getPath() + " domain=" + getDomain() + " value=" + getValue()
+		    + " secure=" + isSecure() + " httpOnly=" + isHttpOnly() + " expires=" + getExpires() + " maxAge=" + getMaxAge() + " discard=" + isDiscard()
+		    + " version=" + getVersion() + " comment=" + getComment() + " sameSite=" + isSameSite() + " sameSiteMode=" + getSameSiteMode() + "}";
 	}
 
+	/**
+	 * Create a new cookie from an incoming cookie header, decoding the value.
+	 * 
+	 * @param name  The cookie name
+	 * @param value The encoded cookie value
+	 * 
+	 * @return A new BoxCookie instance with the name and value set
+	 */
+	public static BoxCookie fromEncoded( String name, String value ) {
+		try {
+			value = URLDecoder.decode( value, java.nio.charset.StandardCharsets.UTF_8 );
+		} catch ( IllegalArgumentException e ) {
+			// TODO: remove this later. Just want to see if it happens in the wild.
+			System.out.println( "IllegalArgumentException decoding cookie name: [" + name + "] value: [" + value + "] error: " + e.getMessage() );
+
+			// Ignore, just return the cookie with the encoded value
+			// This cookie may have been set without any encoding, but there's no way to know that.
+		}
+		return new BoxCookie( name, value );
+	}
+
+	/**
+	 * Generate the Set-Cookie header value for this cookie.
+	 *
+	 * @return A string representing the Set-Cookie header value.
+	 */
+	public String toSetCookieHeader() {
+		StringBuilder header = new StringBuilder();
+
+		// Add the cookie name and value
+		header.append( getName() ).append( "=" ).append( getEncodedValue() ).append( "; " );
+
+		// Add the Path attribute if set
+		if ( getPath() != null ) {
+			header.append( "Path=" ).append( getPath() ).append( "; " );
+		}
+
+		// Add the Domain attribute if set
+		if ( getDomain() != null ) {
+			header.append( "Domain=" ).append( getDomain() ).append( "; " );
+		}
+
+		// Add the Max-Age attribute if set
+		if ( getMaxAge() != null ) {
+			header.append( "Max-Age=" ).append( getMaxAge() ).append( "; " );
+		}
+
+		// Add the Expires attribute if set
+		if ( getExpires() != null ) {
+			header.append( "Expires=" ).append( new SimpleDateFormat( "EEE, dd MMM yyyy HH:mm:ss z" ).format( getExpires() ) ).append( "; " );
+		}
+
+		// Add the Secure attribute if set
+		if ( isSecure() ) {
+			header.append( "Secure; " );
+		}
+
+		// Add the HttpOnly attribute if set
+		if ( isHttpOnly() ) {
+			header.append( "HttpOnly; " );
+		}
+
+		// Add the SameSite attribute if set
+		if ( isSameSite() && getSameSiteMode() != null ) {
+			header.append( "SameSite=" ).append( getSameSiteMode() ).append( "; " );
+		}
+
+		// Remove the trailing "; " if present
+		if ( header.length() > 2 && header.substring( header.length() - 2 ).equals( "; " ) ) {
+			header.setLength( header.length() - 2 );
+		}
+
+		return header.toString();
+	}
 }
