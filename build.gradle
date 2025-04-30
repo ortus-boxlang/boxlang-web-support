@@ -187,9 +187,9 @@ publishing {
 					}
 				}
 				scm {
-					connection = 'scm:git:https://github.com/ortus-boxlang/boxlang.git'
-					developerConnection = 'scm:git:ssh://github.com/ortus-boxlang/boxlang.git'
-					url = 'https://github.com/ortus-boxlang/boxlang'
+					connection = 'scm:git:https://github.com/ortus-boxlang/boxlang-web-support.git'
+					developerConnection = 'scm:git:ssh://github.com/ortus-boxlang/boxlang-web-support.git'
+					url = 'https://github.com/ortus-boxlang/boxlang-web-support'
 				}
 				developers{
 					developer {
@@ -260,7 +260,7 @@ publishing {
         }
 		maven {
 			name = "GitHubPackages"
-			url = "https://maven.pkg.github.com/ortus-boxlang/boxlang"
+			url = "https://maven.pkg.github.com/ortus-boxlang/boxlang-web-support"
 			credentials {
 				username = System.getenv( "GITHUB_ACTOR" )
 				password = System.getenv( "GITHUB_TOKEN" )
