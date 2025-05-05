@@ -57,7 +57,7 @@ dependencies {
 	}
 
 	// For HTML Parsing
-	implementation 'org.jsoup:jsoup:1.19.1'
+	implementation 'org.jsoup:jsoup:1.20.1'
 
 	// Testing Frameworks
 	testImplementation "org.junit.jupiter:junit-jupiter:5.+"
