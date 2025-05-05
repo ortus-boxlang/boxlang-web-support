@@ -70,7 +70,7 @@ public class BoxCookie {
 	 * @return The cookie value, encoded if necessary
 	 */
 	public String getEncodedValue() {
-		if ( encodeValue ) {
+		if ( encodeValue && value != null ) {
 			return URLEncoder.encode( value, java.nio.charset.StandardCharsets.UTF_8 );
 		}
 		return value;
@@ -255,7 +255,9 @@ public class BoxCookie {
 	 */
 	public static BoxCookie fromEncoded( String name, String value ) {
 		try {
-			value = URLDecoder.decode( value, java.nio.charset.StandardCharsets.UTF_8 );
+			if ( value != null ) {
+				value = URLDecoder.decode( value, java.nio.charset.StandardCharsets.UTF_8 );
+			}
 		} catch ( IllegalArgumentException e ) {
 			// TODO: remove this later. Just want to see if it happens in the wild.
 			System.out.println( "IllegalArgumentException decoding cookie name: [" + name + "] value: [" + value + "] error: " + e.getMessage() );
