@@ -72,6 +72,9 @@ public class GetHTTPTimeStringTest {
 		assertThat( variables.getAsString( result ) ).isEqualTo( resultRef );
 
 		assertThrows( BoxRuntimeException.class, () -> instance.executeSource( "result = getHttpTimeString( 'foo' );", context ) );
+
+		instance.executeSource( "result = getHttpTimeString();", context );
+		assertThat( variables.getAsString( result ) ).isInstanceOf( String.class );
 	}
 
 }

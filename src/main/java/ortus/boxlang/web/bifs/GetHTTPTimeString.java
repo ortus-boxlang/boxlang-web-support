@@ -19,18 +19,16 @@
 package ortus.boxlang.web.bifs;
 
 import java.time.ZoneId;
-import java.util.Set;
 
 import ortus.boxlang.runtime.bifs.BIF;
 import ortus.boxlang.runtime.bifs.BoxBIF;
 import ortus.boxlang.runtime.context.IBoxContext;
-import ortus.boxlang.runtime.dynamic.casters.StringCaster;
+import ortus.boxlang.runtime.dynamic.casters.DateTimeCaster;
 import ortus.boxlang.runtime.scopes.ArgumentsScope;
 import ortus.boxlang.runtime.scopes.Key;
 import ortus.boxlang.runtime.types.Argument;
 import ortus.boxlang.runtime.types.DateTime;
-import ortus.boxlang.runtime.types.exceptions.BoxRuntimeException;
-import ortus.boxlang.runtime.validation.Validator;
+import ortus.boxlang.runtime.util.LocalizationUtil;
 
 @BoxBIF
 
@@ -42,7 +40,7 @@ public class GetHTTPTimeString extends BIF {
 	public GetHTTPTimeString() {
 		super();
 		declaredArguments = new Argument[] {
-		    new Argument( true, "any", Key.date, Set.of( Validator.typeOneOf( "datetime", "string" ) ) )
+		    new Argument( false, "any", Key.date )
 		};
 	}
 
@@ -55,14 +53,12 @@ public class GetHTTPTimeString extends BIF {
 	 * @argument.foo Describe any expected arguments
 	 */
 	public Object _invoke( IBoxContext context, ArgumentsScope arguments ) {
-		DateTime dateRef = null;
-		try {
-			dateRef = arguments.getAsDateTime( Key.date );
-		} catch ( java.lang.ClassCastException e ) {
-			throw new BoxRuntimeException(
-			    String.format( "The provided date value [%s] could not be cast to a DateTime value", StringCaster.cast( arguments.get( Key.date ) ) ) );
+		Object dateArg = arguments.get( Key.date );
+		if ( dateArg == null ) {
+			dateArg = new DateTime( LocalizationUtil.parseZoneId( null, context ) );
 		}
-		DateTime converted = dateRef.convertToZone( ZoneId.of( "UTC" ) );
+		DateTime	dateRef		= DateTimeCaster.cast( dateArg );
+		DateTime	converted	= dateRef.convertToZone( ZoneId.of( "UTC" ) );
 		converted.setFormat( "EEE, dd MMM yyyy HH:mm:ss z" );
 
 		return converted.toString();
