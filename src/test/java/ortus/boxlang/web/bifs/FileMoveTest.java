@@ -31,9 +31,9 @@ import ortus.boxlang.runtime.types.exceptions.BoxRuntimeException;
 
 public class FileMoveTest extends ortus.boxlang.web.util.BaseWebTest {
 
-	static String sourceFile = "src/test/resources/tmp/fileCopyTest/source.txt";
+	static String sourceFile = "src/test/resources/tmp/fileMoveTest/source.txt";
 
-	@DisplayName( "It tests the BIF FileCopy security in the default web context" )
+	@DisplayName( "It tests the BIF FileMove security in the default web context" )
 	@Test
 	public void testBifSecurity() {
 		variables.put( Key.of( "source" ), Path.of( sourceFile ).toAbsolutePath().toString() );
