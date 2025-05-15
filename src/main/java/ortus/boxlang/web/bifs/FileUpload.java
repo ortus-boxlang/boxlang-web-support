@@ -308,7 +308,7 @@ public class FileUpload extends BIF {
 			    .anyMatch( ext -> ext.equals( "*" ) || ext.equalsIgnoreCase( uploadMimeType ) );
 		}
 
-		hasServerPermission = runtime.getConfiguration().security.isExtensionAllowed( uploadExtension );
+		hasServerPermission = context.getParentOfType( RequestBoxContext.class ).getApplicationListener().isExtensionAllowed( uploadExtension );
 
 		return strict
 		    ? hasServerPermission && hasRequestPermission
