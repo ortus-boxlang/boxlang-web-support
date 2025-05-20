@@ -19,6 +19,7 @@ jobs:
         repo:
           - "ortus-boxlang/boxlang-miniserver"
           - "ortus-boxlang/boxlang-servlet"
+          - "ortus-boxlang/boxlang-aws-lambda"
 
     steps:
       - name: Trigger Build Workflow for ${{ matrix.repo }}
