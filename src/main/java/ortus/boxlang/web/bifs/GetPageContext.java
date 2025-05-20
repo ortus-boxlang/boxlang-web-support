@@ -274,6 +274,16 @@ public class GetPageContext extends BIF {
 			return exchange.isResponseStarted();
 		}
 
+		/**
+		 * Returns the name of the scheme used to make this request, for example, http, https, or ftp. Different schemes have different rules for constructing
+		 * URLs, as noted in RFC 1738.
+		 * 
+		 * @return a String containing the name of the scheme used to make this request
+		 */
+		public String getScheme() {
+			return exchange.getRequestScheme();
+		}
+
 	}
 
 }
