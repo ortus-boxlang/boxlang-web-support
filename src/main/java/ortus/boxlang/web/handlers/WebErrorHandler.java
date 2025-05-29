@@ -184,9 +184,21 @@ public class WebErrorHandler {
 				return errorOutput.toString();
 			}
 
-			/*********************************************************************************/
-			/* NON DEBUG MODE DATA */
-			/*********************************************************************************/
+			/**
+			 * ------------------------------------------------------------------------------
+			 * DEBUG MODE DATA
+			 * In debug mode, we show more details about the error
+			 * ------------------------------------------------------------------------------
+			 */
+
+			// Output a nice message that if we canimprove the error message, we will, just go to our Jira project at
+			// https://ortussolutions.atlassian.net/browse/BL
+			errorOutput.append( "<p class=\"bx-err-msg\">" )
+			    .append( "If the error message can be improved, please let us know by creating a ticket" )
+			    .append( "<a href=\"https://ortussolutions.atlassian.net/browse/BL\" target=\"_blank\" rel=\"noopener noreferrer\">" )
+			    .append( "BoxLang Jira Project" )
+			    .append( "</a>." )
+			    .append( "</p>" );
 
 			// error detail
 			if ( thisException instanceof BoxLangException ble ) {
@@ -197,14 +209,12 @@ public class WebErrorHandler {
 				}
 			}
 
-			// TODO: Format this
 			if ( thisException instanceof MissingIncludeException mie ) {
 				errorOutput.append( "Missing include: " )
 				    .append( mie.getMissingFileName() )
 				    .append( "<br>" );
 			}
 
-			// TODO: Format this
 			if ( thisException instanceof BoxRuntimeException bre ) {
 				Object				extendedInfo	= bre.getExtendedInfo();
 				CastAttempt<String>	castAttempt		= StringCaster.attempt( extendedInfo );
@@ -215,7 +225,6 @@ public class WebErrorHandler {
 				}
 			}
 
-			// TODO: Format this
 			if ( thisException instanceof CustomException ce ) {
 				String errorCode = ce.getErrorCode();
 				if ( errorCode != null && !errorCode.isEmpty() ) {
@@ -225,7 +234,6 @@ public class WebErrorHandler {
 				}
 			}
 
-			// TODO: Format this
 			if ( thisException instanceof DatabaseException dbe ) {
 				String	nativeErrorCode	= dbe.getNativeErrorCode();
 				String	SQLState		= dbe.getSQLState();
@@ -260,7 +268,6 @@ public class WebErrorHandler {
 				}
 			}
 
-			// TODO: Format this
 			if ( thisException instanceof LockException le ) {
 				String	lockName		= le.getLockName();
 				String	lockOperation	= le.getLockOperation();

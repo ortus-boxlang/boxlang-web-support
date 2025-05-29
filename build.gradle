@@ -459,7 +459,8 @@ project.ext.bumpVersion = {
  */
 task bumpMajorVersion {
 	doLast{
-		bumpVersion( true )
+		bumpVersion( true, false, false, false, false, "version" )
+		bumpVersion( true, false, false, false, false, "boxlangVersion" )
 	}
 }
 
@@ -468,7 +469,8 @@ task bumpMajorVersion {
  */
 task bumpMinorVersion {
 	doLast{
-		bumpVersion( false, true )
+		bumpVersion( false, true, false, false, false, "version" )
+		bumpVersion( false, true, false, false, false, "boxlangVersion" )
 	}
 }
 
@@ -477,7 +479,8 @@ task bumpMinorVersion {
  */
 task bumpPatchVersion {
 	doLast{
-		bumpVersion( false, false, true, false, false )
+		bumpVersion( false, false, true, false, false, "version" )
+		bumpVersion( false, false, true, false, false, "boxlangVersion" )
 	}
 }
 
@@ -486,7 +489,8 @@ task bumpPatchVersion {
  */
 task bumpBetaVersion {
 	doLast{
-		bumpVersion( false, false, false, true, false )
+		bumpVersion( false, false, false, true, false, "version" )
+		bumpVersion( false, false, false, true, false, "boxlangVersion" )
 	}
 }
 /**
@@ -494,6 +498,7 @@ task bumpBetaVersion {
  */
 task bumpRCVersion {
 	doLast{
-		bumpVersion( false, false, false, false, true )
+		bumpVersion( false, false, false, false, true, "version" )
+		bumpVersion( false, false, false, false, true, "boxlangVersion" )
 	}
 }

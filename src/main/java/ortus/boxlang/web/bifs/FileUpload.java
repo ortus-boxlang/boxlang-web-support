@@ -286,16 +286,16 @@ public class FileUpload extends BIF {
 	@SuppressWarnings( "unchecked" )
 	public boolean processUploadSecurity( IBoxHTTPExchange.FileUpload upload, IStruct arguments, IBoxContext context ) {
 		// System and request level whitelist and blacklist settings
-		IStruct	requestSettings			= context.getParentOfType( RequestBoxContext.class ).getSettings();
+		IStruct	requestSettings				= context.getParentOfType( RequestBoxContext.class ).getSettings();
 
-		String	uploadMimeType			= FileSystemUtil.getMimeType( upload.tmpPath().toString() );
-		String	uploadExtension			= Parser.getFileExtension( upload.tmpPath().getFileName().toString() ).get().toLowerCase();
-		String	allowedExtensions		= arguments.getAsString( KeyDictionary.allowedExtensions );
-		String	allowedMimeTypes		= arguments.getAsString( Key.accept );
-		Boolean	strict					= arguments.getAsBoolean( Key.strict );
+		String	uploadMimeType				= FileSystemUtil.getMimeType( upload.tmpPath().toString() );
+		String	uploadExtension				= Parser.getFileExtension( upload.tmpPath().getFileName().toString() ).get().toLowerCase();
+		String	allowedExtensions			= arguments.getAsString( KeyDictionary.allowedExtensions );
+		String	allowedMimeTypes			= arguments.getAsString( Key.accept );
+		Boolean	strict						= arguments.getAsBoolean( Key.strict );
 
-		Boolean	hasServerPermission		= true;
-		Boolean	hasRequestPermission	= true;
+		Boolean	hasApplicationPermission	= true;
+		Boolean	hasRequestPermission		= true;
 
 		if ( allowedExtensions != null ) {
 			hasRequestPermission = ListUtil.asList( allowedExtensions, ListUtil.DEFAULT_DELIMITER ).stream()
@@ -308,13 +308,13 @@ public class FileUpload extends BIF {
 			    .anyMatch( ext -> ext.equals( "*" ) || ext.equalsIgnoreCase( uploadMimeType ) );
 		}
 
-		hasServerPermission = runtime.getConfiguration().security.isExtensionAllowed( uploadExtension );
+		hasApplicationPermission = FileSystemUtil.isExtensionAllowed( context, uploadExtension );
 
 		return strict
-		    ? hasServerPermission && hasRequestPermission
+		    ? hasApplicationPermission && hasRequestPermission
 		    : ( allowedExtensions != null || allowedMimeTypes != null
 		        ? hasRequestPermission
-		        : hasServerPermission );
+		        : hasApplicationPermission );
 
 	}
 
