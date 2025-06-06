@@ -104,65 +104,6 @@ shadowJar {
 }
 
 /**
- * This is necessary to create a single level instead of what shadow does
- */
-import java.nio.file.Files
-task createDistributionFile( type: Zip ){
-	dependsOn jar
-    doFirst {
-        delete archiveFile
-    }
-	from( 'build/scriptsShadow' ) {
-		into 'bin'
-	}
-	from( 'build/distributions' ) {
-		include 'boxlang-web-support-' + version + '.jar'
-		into 'lib'
-	}
-	archiveFileName = "boxlang-web-support-${version}.zip"
-}
-build.finalizedBy( createDistributionFile )
-
-/**
- * Generate checksums for all distribution files
- */
-task generateDistributionChecksums {
-	doLast {
-		// Generate checksums for all zip and jar files in distributions folder
-		file( "build/distributions" ).listFiles().each { file ->
-			if ( file.name.endsWith( '.zip' ) || file.name.endsWith( '.jar' ) ) {
-				generateChecksum( file, 'SHA-256' )
-				generateChecksum( file, 'MD5' )
-			}
-		}
-
-		Files.copy( file( "build/libs/boxlang-web-support-${version}-javadoc.jar" ).toPath(), file( "build/distributions/boxlang-web-support-${version}-javadoc.jar" ).toPath(), StandardCopyOption.REPLACE_EXISTING )
-
-	    file( "build/evergreen" ).mkdirs()
-	    if( branch == 'development' ){
-	        Files.copy( file( "build/distributions/boxlang-web-support-${version}.zip" ).toPath(), file( "build/evergreen/boxlang-web-support-snapshot.zip" ).toPath(), StandardCopyOption.REPLACE_EXISTING )
-	        Files.copy( file( "build/distributions/boxlang-web-support-${version}.jar" ).toPath(), file( "build/evergreen/boxlang-web-support-snapshot.jar" ).toPath(), StandardCopyOption.REPLACE_EXISTING )
-	        // Copy checksums
-	        Files.copy( file( "build/distributions/boxlang-web-support-${version}.zip.sha-256" ).toPath(), file( "build/evergreen/boxlang-web-support-snapshot.zip.sha-256" ).toPath(), StandardCopyOption.REPLACE_EXISTING )
-			Files.copy( file( "build/distributions/boxlang-web-support-${version}.zip.md5" ).toPath(), file( "build/evergreen/boxlang-web-support-snapshot.zip.md5" ).toPath(), StandardCopyOption.REPLACE_EXISTING )
-			Files.copy( file( "build/distributions/boxlang-web-support-${version}.jar.sha-256" ).toPath(), file( "build/evergreen/boxlang-web-support-snapshot.jar.sha-256" ).toPath(), StandardCopyOption.REPLACE_EXISTING )
-			Files.copy( file( "build/distributions/boxlang-web-support-${version}.jar.md5" ).toPath(), file( "build/evergreen/boxlang-web-support-snapshot.jar.md5" ).toPath(), StandardCopyOption.REPLACE_EXISTING )
-	    } else {
-	        Files.copy( file( "build/distributions/boxlang-web-support-${version}.zip" ).toPath(), file( "build/evergreen/boxlang-web-support-latest.zip" ).toPath(), StandardCopyOption.REPLACE_EXISTING )
-	        Files.copy( file( "build/distributions/boxlang-web-support-${version}.jar" ).toPath(), file( "build/evergreen/boxlang-web-support-latest.jar" ).toPath(), StandardCopyOption.REPLACE_EXISTING )
-	        // Copy checksums
-	        Files.copy( file( "build/distributions/boxlang-web-support-${version}.zip.sha-256" ).toPath(), file( "build/evergreen/boxlang-miniserver-latest.zip.sha-256" ).toPath(), StandardCopyOption.REPLACE_EXISTING )
-			Files.copy( file( "build/distributions/boxlang-web-support-${version}.zip.md5" ).toPath(), file( "build/evergreen/boxlang-miniserver-latest.zip.md5" ).toPath(), StandardCopyOption.REPLACE_EXISTING )
-			Files.copy( file( "build/distributions/boxlang-web-support-${version}.jar.sha-256" ).toPath(), file( "build/evergreen/boxlang-miniserver-latest.jar.sha-256" ).toPath(), StandardCopyOption.REPLACE_EXISTING )
-			Files.copy( file( "build/distributions/boxlang-web-support-${version}.jar.md5" ).toPath(), file( "build/evergreen/boxlang-miniserver-latest.jar.md5" ).toPath(), StandardCopyOption.REPLACE_EXISTING )
-	    }
-
-		println "+ Distribution checksums have been generated"
-	}
-}
-createDistributionFile.finalizedBy( generateDistributionChecksums )
-
-/**
  * Generate checksums for the given file using the specified algorithm
 
  * @param file The file to generate the checksum for
@@ -184,11 +125,33 @@ def generateChecksum( File file, String algorithm ) {
  and must run after build
  */
 task libsToDistro( type: Copy ) {
-	dependsOn build, createDistributionFile
 	from 'build/libs'
 	into "$buildDir/distributions"
 	// Output that the libs have been moved
 	doLast {
+		// Generate checksums for all zip and jar files in distributions folder
+		file( "build/distributions" ).listFiles().each { file ->
+			if ( file.name.endsWith( '.zip' ) || file.name.endsWith( '.jar' ) ) {
+				generateChecksum( file, 'SHA-256' )
+				generateChecksum( file, 'MD5' )
+			}
+		}
+
+		Files.copy( file( "build/libs/boxlang-web-support-${version}-javadoc.jar" ).toPath(), file( "build/distributions/boxlang-web-support-${version}-javadoc.jar" ).toPath(), StandardCopyOption.REPLACE_EXISTING )
+
+	    file( "build/evergreen" ).mkdirs()
+	    if( branch == 'development' ){
+	        Files.copy( file( "build/distributions/boxlang-web-support-${version}.jar" ).toPath(), file( "build/evergreen/boxlang-web-support-snapshot.jar" ).toPath(), StandardCopyOption.REPLACE_EXISTING )
+	        // Copy checksums
+			Files.copy( file( "build/distributions/boxlang-web-support-${version}.jar.sha-256" ).toPath(), file( "build/evergreen/boxlang-web-support-snapshot.jar.sha-256" ).toPath(), StandardCopyOption.REPLACE_EXISTING )
+			Files.copy( file( "build/distributions/boxlang-web-support-${version}.jar.md5" ).toPath(), file( "build/evergreen/boxlang-web-support-snapshot.jar.md5" ).toPath(), StandardCopyOption.REPLACE_EXISTING )
+	    } else {
+	        Files.copy( file( "build/distributions/boxlang-web-support-${version}.jar" ).toPath(), file( "build/evergreen/boxlang-web-support-latest.jar" ).toPath(), StandardCopyOption.REPLACE_EXISTING )
+	        // Copy checksums
+			Files.copy( file( "build/distributions/boxlang-web-support-${version}.jar.sha-256" ).toPath(), file( "build/evergreen/boxlang-miniserver-latest.jar.sha-256" ).toPath(), StandardCopyOption.REPLACE_EXISTING )
+			Files.copy( file( "build/distributions/boxlang-web-support-${version}.jar.md5" ).toPath(), file( "build/evergreen/boxlang-miniserver-latest.jar.md5" ).toPath(), StandardCopyOption.REPLACE_EXISTING )
+	    }
+
 		println "+ Libs have been moved to the distribution folder"
 	}
 }
