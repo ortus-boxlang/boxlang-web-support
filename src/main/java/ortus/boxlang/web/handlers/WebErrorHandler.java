@@ -191,15 +191,6 @@ public class WebErrorHandler {
 			 * ------------------------------------------------------------------------------
 			 */
 
-			// Output a nice message that if we canimprove the error message, we will, just go to our Jira project at
-			// https://ortussolutions.atlassian.net/browse/BL
-			errorOutput.append( "<p class=\"bx-err-msg\">" )
-			    .append( "If the error message can be improved, please let us know by creating a ticket" )
-			    .append( "<a href=\"https://ortussolutions.atlassian.net/browse/BL\" target=\"_blank\" rel=\"noopener noreferrer\">" )
-			    .append( "BoxLang Jira Project" )
-			    .append( "</a>." )
-			    .append( "</p>" );
-
 			// error detail
 			if ( thisException instanceof BoxLangException ble ) {
 				if ( ble.getDetail() != null && !ble.getDetail().isEmpty() ) {

@@ -113,8 +113,7 @@ public class WebRequestBoxContext extends RequestBoxContext {
 	    KeyDictionary.httpOnly, true,
 	    KeyDictionary.disableUpdate, false,
 	    Key.timeout, new DateTime().modify( "yyyy", 30l ),
-	    KeyDictionary.sameSiteMode, "Lax"
-	);
+	    KeyDictionary.sameSiteMode, "Lax" );
 
 	/**
 	 * --------------------------------------------------------------------------
@@ -177,14 +176,16 @@ public class WebRequestBoxContext extends RequestBoxContext {
 				// double check...
 				if ( this.sessionID == null ) {
 					// Check for existing request cookie
-					BoxCookie sessionCookie = httpExchange.getRequestCookie( sessionCookieDefaults.getAsString( Key._NAME ) );
+					BoxCookie sessionCookie = httpExchange
+					    .getRequestCookie( sessionCookieDefaults.getAsString( Key._NAME ) );
 					if ( sessionCookie != null ) {
 						this.sessionID = Key.of( sessionCookie.getValue() );
 					} else {
 						// Otherwise generate a new one
 						this.sessionID	= Key.of( UUID.randomUUID().toString() );
 
-						sessionCookie	= new BoxCookie( sessionCookieDefaults.getAsString( Key._NAME ), this.sessionID.getName() )
+						sessionCookie	= new BoxCookie( sessionCookieDefaults.getAsString( Key._NAME ),
+						    this.sessionID.getName() )
 						    .setPath( "/" )
 						    .setHttpOnly( sessionCookieSettings.getAsBoolean( KeyDictionary.httpOnly ) )
 						    .setSecure( sessionCookieSettings.getAsBoolean( Key.secure ) )
@@ -201,7 +202,8 @@ public class WebRequestBoxContext extends RequestBoxContext {
 						} else if ( expiration instanceof Duration expireDuration ) {
 							sessionCookie.setExpires( Date.from( Instant.now().plus( expireDuration ) ) );
 						} else {
-							sessionCookie.setExpires( Date.from( sessionCookieDefaults.getAsDateTime( Key.timeout ).toInstant() ) );
+							sessionCookie.setExpires(
+							    Date.from( sessionCookieDefaults.getAsDateTime( Key.timeout ).toInstant() ) );
 						}
 
 						httpExchange.addResponseCookie( sessionCookie );
@@ -240,7 +242,35 @@ public class WebRequestBoxContext extends RequestBoxContext {
 		if ( nearby ) {
 			scopes.getAsStruct( Key.contextual ).put( VariablesScope.name, variablesScope );
 		}
-		return super.getVisibleScopes( scopes, nearby, shallow );
+		return scopes;
+	}
+
+	/**
+	 * Check if a key is visible in the current context as a scope name.
+	 * This allows us to "reserve" known scope names to ensure arguments.foo
+	 * will always look in the proper arguments scope and never in
+	 * local.arguments.foo for example
+	 * 
+	 * @param key     The key to check for visibility
+	 * @param nearby  true, check only scopes that are nearby to the current
+	 *                execution context
+	 * @param shallow true, do not delegate to parent or default scope if not found
+	 * 
+	 * @return True if the key is visible in the current context, else false
+	 */
+	@Override
+	public boolean isKeyVisibleScope( Key key, boolean nearby, boolean shallow ) {
+		if ( key.equals( URLScope.getName() ) ||
+		    key.equals( formScope.getName() ) ||
+		    key.equals( CGIScope.getName() ) ||
+		    key.equals( cookieScope.getName() ) ||
+		    key.equals( requestScope.getName() ) ) {
+			return true;
+		}
+		if ( nearby && key.equals( VariablesScope.name ) ) {
+			return true;
+		}
+		return super.isKeyVisibleScope( key, false, false );
 	}
 
 	/**
@@ -419,8 +449,10 @@ public class WebRequestBoxContext extends RequestBoxContext {
 		if ( !canOutput() && !force ) {
 			return this;
 		}
-		// This will commit the response so we don't want to do it unless we're forcing a flush, or it's the end of the request
-		// in which case, the web request executor will always issue a final forced flush. Otherwise, just let the buffer keep accumulating
+		// This will commit the response so we don't want to do it unless we're forcing
+		// a flush, or it's the end of the request
+		// in which case, the web request executor will always issue a final forced
+		// flush. Otherwise, just let the buffer keep accumulating
 		if ( force ) {
 			String output = "";
 			for ( StringBuffer buf : buffers ) {
