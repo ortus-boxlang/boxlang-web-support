@@ -38,21 +38,33 @@ public class HtmlClean extends BIF {
 		super();
 		declaredArguments = new Argument[] {
 		    new Argument( true, Argument.STRING, KeyDictionary.html, Set.of( Validator.NON_EMPTY ) ),
-		    new Argument( false, Argument.STRING, KeyDictionary.safeList, "basic",
-		        Set.of( Validator.valueOneOf( "basic", "none", "simpletext", "basicwithimages", "relaxed" ) ) )
+		    new Argument( false, Argument.STRING, KeyDictionary.safeList, "relaxed",
+		        Set.of( Validator.valueOneOf( "basic", "none", "simpletext", "basicwithimages", "relaxed" ) )
+		    ),
+		    new Argument( false, Argument.BOOLEAN, KeyDictionary.preserveRelativeLinks, false ),
+		    new Argument( false, Argument.STRING, KeyDictionary.baseUri, "" )
 		};
 	}
 
 	/**
-	 * This method cleans the provided HTML string using Jsoup.
-	 * The safeList argument determines the level of cleaning applied.
-	 * It returns a cleaned HTML string or an empty string if the input is null or empty.
+	 * This method cleans the provided HTML string using Jsoup. Here are some details about its functionality:
+	 * <h2>Functionality</h2>
+	 * <ul>
+	 * <li>The safeList argument determines the level of cleaning applied.</li>
+	 * <li>It returns a cleaned HTML string or an empty string if the input is null or empty.</li>
+	 * <li>By default it will use the "relaxed" safelist, which allows a wide range of HTML tags and attributes.</li>
+	 * <li>By default, it does not preserve relative links, but this can be controlled with the <code>preserveRelativeLinks</code> argument.</li>
+	 * <li>The <code>baseUri</code> argument is used to resolve relative links into absolute URLs <strong>only when</strong>
+	 * <code>preserveRelativeLinks</code> is <code>false</code> (the default behavior). If <code>preserveRelativeLinks</code> is <code>true</code>, then
+	 * <code>baseUri</code> is ignored.</li>
+	 * </ul>
 	 * <h2>Safe List Options</h2>
 	 * The valid values for safeList are:
 	 * <ul>
 	 * <li><code>basic</code>: Basic cleaning, removes all tags except for a few safe ones.</li>
-	 * <li><code>none</code>: No cleaning, returns the original HTML.</li>
-	 * <li><code>simpletext</code>: Removes all tags and returns plain text.</li>
+	 * <li><code>none</code>: Maximum cleaning, removes all tags and returns plain text only.</li>
+	 * <li><code>simpletext</code>: Similar to <code>none</code>, but allows very limited inline formatting tags like <code>&lt;b&gt;</code>,
+	 * <code>&lt;i&gt;</code>, <code>&lt;br&gt;</code>.</li>
 	 * <li><code>basicwithimages</code>: Basic cleaning but allows images.</li>
 	 * <li><code>relaxed</code>: More lenient cleaning, allows more tags.</li>
 	 * </ul>
@@ -66,7 +78,7 @@ public class HtmlClean extends BIF {
 	 * It is particularly useful for preventing XSS (Cross-Site Scripting) attacks by
 	 * ensuring that only safe HTML content is rendered in the browser.
 	 * <h2>Example</h2>
-	 * 
+	 *
 	 * <pre>
 	 * // Clean HTML content with basic safelist
 	 * var cleanedHtml = HtmlClean( html: "&lt;script&gt;alert('XSS')&lt;/script&gt;&lt;p&gt;Hello World!&lt;/p&gt;" );
@@ -81,19 +93,29 @@ public class HtmlClean extends BIF {
 	 *
 	 * @argument.html A HTML string to be cleaned.
 	 *
-	 * @argument.safeList The level of cleaning to apply, defaults to "basic".
+	 * @argument.safeList The level of cleaning to apply, defaults to "relaxed".
+	 *
+	 * @argument.preserveRelativeLinks If true, relative links will be preserved in the cleaned HTML. Defaults to false.
+	 *
+	 * @argument.baseUri The base URI to resolve relative links in the cleaned HTML. Defaults to an empty string. Only active if preserveRelativeLinks is
+	 *                   false.
 	 *
 	 * @return A cleaned HTML string or an empty string if the input is null or empty.
 	 */
 	public Object _invoke( IBoxContext context, ArgumentsScope arguments ) {
-		var	target			= arguments.getAsString( KeyDictionary.html );
-		var	safeListName	= resolveSafelist( arguments.getAsString( KeyDictionary.safeList ) );
+		var			target			= arguments.getAsString( KeyDictionary.html );
+		Safelist	targetSafeList	= resolveSafelist( arguments.getAsString( KeyDictionary.safeList ) );
 
 		if ( target == null || target.isEmpty() ) {
 			return "";
 		}
 
-		return Jsoup.clean( target, safeListName );
+		// Preserve relative links if specified
+		targetSafeList = targetSafeList.preserveRelativeLinks( arguments.getAsBoolean( KeyDictionary.preserveRelativeLinks ) );
+
+		// Clean the HTML using Jsoup with the specified safelist and base URI if provided
+		return Jsoup.clean( target, arguments.getAsString( KeyDictionary.baseUri ), targetSafeList );
+
 	}
 
 	/**

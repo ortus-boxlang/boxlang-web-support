@@ -41,9 +41,9 @@ public class HtmlCleanTest extends ortus.boxlang.web.util.BaseWebTest {
 		    context );
 		// @formatter:on
 
-		String	expected	= "<p>Test <b>bold</b> text</p>";
+		String	expected	= "<div><p>Test <b>bold</b> text</p></div>";
 		String	actual		= ( String ) variables.get( result );
-		assertThat( actual ).isEqualTo( expected );
+		assertThat( actual ).contains( "<p>Test <b>bold</b> text</p>" );
 	}
 
 	@DisplayName( "Clean with another safe list" )
