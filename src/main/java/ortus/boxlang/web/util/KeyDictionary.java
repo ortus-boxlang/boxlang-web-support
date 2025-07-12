@@ -22,11 +22,14 @@ import ortus.boxlang.runtime.scopes.Key;
 public class KeyDictionary {
 
 	public static final Key	bx_template_path	= Key.of( "bx_template_path" );
+	public static final Key	html				= Key.of( "html" );
 	public static final Key	htmlHead			= Key.of( "htmlHead" );
+	public static final Key	htmlParse			= Key.of( "htmlParse" );
 	public static final Key	htmlFooter			= Key.of( "htmlFooter" );
 	public static final Key	onRequestEnd		= Key.of( "onRequestEnd" );
 	public static final Key	fileName			= Key.of( "fileName" );
 	public static final Key	disposition			= Key.of( "disposition" );
+	public static final Key	safeList			= Key.of( "safeList" );
 	public static final Key	success				= Key.of( "success" );
 
 	// File Upload keys
