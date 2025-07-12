@@ -17,11 +17,13 @@
  */
 package ortus.boxlang.web.bifs;
 
+import static com.google.common.truth.Truth.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import org.jsoup.nodes.Document;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+
+import ortus.boxlang.web.util.BoxDocument;
 
 public class HtmlParseTest extends ortus.boxlang.web.util.BaseWebTest {
 
@@ -38,11 +40,29 @@ public class HtmlParseTest extends ortus.boxlang.web.util.BaseWebTest {
 		    context );
 		// @formatter:on
 
-		Document doc = ( Document ) variables.get( result );
+		BoxDocument doc = ( BoxDocument ) variables.get( result );
 		assertEquals( "My Page", doc.title() );
 		assertEquals( "<h1>Hello World</h1>", doc.body().html() );
 		assertEquals( "Hello World", doc.body().text() );
 		assertEquals( "UTF-8", doc.charset().name() );
+	}
+
+	@DisplayName( "BoxDocument can call the toXML() method" )
+	@Test
+	public void testBoxDocumentToXML() {
+		BoxDocument	doc	= BoxDocument.fromDocument( BoxDocument.EMPTY_DOCUMENT );
+		String		xml	= doc.toXML();
+		assertThat( xml ).contains( "<html>" );
+		assertThat( xml ).contains( "<head>" );
+	}
+
+	@DisplayName( "BoxDocument can call the toJson() method" )
+	@Test
+	public void testBoxDocumentToJson() {
+		BoxDocument	doc		= BoxDocument.fromDocument( BoxDocument.EMPTY_DOCUMENT );
+		String		json	= doc.toJSON();
+		assertThat( json ).contains( "\"html\"" );
+		assertThat( json ).contains( "\"head\"" );
 	}
 
 }

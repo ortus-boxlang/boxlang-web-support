@@ -24,6 +24,7 @@ import ortus.boxlang.runtime.context.IBoxContext;
 import ortus.boxlang.runtime.scopes.ArgumentsScope;
 import ortus.boxlang.runtime.types.Argument;
 import ortus.boxlang.runtime.validation.Validator;
+import ortus.boxlang.web.util.BoxDocument;
 import ortus.boxlang.web.util.KeyDictionary;
 
 @BoxBIF
@@ -97,10 +98,10 @@ public class HtmlParse extends BIF {
 		var target = arguments.getAsString( KeyDictionary.html );
 
 		if ( target == null || target.isEmpty() ) {
-			return Jsoup.parse( "" );
+			return BoxDocument.EMPTY_DOCUMENT;
 		}
 
-		return Jsoup.parse( target );
+		return BoxDocument.fromDocument( Jsoup.parse( target ) );
 	}
 
 }
