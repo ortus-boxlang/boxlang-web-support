@@ -187,15 +187,11 @@ public class WebRequestBoxContext extends RequestBoxContext {
 
 						sessionCookie	= new BoxCookie( sessionCookieDefaults.getAsString( Key._NAME ),
 						    this.sessionID.getName() )
-						        .setPath( "/" )
-						        .setHttpOnly( BooleanCaster.cast( sessionCookieSettings.get( KeyDictionary.httpOnly ) ) )
-						        .setSecure( BooleanCaster.cast( sessionCookieSettings.get( Key.secure ) ) )
-						        .setDomain( StringCaster.cast( sessionCookieSettings.get( Key.domain ) ) )
-						        .setSameSiteMode( StringCaster.cast( sessionCookieSettings.get( KeyDictionary.sameSite ) ) );
-
-						if ( sessionCookieSettings.get( KeyDictionary.sameSite ) != null ) {
-							sessionCookie.setSameSite( true );
-						}
+						    .setPath( "/" )
+						    .setHttpOnly( BooleanCaster.cast( sessionCookieSettings.get( KeyDictionary.httpOnly ) ) )
+						    .setSecure( BooleanCaster.cast( sessionCookieSettings.get( Key.secure ) ) )
+						    .setDomain( StringCaster.cast( sessionCookieSettings.get( Key.domain ) ) )
+						    .setSameSiteMode( StringCaster.cast( sessionCookieSettings.get( KeyDictionary.sameSite ) ) );
 
 						Object expiration = sessionCookieSettings.get( Key.timeout );
 						if ( expiration instanceof DateTime expireDateTime ) {

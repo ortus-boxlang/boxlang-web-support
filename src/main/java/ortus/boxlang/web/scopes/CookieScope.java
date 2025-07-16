@@ -135,7 +135,6 @@ public class CookieScope extends BaseScope {
 		        .setVersion( version )
 		        .setHttpOnly( httpOnly )
 		        .setExpires( expires )
-		        .setSameSite( sameSite )
 		        .setSameSiteMode( sameSiteMode )
 		);
 		return value;
