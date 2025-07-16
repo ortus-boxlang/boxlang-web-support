@@ -27,6 +27,7 @@ import ortus.boxlang.runtime.BoxRuntime;
 import ortus.boxlang.runtime.context.IBoxContext;
 import ortus.boxlang.runtime.context.RequestBoxContext;
 import ortus.boxlang.runtime.dynamic.casters.BooleanCaster;
+import ortus.boxlang.runtime.dynamic.casters.StringCaster;
 import ortus.boxlang.runtime.scopes.IScope;
 import ortus.boxlang.runtime.scopes.Key;
 import ortus.boxlang.runtime.scopes.VariablesScope;
@@ -186,11 +187,11 @@ public class WebRequestBoxContext extends RequestBoxContext {
 
 						sessionCookie	= new BoxCookie( sessionCookieDefaults.getAsString( Key._NAME ),
 						    this.sessionID.getName() )
-						    .setPath( "/" )
-						    .setHttpOnly( sessionCookieSettings.getAsBoolean( KeyDictionary.httpOnly ) )
-						    .setSecure( sessionCookieSettings.getAsBoolean( Key.secure ) )
-						    .setDomain( sessionCookieSettings.getAsString( Key.domain ) )
-						    .setSameSiteMode( sessionCookieSettings.getAsString( KeyDictionary.sameSite ) );
+						        .setPath( "/" )
+						        .setHttpOnly( BooleanCaster.cast( sessionCookieSettings.get( KeyDictionary.httpOnly ) ) )
+						        .setSecure( BooleanCaster.cast( sessionCookieSettings.get( Key.secure ) ) )
+						        .setDomain( StringCaster.cast( sessionCookieSettings.get( Key.domain ) ) )
+						        .setSameSiteMode( StringCaster.cast( sessionCookieSettings.get( KeyDictionary.sameSite ) ) );
 
 						if ( sessionCookieSettings.get( KeyDictionary.sameSite ) != null ) {
 							sessionCookie.setSameSite( true );
