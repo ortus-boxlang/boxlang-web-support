@@ -73,17 +73,27 @@ public class CookieScopeTest {
 	public void testSetAndGetInSameRequest() {
 		instance.executeSource(
 		    """
-		    checkA = cookie.keyExists( "foo" );
-		    cookie[ "foo" ] = "bar";
-		    checkB = cookie.keyExists( "foo" );
-		    result = cookie[ "foo" ];
-		    """,
+		          checkA = cookie.keyExists( "foo" );
+		          cookie[ "foo" ] = "bar";
+		          checkB = cookie.keyExists( "foo" );
+		          result = cookie[ "foo" ];
+		          cookie[ "bar"] = {
+		          	"value": "baz",
+		          	"samesite": "Lax",
+		       	"secure": true,
+		          };
+		       checkC = cookie.keyExists( "bar" );
+		    checkCResult = cookie[ "bar" ];
+		          """,
 		    context );
 		Object checkA = variables.get( Key.of( "checkA" ) );
 		assertThat( ( Boolean ) checkA ).isFalse();
 		Object checkB = variables.get( Key.of( "checkB" ) );
 		assertThat( ( Boolean ) checkB ).isTrue();
 		assertThat( variables.getAsString( Key.of( "result" ) ) ).isEqualTo( "bar" );
+		Object checkC = variables.get( Key.of( "checkC" ) );
+		assertThat( ( Boolean ) checkC ).isTrue();
+		assertThat( variables.getAsString( Key.of( "checkCResult" ) ) ).isEqualTo( "baz" );
 	}
 
 }
