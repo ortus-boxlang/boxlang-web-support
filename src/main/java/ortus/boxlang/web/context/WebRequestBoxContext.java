@@ -186,11 +186,11 @@ public class WebRequestBoxContext extends RequestBoxContext {
 
 						sessionCookie	= new BoxCookie( sessionCookieDefaults.getAsString( Key._NAME ),
 						    this.sessionID.getName() )
-						        .setPath( "/" )
-						        .setHttpOnly( sessionCookieSettings.getAsBoolean( KeyDictionary.httpOnly ) )
-						        .setSecure( sessionCookieSettings.getAsBoolean( Key.secure ) )
-						        .setDomain( sessionCookieSettings.getAsString( Key.domain ) )
-						        .setSameSiteMode( sessionCookieSettings.getAsString( KeyDictionary.sameSite ) );
+						    .setPath( "/" )
+						    .setHttpOnly( sessionCookieSettings.getAsBoolean( KeyDictionary.httpOnly ) )
+						    .setSecure( sessionCookieSettings.getAsBoolean( Key.secure ) )
+						    .setDomain( sessionCookieSettings.getAsString( Key.domain ) )
+						    .setSameSiteMode( sessionCookieSettings.getAsString( KeyDictionary.sameSite ) );
 
 						if ( sessionCookieSettings.get( KeyDictionary.sameSite ) != null ) {
 							sessionCookie.setSameSite( true );
