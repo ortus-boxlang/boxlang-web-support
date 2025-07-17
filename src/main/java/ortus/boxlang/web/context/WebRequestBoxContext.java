@@ -27,6 +27,7 @@ import ortus.boxlang.runtime.BoxRuntime;
 import ortus.boxlang.runtime.context.IBoxContext;
 import ortus.boxlang.runtime.context.RequestBoxContext;
 import ortus.boxlang.runtime.dynamic.casters.BooleanCaster;
+import ortus.boxlang.runtime.dynamic.casters.StringCaster;
 import ortus.boxlang.runtime.scopes.IScope;
 import ortus.boxlang.runtime.scopes.Key;
 import ortus.boxlang.runtime.scopes.VariablesScope;
@@ -113,7 +114,7 @@ public class WebRequestBoxContext extends RequestBoxContext {
 	    KeyDictionary.httpOnly, true,
 	    KeyDictionary.disableUpdate, false,
 	    Key.timeout, new DateTime().modify( "yyyy", 30l ),
-	    KeyDictionary.sameSiteMode, "Lax" );
+	    KeyDictionary.sameSite, "Lax" );
 
 	/**
 	 * --------------------------------------------------------------------------
@@ -187,14 +188,10 @@ public class WebRequestBoxContext extends RequestBoxContext {
 						sessionCookie	= new BoxCookie( sessionCookieDefaults.getAsString( Key._NAME ),
 						    this.sessionID.getName() )
 						    .setPath( "/" )
-						    .setHttpOnly( sessionCookieSettings.getAsBoolean( KeyDictionary.httpOnly ) )
-						    .setSecure( sessionCookieSettings.getAsBoolean( Key.secure ) )
-						    .setDomain( sessionCookieSettings.getAsString( Key.domain ) )
-						    .setSameSiteMode( sessionCookieSettings.getAsString( KeyDictionary.sameSiteMode ) );
-
-						if ( sessionCookieSettings.getAsBoolean( KeyDictionary.sameSite ) != null ) {
-							sessionCookie.setSameSite( sessionCookieSettings.getAsBoolean( KeyDictionary.sameSite ) );
-						}
+						    .setHttpOnly( BooleanCaster.cast( sessionCookieSettings.get( KeyDictionary.httpOnly ) ) )
+						    .setSecure( BooleanCaster.cast( sessionCookieSettings.get( Key.secure ) ) )
+						    .setDomain( StringCaster.cast( sessionCookieSettings.get( Key.domain ) ) )
+						    .setSameSiteMode( StringCaster.cast( sessionCookieSettings.get( KeyDictionary.sameSite ) ) );
 
 						Object expiration = sessionCookieSettings.get( Key.timeout );
 						if ( expiration instanceof DateTime expireDateTime ) {
@@ -250,12 +247,12 @@ public class WebRequestBoxContext extends RequestBoxContext {
 	 * This allows us to "reserve" known scope names to ensure arguments.foo
 	 * will always look in the proper arguments scope and never in
 	 * local.arguments.foo for example
-	 * 
+	 *
 	 * @param key     The key to check for visibility
 	 * @param nearby  true, check only scopes that are nearby to the current
 	 *                execution context
 	 * @param shallow true, do not delegate to parent or default scope if not found
-	 * 
+	 *
 	 * @return True if the key is visible in the current context, else false
 	 */
 	@Override

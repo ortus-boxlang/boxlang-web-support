@@ -42,10 +42,9 @@ public class CookieScope extends BaseScope {
 	 * Public Properties
 	 * --------------------------------------------------------------------------
 	 */
-	public static final Key		name			= Key.of( "cookie" );
-	private static final Key	maxAgeKey		= Key.of( "maxAge" );
-	private static final Key	sameSiteKey		= Key.of( "sameSite" );
-	private static final Key	sameSiteModeKey	= Key.of( "sameSiteMode" );
+	public static final Key		name		= Key.of( "cookie" );
+	private static final Key	maxAgeKey	= Key.of( "maxAge" );
+	private static final Key	sameSiteKey	= Key.of( "sameSite" );
 
 	protected IBoxHTTPExchange	exchange;
 
@@ -116,10 +115,8 @@ public class CookieScope extends BaseScope {
 				version = IntegerCaster.cast( cookieData.get( Key.version ) );
 			}
 			if ( cookieData.containsKey( sameSiteKey ) ) {
-				sameSite = BooleanCaster.cast( cookieData.get( sameSiteKey ) );
-			}
-			if ( cookieData.containsKey( sameSiteModeKey ) ) {
-				sameSiteMode = StringCaster.cast( cookieData.get( sameSiteModeKey ) );
+				sameSiteMode	= StringCaster.cast( cookieData.get( sameSiteKey ) );
+				sameSite		= true;
 			}
 
 		} else {
@@ -138,7 +135,6 @@ public class CookieScope extends BaseScope {
 		        .setVersion( version )
 		        .setHttpOnly( httpOnly )
 		        .setExpires( expires )
-		        .setSameSite( sameSite )
 		        .setSameSiteMode( sameSiteMode )
 		);
 		return value;
