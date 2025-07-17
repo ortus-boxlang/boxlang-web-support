@@ -46,7 +46,7 @@ public class BoxCookie {
 
 	private final BoxLangLogger	logger	= BoxRuntime.getInstance()
 	    .getLoggingService()
-	    .getLogger( "exception" );
+	    .EXCEPTION_LOGGER;
 
 	public BoxCookie( final String name, final String value ) {
 		this( name, value, true );
