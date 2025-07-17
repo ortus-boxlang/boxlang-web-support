@@ -44,8 +44,7 @@ public class BoxCookie {
 	private String				sameSiteMode;
 	private boolean				encodeValue;
 
-	private final BoxLangLogger	logger	= BoxRuntime.getInstance()
-	    .getLoggingService().EXCEPTION_LOGGER;
+	private final BoxLangLogger	logger	= BoxRuntime.getInstance().getLoggingService().EXCEPTION_LOGGER;
 
 	public BoxCookie( final String name, final String value ) {
 		this( name, value, true );
