@@ -21,6 +21,7 @@ import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Date;
+import java.util.Optional;
 import java.util.UUID;
 
 import ortus.boxlang.runtime.BoxRuntime;
@@ -187,11 +188,13 @@ public class WebRequestBoxContext extends RequestBoxContext {
 
 						sessionCookie	= new BoxCookie( sessionCookieDefaults.getAsString( Key._NAME ),
 						    this.sessionID.getName() )
-						    .setPath( "/" )
-						    .setHttpOnly( BooleanCaster.cast( sessionCookieSettings.get( KeyDictionary.httpOnly ) ) )
-						    .setSecure( BooleanCaster.cast( sessionCookieSettings.get( Key.secure ) ) )
-						    .setDomain( StringCaster.cast( sessionCookieSettings.get( Key.domain ) ) )
-						    .setSameSiteMode( StringCaster.cast( sessionCookieSettings.get( KeyDictionary.sameSite ) ) );
+						        .setPath( "/" );
+
+						Optional.ofNullable( sessionCookieSettings.get( KeyDictionary.httpOnly ) ).map( BooleanCaster::cast ).map( sessionCookie::setHttpOnly );
+						Optional.ofNullable( sessionCookieSettings.get( KeyDictionary.secure ) ).map( BooleanCaster::cast ).map( sessionCookie::setSecure );
+						Optional.ofNullable( sessionCookieSettings.get( Key.domain ) ).map( StringCaster::cast ).map( sessionCookie::setDomain );
+						Optional.ofNullable( sessionCookieSettings.get( KeyDictionary.sameSite ) ).map( StringCaster::cast )
+						    .map( sessionCookie::setSameSiteMode );
 
 						Object expiration = sessionCookieSettings.get( Key.timeout );
 						if ( expiration instanceof DateTime expireDateTime ) {
