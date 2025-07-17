@@ -191,8 +191,11 @@ public class WebRequestBoxContext extends RequestBoxContext {
 						    .setPath( "/" );
 
 						Optional.ofNullable( sessionCookieSettings.get( KeyDictionary.httpOnly ) ).map( BooleanCaster::cast ).map( sessionCookie::setHttpOnly );
+
 						Optional.ofNullable( sessionCookieSettings.get( KeyDictionary.secure ) ).map( BooleanCaster::cast ).map( sessionCookie::setSecure );
+
 						Optional.ofNullable( sessionCookieSettings.get( Key.domain ) ).map( StringCaster::cast ).map( sessionCookie::setDomain );
+
 						Optional.ofNullable( sessionCookieSettings.get( KeyDictionary.sameSite ) ).map( StringCaster::cast )
 						    .map( sessionCookie::setSameSiteMode );
 
