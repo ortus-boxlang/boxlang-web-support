@@ -181,7 +181,13 @@ public class WebRequestBoxContext extends RequestBoxContext {
 					BoxCookie sessionCookie = httpExchange
 					    .getRequestCookie( sessionCookieDefaults.getAsString( Key._NAME ) );
 					if ( sessionCookie != null ) {
-						this.sessionID = Key.of( sessionCookie.getValue() );
+						String idValue = sessionCookie.getValue();
+						// We need to ensure that we are not dealing with the null value set by `resetSession()`
+						if ( idValue != null ) {
+							this.sessionID = Key.of( sessionCookie.getValue() );
+						} else {
+							this.sessionID = Key.of( UUID.randomUUID().toString() );
+						}
 					} else {
 						// Otherwise generate a new one
 						this.sessionID	= Key.of( UUID.randomUUID().toString() );
