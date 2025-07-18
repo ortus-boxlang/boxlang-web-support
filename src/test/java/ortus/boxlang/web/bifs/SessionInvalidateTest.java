@@ -21,6 +21,7 @@ package ortus.boxlang.web.bifs;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -81,7 +82,7 @@ public class SessionInvalidateTest {
 		assertNotEquals( initialSession.getAsString( Key.of( "jsessionID" ) ), variables.getAsStruct( result ).getAsString( Key.of( "jsessionID" ) ) );
 		assertFalse(
 		    initialSession.getAsDateTime( Key.of( "timeCreated" ) ).equals( variables.getAsStruct( result ).getAsDateTime( Key.of( "timeCreated" ) ) ) );
-		assertFalse( variables.getAsStruct( result ).getAsString( Key.of( "jsessionID" ) ) == null );
+		assertNotNull( variables.getAsStruct( result ).getAsString( Key.of( "jsessionID" ) ) );
 		assertNotEquals( initialSession.getAsString( Key.of( "sessionid" ) ), variables.getAsStruct( result ).getAsString( Key.of( "sessionid" ) ) );
 	}
 
