@@ -37,6 +37,7 @@ import ortus.boxlang.runtime.types.IStruct;
 import ortus.boxlang.runtime.types.Struct;
 import ortus.boxlang.runtime.types.UDF;
 import ortus.boxlang.runtime.types.exceptions.ScopeNotFoundException;
+import ortus.boxlang.runtime.util.Mapping;
 import ortus.boxlang.web.exchange.BoxCookie;
 import ortus.boxlang.web.exchange.IBoxHTTPExchange;
 import ortus.boxlang.web.scopes.CGIScope;
@@ -194,7 +195,7 @@ public class WebRequestBoxContext extends RequestBoxContext {
 
 						sessionCookie	= new BoxCookie( sessionCookieDefaults.getAsString( Key._NAME ),
 						    this.sessionID.getName() )
-						    .setPath( "/" );
+						        .setPath( "/" );
 
 						Optional.ofNullable( sessionCookieSettings.get( KeyDictionary.httpOnly ) ).map( BooleanCaster::cast ).map( sessionCookie::setHttpOnly );
 
@@ -520,7 +521,7 @@ public class WebRequestBoxContext extends RequestBoxContext {
 		IStruct	appMappings	= getApplicationListener().getSettings().getAsStruct( Key.mappings );
 		// Only set this if our application this.mappings doesn't already override it
 		if ( appMappings == null || appMappings.get( Key._slash ) == null ) {
-			config.getAsStruct( Key.mappings ).put( Key._slash, webRoot );
+			config.getAsStruct( Key.mappings ).put( Key._slash, Mapping.ofInternal( "/", webRoot ) );
 		}
 		return config;
 	}
