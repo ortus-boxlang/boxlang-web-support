@@ -29,6 +29,7 @@ import ortus.boxlang.runtime.interop.DynamicObject;
 import ortus.boxlang.runtime.scopes.Key;
 import ortus.boxlang.runtime.types.Struct;
 import ortus.boxlang.runtime.types.exceptions.AbortException;
+import ortus.boxlang.runtime.types.exceptions.BoxRuntimeException;
 import ortus.boxlang.runtime.types.exceptions.MissingIncludeException;
 import ortus.boxlang.runtime.util.BoxFQN;
 import ortus.boxlang.runtime.util.FRTransService;
@@ -67,10 +68,21 @@ public class WebRequestExecutor {
 			// Debug tracking
 			frTransService	= FRTransService.getInstance( manageFullReqestLifecycle );
 			requestString	= exchange.getRequestURI();
-			trans			= frTransService.startTransaction( "Web Request", requestString );
+
+			// I don't know if this is possible, but let's check for it just in case a path traversal is attempted.
+			// Internally, we delegate to bx:include essentially, which supports all of these, but we want to ensure
+			// nothing like this ever gets passed in as a request URI
+			if ( requestString.equals( ".." ) ||
+			    requestString.contains( "../" ) ||
+			    requestString.contains( "..\\" ) ||
+			    requestString.contains( ";.." ) ||
+			    requestString.contains( "..;" ) ) {
+				throw new BoxRuntimeException( "Invalid request URI: [" + requestString + "]. Path traversal detected." );
+			}
+			trans	= frTransService.startTransaction( "Web Request", requestString );
 
 			// Load up the runtime, context and app listener
-			context			= new WebRequestBoxContext( BoxRuntime.getInstance().getRuntimeContext(), exchange, webRoot );
+			context	= new WebRequestBoxContext( BoxRuntime.getInstance().getRuntimeContext(), exchange, webRoot );
 			RequestBoxContext.setCurrent( context );
 			context.loadApplicationDescriptor( new URI( requestString ) );
 			appListener = context.getApplicationListener();
