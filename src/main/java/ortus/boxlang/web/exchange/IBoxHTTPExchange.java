@@ -56,14 +56,37 @@ public interface IBoxHTTPExchange {
 	 ****************************************/
 
 	default boolean isTextBasedContentType() {
-		String contentType = getRequestContentType();
-		return contentType != null && ( contentType.startsWith( "text/" ) ||
-		    contentType.equals( "application/json" ) ||
-		    contentType.equals( "application/xml" ) ||
-		    contentType.equals( "application/javascript" ) ||
-		    contentType.equals( "application/xhtml+xml" ) ||
-		    contentType.equals( "application/rss+xml" ) ||
-		    contentType.equals( "application/atom+xml" ) );
+		String contentType = this.getRequestContentType();
+		if ( contentType == null )
+			return false;
+
+		// Remove parameters (e.g., "; charset=utf-8") and normalize
+		int semicolon = contentType.indexOf( ';' );
+		if ( semicolon != -1 ) {
+			contentType = contentType.substring( 0, semicolon );
+		}
+		contentType = contentType.trim().toLowerCase( Locale.ROOT );
+
+		return contentType.startsWith( "text/" )
+		    || contentType.equals( "application/json" )
+		    || contentType.equals( "application/ld+json" )
+		    || contentType.equals( "application/vnd.api+json" )
+		    || contentType.equals( "application/hal+json" )
+		    || contentType.equals( "application/problem+json" )
+		    || contentType.equals( "application/problem+xml" )
+		    || contentType.equals( "application/xml" )
+		    || contentType.equals( "application/xhtml+xml" )
+		    || contentType.equals( "application/rss+xml" )
+		    || contentType.equals( "application/atom+xml" )
+		    || contentType.equals( "application/x-www-form-urlencoded" )
+		    || contentType.equals( "application/javascript" )
+		    || contentType.equals( "application/graphql" )
+		    || contentType.equals( "application/yaml" )
+		    || contentType.equals( "application/x-yaml" )
+		    || contentType.equals( "application/x-ndjson" )
+		    || contentType.equals( "application/csv" )
+		    || contentType.equals( "application/sql" )
+		    || contentType.equals( "application/rtf" );
 	}
 
 	/**
