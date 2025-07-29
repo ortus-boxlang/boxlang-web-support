@@ -18,6 +18,8 @@
 package ortus.boxlang.web.components;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.util.Set;
 
 import ortus.boxlang.runtime.components.Attribute;
@@ -28,8 +30,10 @@ import ortus.boxlang.runtime.dynamic.casters.StringCaster;
 import ortus.boxlang.runtime.scopes.Key;
 import ortus.boxlang.runtime.types.IStruct;
 import ortus.boxlang.runtime.types.exceptions.AbortException;
+import ortus.boxlang.runtime.types.exceptions.BoxIOException;
 import ortus.boxlang.runtime.util.FileSystemUtil;
 import ortus.boxlang.runtime.validation.Validator;
+import ortus.boxlang.web.WebRequestExecutor;
 import ortus.boxlang.web.context.WebRequestBoxContext;
 import ortus.boxlang.web.exchange.IBoxHTTPExchange;
 
@@ -91,12 +95,36 @@ public class Content extends Component {
 		IBoxHTTPExchange		exchange		= requestContext.getHTTPExchange();
 
 		if ( type != null ) {
-			exchange.setResponseHeader( "content-type", type );
+			exchange.setResponseHeader( WebRequestExecutor.CONTENT_TYPE_HEADER, type );
 		}
+
+		// retrieve our servlet assigned content type
+		String assignedContentType = exchange.getResponseHeader( WebRequestExecutor.CONTENT_TYPE_HEADER );
+
 		if ( file != null ) {
 			file = FileSystemUtil.expandPath( context, file ).absolutePath().toString();
+			File fileObj = new File( file );
+			// set our mimetype if it has not explicitly been set
+			// We cannot test for nullness of `getContentType()` because a default is being set to text/html at this point
+
+			if ( type == null
+			    &&
+			    ( assignedContentType == null
+			        || assignedContentType.equals( WebRequestExecutor.DEFAULT_CONTENT_TYPE ) ) ) {
+				String contentType;
+				try {
+					contentType = Files.probeContentType( fileObj.toPath() );
+				} catch ( IOException e ) {
+					throw new BoxIOException( "An error occurred while attempting to determine the contentType of the file " + fileObj.getName(), e );
+				}
+				if ( contentType == null ) {
+					contentType = WebRequestExecutor.DEFAULT_BINARY_CONTENT_TYPE; // Default to binary if we can't determine the type
+				}
+				exchange.setResponseHeader( WebRequestExecutor.CONTENT_TYPE_HEADER, contentType );
+			}
+			// The buffer always gets cleared when using the `file` attribute
 			context.clearBuffer();
-			exchange.sendResponseFile( new File( file ) );
+			exchange.sendResponseFile( fileObj );
 			if ( deleteFile ) {
 				FileSystemUtil.deleteFile( file );
 			}
@@ -112,6 +140,13 @@ public class Content extends Component {
 			byte[] bytesToWrite;
 			if ( variable instanceof byte[] barr ) {
 				bytesToWrite = barr;
+				// If a type is not given but we know this is binary data, we set the content type to application/octet-stream
+				if ( type == null
+				    &&
+				    ( assignedContentType == null
+				        || assignedContentType.equals( WebRequestExecutor.DEFAULT_CONTENT_TYPE ) ) ) {
+					exchange.setResponseHeader( WebRequestExecutor.CONTENT_TYPE_HEADER, WebRequestExecutor.DEFAULT_BINARY_CONTENT_TYPE );
+				}
 			} else {
 				bytesToWrite = StringCaster.cast( variable ).getBytes();
 			}

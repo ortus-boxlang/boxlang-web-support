@@ -47,7 +47,11 @@ public class WebRequestExecutor {
 	// TODO: make this configurable and move cf extensions to compat
 	private static final Set<String>	VALID_REMOTE_REQUEST_EXTENSIONS	= Set.of( "cfc", "bx" );
 
-	private static final String			DEFAULT_CONTENT_TYPE			= "text/html;charset=UTF-8";
+	public static final String			DEFAULT_CONTENT_TYPE			= "text/html;charset=UTF-8";
+
+	public static final String			CONTENT_TYPE_HEADER				= "Content-Type";
+
+	public static final String			DEFAULT_BINARY_CONTENT_TYPE		= "application/octet-stream";
 
 	/**
 	 * Execute a web request
