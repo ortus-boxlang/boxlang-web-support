@@ -265,6 +265,7 @@ public class WebRequestExecutor {
 			if ( frTransService != null ) {
 				frTransService.endTransaction( trans );
 			}
+			context.shutdown();
 			RequestBoxContext.removeCurrent();
 			Thread.currentThread().setContextClassLoader( oldClassLoader );
 		}
