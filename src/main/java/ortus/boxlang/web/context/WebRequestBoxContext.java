@@ -21,12 +21,14 @@ import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Date;
+import java.util.Optional;
 import java.util.UUID;
 
 import ortus.boxlang.runtime.BoxRuntime;
 import ortus.boxlang.runtime.context.IBoxContext;
 import ortus.boxlang.runtime.context.RequestBoxContext;
 import ortus.boxlang.runtime.dynamic.casters.BooleanCaster;
+import ortus.boxlang.runtime.dynamic.casters.StringCaster;
 import ortus.boxlang.runtime.scopes.IScope;
 import ortus.boxlang.runtime.scopes.Key;
 import ortus.boxlang.runtime.scopes.VariablesScope;
@@ -35,6 +37,7 @@ import ortus.boxlang.runtime.types.IStruct;
 import ortus.boxlang.runtime.types.Struct;
 import ortus.boxlang.runtime.types.UDF;
 import ortus.boxlang.runtime.types.exceptions.ScopeNotFoundException;
+import ortus.boxlang.runtime.util.Mapping;
 import ortus.boxlang.web.exchange.BoxCookie;
 import ortus.boxlang.web.exchange.IBoxHTTPExchange;
 import ortus.boxlang.web.scopes.CGIScope;
@@ -113,7 +116,7 @@ public class WebRequestBoxContext extends RequestBoxContext {
 	    KeyDictionary.httpOnly, true,
 	    KeyDictionary.disableUpdate, false,
 	    Key.timeout, new DateTime().modify( "yyyy", 30l ),
-	    KeyDictionary.sameSiteMode, "Lax" );
+	    KeyDictionary.sameSite, "Lax" );
 
 	/**
 	 * --------------------------------------------------------------------------
@@ -179,22 +182,29 @@ public class WebRequestBoxContext extends RequestBoxContext {
 					BoxCookie sessionCookie = httpExchange
 					    .getRequestCookie( sessionCookieDefaults.getAsString( Key._NAME ) );
 					if ( sessionCookie != null ) {
-						this.sessionID = Key.of( sessionCookie.getValue() );
+						String idValue = sessionCookie.getValue();
+						// We need to ensure that we are not dealing with the null value set by `resetSession()`
+						if ( idValue != null ) {
+							this.sessionID = Key.of( sessionCookie.getValue() );
+						} else {
+							this.sessionID = Key.of( UUID.randomUUID().toString() );
+						}
 					} else {
 						// Otherwise generate a new one
 						this.sessionID	= Key.of( UUID.randomUUID().toString() );
 
 						sessionCookie	= new BoxCookie( sessionCookieDefaults.getAsString( Key._NAME ),
 						    this.sessionID.getName() )
-						    .setPath( "/" )
-						    .setHttpOnly( sessionCookieSettings.getAsBoolean( KeyDictionary.httpOnly ) )
-						    .setSecure( sessionCookieSettings.getAsBoolean( Key.secure ) )
-						    .setDomain( sessionCookieSettings.getAsString( Key.domain ) )
-						    .setSameSiteMode( sessionCookieSettings.getAsString( KeyDictionary.sameSiteMode ) );
+						    .setPath( "/" );
 
-						if ( sessionCookieSettings.getAsBoolean( KeyDictionary.sameSite ) != null ) {
-							sessionCookie.setSameSite( sessionCookieSettings.getAsBoolean( KeyDictionary.sameSite ) );
-						}
+						Optional.ofNullable( sessionCookieSettings.get( KeyDictionary.httpOnly ) ).map( BooleanCaster::cast ).map( sessionCookie::setHttpOnly );
+
+						Optional.ofNullable( sessionCookieSettings.get( KeyDictionary.secure ) ).map( BooleanCaster::cast ).map( sessionCookie::setSecure );
+
+						Optional.ofNullable( sessionCookieSettings.get( Key.domain ) ).map( StringCaster::cast ).map( sessionCookie::setDomain );
+
+						Optional.ofNullable( sessionCookieSettings.get( KeyDictionary.sameSite ) ).map( StringCaster::cast )
+						    .map( sessionCookie::setSameSiteMode );
 
 						Object expiration = sessionCookieSettings.get( Key.timeout );
 						if ( expiration instanceof DateTime expireDateTime ) {
@@ -250,12 +260,12 @@ public class WebRequestBoxContext extends RequestBoxContext {
 	 * This allows us to "reserve" known scope names to ensure arguments.foo
 	 * will always look in the proper arguments scope and never in
 	 * local.arguments.foo for example
-	 * 
+	 *
 	 * @param key     The key to check for visibility
 	 * @param nearby  true, check only scopes that are nearby to the current
 	 *                execution context
 	 * @param shallow true, do not delegate to parent or default scope if not found
-	 * 
+	 *
 	 * @return True if the key is visible in the current context, else false
 	 */
 	@Override
@@ -511,7 +521,7 @@ public class WebRequestBoxContext extends RequestBoxContext {
 		IStruct	appMappings	= getApplicationListener().getSettings().getAsStruct( Key.mappings );
 		// Only set this if our application this.mappings doesn't already override it
 		if ( appMappings == null || appMappings.get( Key._slash ) == null ) {
-			config.getAsStruct( Key.mappings ).put( Key._slash, webRoot );
+			config.getAsStruct( Key.mappings ).put( Key._slash, Mapping.ofInternal( "/", webRoot ) );
 		}
 		return config;
 	}

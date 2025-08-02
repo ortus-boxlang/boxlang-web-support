@@ -25,6 +25,7 @@ import java.util.Locale;
 import java.util.Map;
 
 import ortus.boxlang.runtime.scopes.Key;
+import ortus.boxlang.web.WebRequestExecutor;
 import ortus.boxlang.web.context.WebRequestBoxContext;
 
 /**
@@ -39,14 +40,14 @@ public interface IBoxHTTPExchange {
 
 	/**
 	 * Set the BoxLang context for this request
-	 * 
+	 *
 	 * @param context The BoxLang context
 	 */
 	public void setWebContext( WebRequestBoxContext context );
 
 	/**
 	 * Get the BoxLang context for this request
-	 * 
+	 *
 	 * @return The BoxLang context
 	 */
 	public WebRequestBoxContext getWebContext();
@@ -56,23 +57,46 @@ public interface IBoxHTTPExchange {
 	 ****************************************/
 
 	default boolean isTextBasedContentType() {
-		String contentType = getRequestContentType();
-		return contentType != null && ( contentType.startsWith( "text/" ) ||
-		    contentType.equals( "application/json" ) ||
-		    contentType.equals( "application/xml" ) ||
-		    contentType.equals( "application/javascript" ) ||
-		    contentType.equals( "application/xhtml+xml" ) ||
-		    contentType.equals( "application/rss+xml" ) ||
-		    contentType.equals( "application/atom+xml" ) );
+		String contentType = this.getRequestContentType();
+		if ( contentType == null )
+			return false;
+
+		// Remove parameters (e.g., "; charset=utf-8") and normalize
+		int semicolon = contentType.indexOf( ';' );
+		if ( semicolon != -1 ) {
+			contentType = contentType.substring( 0, semicolon );
+		}
+		contentType = contentType.trim().toLowerCase( Locale.ROOT );
+
+		return contentType.startsWith( "text/" )
+		    || contentType.equals( "application/json" )
+		    || contentType.equals( "application/ld+json" )
+		    || contentType.equals( "application/vnd.api+json" )
+		    || contentType.equals( "application/hal+json" )
+		    || contentType.equals( "application/problem+json" )
+		    || contentType.equals( "application/problem+xml" )
+		    || contentType.equals( "application/xml" )
+		    || contentType.equals( "application/xhtml+xml" )
+		    || contentType.equals( "application/rss+xml" )
+		    || contentType.equals( "application/atom+xml" )
+		    || contentType.equals( "application/x-www-form-urlencoded" )
+		    || contentType.equals( "application/javascript" )
+		    || contentType.equals( "application/graphql" )
+		    || contentType.equals( "application/yaml" )
+		    || contentType.equals( "application/x-yaml" )
+		    || contentType.equals( "application/x-ndjson" )
+		    || contentType.equals( "application/csv" )
+		    || contentType.equals( "application/sql" )
+		    || contentType.equals( "application/rtf" );
 	}
 
 	/**
 	 * Default the response content type to text/html if not set.
 	 */
 	default void ensureResponseContentType() {
-		var contentType = getResponseHeader( "Content-Type" );
+		var contentType = getResponseHeader( WebRequestExecutor.CONTENT_TYPE_HEADER );
 		if ( contentType == null || contentType.isEmpty() ) {
-			addResponseHeader( "Content-Type", "text/html;charset=UTF-8" );
+			addResponseHeader( WebRequestExecutor.CONTENT_TYPE_HEADER, WebRequestExecutor.DEFAULT_CONTENT_TYPE );
 		}
 
 	}
@@ -92,9 +116,9 @@ public interface IBoxHTTPExchange {
 
 	/**
 	 * Get a request cookie by name
-	 * 
+	 *
 	 * @param name the name of the cookie
-	 * 
+	 *
 	 * @return the cookie or null if not found
 	 */
 	public BoxCookie getRequestCookie( String name );
@@ -332,7 +356,7 @@ public interface IBoxHTTPExchange {
 
 	/**
 	 * Returns a boolean indicating if the response has been started.
-	 * 
+	 *
 	 * @return true if the response has been started, false otherwise
 	 */
 	public boolean isResponseStarted();
@@ -391,14 +415,14 @@ public interface IBoxHTTPExchange {
 
 	/**
 	 * Send binary data as response. Rest any other response body content.
-	 * 
+	 *
 	 * @param data the binary data to send
 	 */
 	public void sendResponseBinary( byte[] data );
 
 	/**
 	 * Send a file as response. Rest any other response body content.
-	 * 
+	 *
 	 * @param file the file to send
 	 */
 	public void sendResponseFile( File file );

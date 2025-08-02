@@ -22,24 +22,29 @@ import java.net.URLEncoder;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
+import ortus.boxlang.runtime.BoxRuntime;
+import ortus.boxlang.runtime.logging.BoxLangLogger;
+
 public class BoxCookie {
 
-	private final String	name;
+	private final String		name;
 	// This will always contain the NON-encoded value, even if encodeValue is set to true.
 	// The encoded value is returned by getEncodedValue()
-	private String			value;
-	private String			path;
-	private String			domain;
-	private Integer			maxAge;
-	private Date			expires;
-	private boolean			discard;
-	private boolean			secure;
-	private boolean			httpOnly;
-	private int				version	= 1;
-	private String			comment;
-	private boolean			sameSite;
-	private String			sameSiteMode;
-	private boolean			encodeValue;
+	private String				value;
+	private String				path;
+	private String				domain;
+	private Integer				maxAge;
+	private Date				expires;
+	private boolean				discard;
+	private boolean				secure;
+	private boolean				httpOnly;
+	private int					version	= 1;
+	private String				comment;
+	private boolean				sameSite;
+	private String				sameSiteMode;
+	private boolean				encodeValue;
+
+	private final BoxLangLogger	logger	= BoxRuntime.getInstance().getLoggingService().EXCEPTION_LOGGER;
 
 	public BoxCookie( final String name, final String value ) {
 		this( name, value, true );
@@ -66,7 +71,7 @@ public class BoxCookie {
 	/**
 	 * Get the encoded cookie value in a format suitable for the HTTP header.
 	 * If encodeValue is set to false, this will return the value as-is.
-	 * 
+	 *
 	 * @return The cookie value, encoded if necessary
 	 */
 	public String getEncodedValue() {
@@ -78,9 +83,9 @@ public class BoxCookie {
 
 	/**
 	 * This always returns the NON-encoded value, even if encodeValue is set to true.
-	 * 
+	 *
 	 * @param value The cookie value with no encoding. Do NOT use this to set an HTTP SET-COOKIE header.
-	 * 
+	 *
 	 * @return The BoxCookie instance for chaining
 	 */
 	public BoxCookie setValue( final String value ) {
@@ -198,7 +203,7 @@ public class BoxCookie {
 			this.sameSiteMode = m;
 			this.setSameSite( true );
 		} else {
-			System.out.println( "Ignoring invalid cookie same site mode: " + mode );
+			logger.error( "Ignoring invalid cookie same site mode: " + mode );
 		}
 		return this;
 	}
@@ -247,10 +252,10 @@ public class BoxCookie {
 
 	/**
 	 * Create a new cookie from an incoming cookie header, decoding the value.
-	 * 
+	 *
 	 * @param name  The cookie name
 	 * @param value The encoded cookie value
-	 * 
+	 *
 	 * @return A new BoxCookie instance with the name and value set
 	 */
 	public static BoxCookie fromEncoded( String name, String value ) {
