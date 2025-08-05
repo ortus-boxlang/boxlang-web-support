@@ -39,7 +39,6 @@ public class FileTest extends ortus.boxlang.web.util.BaseWebTest {
 	String																testURLImage	= "https://ortus-public.s3.amazonaws.com/logos/ortus-medium.jpg";
 	String																tmpDirectory	= "src/test/resources/tmp/FileComponentTests";
 	String																testUpload		= tmpDirectory + "/test.jpg";
-
 	String[]															testFields		= new String[] { "file1", "file2", "file3" };
 
 	@BeforeAll
@@ -106,7 +105,7 @@ public class FileTest extends ortus.boxlang.web.util.BaseWebTest {
 		assertThat( fileInfo.getAsString( KeyDictionary.serverFile ) ).isInstanceOf( String.class );
 		assertThat( fileInfo.getAsString( KeyDictionary.serverFile ) ).isNotEmpty();
 		assertThat( fileInfo.getAsString( KeyDictionary.clientFile ) )
-		    .isEqualTo( Path.of( tmpDirectory, testFields[ 0 ] + ".jpg" ).toAbsolutePath().toString() );
+		    .isEqualTo( testFields[ 0 ] + ".jpg" );
 		assertThat( fileInfo.getAsString( KeyDictionary.clientFile ) )
 		    .isNotEqualTo( fileInfo.getAsString( KeyDictionary.serverFile ) );
 		assertThat( fileInfo.get( KeyDictionary.clientFileExt ) ).isEqualTo( "jpg" );
