@@ -1,4 +1,3 @@
-
 /**
  * [BoxLang]
  *
@@ -25,6 +24,8 @@ import java.nio.file.attribute.FileTime;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import org.apache.commons.io.FilenameUtils;
+
 import ortus.boxlang.compiler.parser.Parser;
 import ortus.boxlang.runtime.bifs.BIF;
 import ortus.boxlang.runtime.bifs.BoxBIF;
@@ -49,7 +50,6 @@ import ortus.boxlang.web.util.KeyDictionary;
 
 @BoxBIF
 @BoxBIF( alias = "FileUploadAll" )
-
 public class FileUpload extends BIF {
 
 	/**
@@ -63,40 +63,56 @@ public class FileUpload extends BIF {
 		    new Argument( false, "string", Key.accept ),
 		    new Argument( false, "string", Key.nameconflict, "error", Set.of( Validator.valueOneOf( "error", "skip", "overwrite", "makeunique" ) ) ),
 		    new Argument( false, "boolean", Key.strict, true ),
-		    new Argument( false, "string", KeyDictionary.allowedExtensions )
+		    new Argument( false, "any", KeyDictionary.allowedExtensions ),
+		    new Argument( false, "any", KeyDictionary.blockedExtensions ),
+		    // Still to implement
+		    new Argument( false, "string", Key.attributes ),
+		    new Argument( false, "string", Key.mode )
 		};
 	}
 
 	/**
-	 * Processes file uploads from the request
+	 * Processes file uploads from the request into the specified destination directory.
 	 *
 	 * @param context   The context in which the BIF is being invoked.
 	 * @param arguments Argument scope for the BIF.
 	 *
-	 * @argument.destination The destination directory for the uploaded files.
+	 * @argument.destination The destination directory for the uploaded files. If the path is not absolute, it will be resolved relative to the system's
+	 *                       temporary directory.
+	 *
+	 * @argument.filefield The name of the file field to process. If not specified, the first file upload in the request will be used.
 	 *
 	 * @argument.accept The accepted MIME types for the uploaded files.
 	 *
 	 * @argument.nameconflict The action to take when a file with the same name already exists in the destination directory.
 	 *
+	 * @argument.strict Whether to strictly enforce the system specified upload security settings.
+	 *
 	 * @argument.allowedExtensions The allowed file extensions for the uploaded files.
 	 *
-	 * @argument.filefield The name of the file field to process.
 	 *
-	 * @argument.strict Whether to strictly enforce the system specified upload security settings.
+	 *
+	 * @throws BoxRuntimeException if no file uploads are found in the request or if the specified file field is not found.
+	 * @throws BoxIOException      if there is an error creating directories or moving files.
+	 * @throws IOException         if there is an error accessing the file system.
+	 *
+	 * @return An IStruct containing information about the uploaded file(s).
 	 */
 	public Object _invoke( IBoxContext context, ArgumentsScope arguments ) {
 		WebRequestBoxContext			requestContext	= context.getParentOfType( WebRequestBoxContext.class );
 		Key								bifMethodKey	= arguments.getAsKey( BIF.__functionName );
-
 		IBoxHTTPExchange				exchange		= requestContext.getHTTPExchange();
-
 		IBoxHTTPExchange.FileUpload[]	uploads			= exchange.getUploadData();
 
+		// Validate the arguments
 		if ( uploads == null ) {
 			throw new BoxRuntimeException( "No file uploads were found in the request" );
-		} else if ( bifMethodKey.equals( KeyDictionary.fileUpload ) ) {
+		}
+
+		// Single File Upload
+		if ( bifMethodKey.equals( KeyDictionary.fileUpload ) ) {
 			String field = arguments.getAsString( Key.filefield );
+			// If no field is specified, use the first upload's form field name
 			if ( field == null ) {
 				field = uploads[ 0 ].formFieldName().getName();
 			}
@@ -112,18 +128,28 @@ public class FileUpload extends BIF {
 			}
 
 			return uploadFile( upload, arguments, context );
-
-		} else {
-			return Stream.of( uploads ).map( upload -> uploadFile( upload, arguments, context ) ).collect( BLCollector.toArray() );
 		}
+
+		// If we reach here then we are processing multiple file uploads
+		return Stream.of( uploads ).map( upload -> uploadFile( upload, arguments, context ) ).collect( BLCollector.toArray() );
 	}
 
+	/**
+	 * Processes a single file upload and saves it to the specified destination directory.
+	 *
+	 * @param upload    The file upload to process.
+	 * @param arguments The arguments for the BIF.
+	 * @param context   The context in which the BIF is being invoked.
+	 *
+	 * @return An IStruct containing information about the uploaded file.
+	 */
 	private IStruct uploadFile( IBoxHTTPExchange.FileUpload upload, IStruct arguments, IBoxContext context ) {
 		String	destination		= arguments.getAsString( Key.destination );
 		Path	destinationPath	= null;
 		Boolean	createPath		= false;
 
 		if ( !Path.of( destination ).isAbsolute() ) {
+			// If the destination is not an absolute path, resolve it relative to the system's temporary directory
 			destinationPath	= Path.of( FileSystemUtil.getTempDirectory(), destination );
 			createPath		= true;
 		} else {
@@ -150,11 +176,12 @@ public class FileUpload extends BIF {
 		Path	filePath		= destinationPath.resolve( fileName );
 		String	nameConflict	= arguments.getAsString( Key.nameconflict ).toLowerCase();
 
+		// Prepare the upload record
 		IStruct	uploadRecord	= newUploadRecord();
 		uploadRecord.put( KeyDictionary.clientDirectory, destinationPath.toString() );
-		uploadRecord.put( KeyDictionary.clientFile, filePath.toString() );
+		uploadRecord.put( KeyDictionary.clientFile, fileName );
 		uploadRecord.put( KeyDictionary.clientFileExt, extension );
-		uploadRecord.put( KeyDictionary.clientFileName, fileName );
+		uploadRecord.put( KeyDictionary.clientFileName, FilenameUtils.getBaseName( fileName ) );
 		uploadRecord.put( KeyDictionary.attemptedServerFile, filePath.toString() );
 
 		try {
@@ -183,7 +210,6 @@ public class FileUpload extends BIF {
 		}
 
 		DateTime operationDate = new DateTime();
-
 		uploadRecord.put( KeyDictionary.timeCreated, operationDate );
 
 		if ( Files.exists( filePath ) ) {
@@ -198,6 +224,8 @@ public class FileUpload extends BIF {
 			} catch ( IOException e ) {
 				throw new BoxIOException( "The size of the original file [" + fileName + "] could not be determined", e );
 			}
+
+			// Handle name conflicts based on the specified action
 			switch ( nameConflict ) {
 				case "error" :
 					throw new BoxRuntimeException( "The file [" + fileName + "] already exists in the destination path [" + destination + "]" );
@@ -230,9 +258,9 @@ public class FileUpload extends BIF {
 			uploadRecord.put( KeyDictionary.contentSubType, ListUtil.asList( mimeType, "/" ).get( 1 ) );
 			uploadRecord.put( KeyDictionary.timeLastModified, operationDate );
 			uploadRecord.put( KeyDictionary.dateLastAccessed, operationDate );
-			uploadRecord.put( KeyDictionary.serverFile, filePath.toString() );
+			uploadRecord.put( KeyDictionary.serverFile, fileName );
 			uploadRecord.put( KeyDictionary.serverFileExt, extension );
-			uploadRecord.put( KeyDictionary.serverFileName, fileName );
+			uploadRecord.put( KeyDictionary.serverFileName, FilenameUtils.getBaseName( fileName ) );
 			uploadRecord.put( KeyDictionary.serverDirectory, filePath.getParent().toString() );
 			uploadRecord.put( KeyDictionary.fileSize, Files.size( filePath ) );
 			uploadRecord.put( KeyDictionary.fileWasSaved, true );
@@ -287,13 +315,12 @@ public class FileUpload extends BIF {
 	public boolean processUploadSecurity( IBoxHTTPExchange.FileUpload upload, IStruct arguments, IBoxContext context ) {
 		// System and request level whitelist and blacklist settings
 		IStruct	requestSettings				= context.getParentOfType( RequestBoxContext.class ).getSettings();
-
 		String	uploadMimeType				= FileSystemUtil.getMimeType( upload.tmpPath().toString() );
 		String	uploadExtension				= Parser.getFileExtension( upload.tmpPath().getFileName().toString() ).get().toLowerCase();
 		String	allowedExtensions			= arguments.getAsString( KeyDictionary.allowedExtensions );
+		String	blockedExtensions			= arguments.getAsString( KeyDictionary.blockedExtensions );
 		String	allowedMimeTypes			= arguments.getAsString( Key.accept );
 		Boolean	strict						= arguments.getAsBoolean( Key.strict );
-
 		Boolean	hasApplicationPermission	= true;
 		Boolean	hasRequestPermission		= true;
 
@@ -301,8 +328,15 @@ public class FileUpload extends BIF {
 			hasRequestPermission = ListUtil.asList( allowedExtensions, ListUtil.DEFAULT_DELIMITER ).stream()
 			    .map( StringCaster::cast )
 			    .anyMatch( ext -> ext.equals( "*" ) || ext.equalsIgnoreCase( uploadExtension ) );
+		}
 
-		} else if ( allowedMimeTypes != null ) {
+		if ( blockedExtensions != null ) {
+			hasRequestPermission = hasRequestPermission && ListUtil.asList( blockedExtensions, ListUtil.DEFAULT_DELIMITER ).stream()
+			    .map( StringCaster::cast )
+			    .noneMatch( ext -> ext.equalsIgnoreCase( uploadExtension ) );
+		}
+
+		if ( allowedMimeTypes != null && allowedExtensions == null && blockedExtensions == null ) {
 			hasRequestPermission = ListUtil.asList( allowedMimeTypes, ListUtil.DEFAULT_DELIMITER ).stream()
 			    .map( StringCaster::cast )
 			    .anyMatch( ext -> ext.equals( "*" ) || ext.equalsIgnoreCase( uploadMimeType ) );
@@ -310,12 +344,18 @@ public class FileUpload extends BIF {
 
 		hasApplicationPermission = FileSystemUtil.isExtensionAllowed( context, uploadExtension );
 
-		return strict
-		    ? hasApplicationPermission && hasRequestPermission
-		    : ( allowedExtensions != null || allowedMimeTypes != null
-		        ? hasRequestPermission
-		        : hasApplicationPermission );
+		// If strict mode, both application and request permissions must be true
+		if ( strict ) {
+			return hasApplicationPermission && hasRequestPermission;
+		}
 
+		// If allowedExtensions, blockedExtensions, or allowedMimeTypes are specified, only check request permission
+		if ( allowedExtensions != null || blockedExtensions != null || allowedMimeTypes != null ) {
+			return hasRequestPermission;
+		}
+
+		// Otherwise, only check application permission
+		return hasApplicationPermission;
 	}
 
 }
