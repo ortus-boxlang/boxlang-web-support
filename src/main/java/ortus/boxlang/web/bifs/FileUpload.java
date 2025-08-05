@@ -74,6 +74,47 @@ public class FileUpload extends BIF {
 	/**
 	 * Processes file uploads from the request into the specified destination directory.
 	 *
+	 * <ul>
+	 * <li>If the destination is not an absolute path, it will be resolved relative to the system's temporary directory.</li>
+	 * <li>If the file field is not specified, the first file upload in the request will be used.</li>
+	 * <li>If the upload is not permitted by the server, application, or request file security settings, it will be rejected.</li>
+	 * <li>If a file with the same name already exists in the destination directory, the action specified by the `nameconflict` argument will be taken:
+	 * <ul>
+	 * <li>`error`: The upload will be rejected if a file with the same name exists.</li>
+	 * <li>`skip`: The existing file will not be overwritten.</li>
+	 * <li>`overwrite`: The existing file will be replaced with the uploaded file.</li>
+	 * <li>`makeunique`: The uploaded file will be renamed to make it unique (e.g., by appending a timestamp).</li>
+	 * </ul>
+	 * </li>
+	 * <li>If the upload violates any security policies and `strict` is true, an exception will be thrown. If `strict` is false, the upload will be
+	 * skipped
+	 * if it violates security policies.</li>
+	 * <li>The uploaded file's metadata will be returned in an IStruct, which includes:
+	 * <ul>
+	 * <li>`clientDirectory`: The directory location of the file uploaded from the client's system.</li>
+	 * <li>`clientFile`: The name of the file uploaded from the client's system.</li>
+	 * <li>`clientFileExt`: The extension of the uploaded file on the client system (without a period).</li>
+	 * <li>`clientFileName`: The name of the uploaded file on the client system (without an extension).</li>
+	 * <li>`contentType`: The MIME content type of the saved file.</li>
+	 * <li>`contentSubType`: The MIME content subtype of the saved file.</li>
+	 * <li>`dateLastAccessed`: The date and time the uploaded file was last accessed.</li>
+	 * <li>`fileExisted`: Whether the file existed with the same path (yes or no).</li>
+	 * <li>`fileSize`: The size of the uploaded file in bytes.</li>
+	 * <li>`fileWasAppended`: Whether ColdFusion appended the uploaded file to a file (yes or no).</li>
+	 * <li>`fileWasOverwritten`: Whether ColdFusion overwrote a file (yes or no).</li>
+	 * <li>`fileWasRenamed`: Whether the uploaded file was renamed to avoid a name conflict (yes or no).</li>
+	 * <li>`fileWasSaved`: Whether ColdFusion saved a file (yes or no).</li>
+	 * <li>`oldFileSize`: The size of a file that was overwritten in the file upload operation.</li>
+	 * <li>`serverDirectory`: The directory of the file saved on the server.</li>
+	 * <li>`serverFile`: The filename of the file saved on the server.</li>
+	 * <li>`serverFileExt`: The extension of the uploaded file on the server (without a period).</li>
+	 * <li>`serverFileName`: The name of the uploaded file on the server (without an extension).</li>
+	 * <li>`timeCreated`: The time the uploaded file was created.</li>
+	 * <li>`timeLastModified`: The date and time of the last modification to the uploaded file.</li>
+	 * </ul>
+	 * </li>
+	 * </ul>
+	 *
 	 * @param context   The context in which the BIF is being invoked.
 	 * @param arguments Argument scope for the BIF.
 	 *
@@ -82,15 +123,20 @@ public class FileUpload extends BIF {
 	 *
 	 * @argument.filefield The name of the file field to process. If not specified, the first file upload in the request will be used.
 	 *
-	 * @argument.accept The accepted MIME types for the uploaded files.
+	 * @argument.accept The accepted MIME types for the uploaded files. This can be a comma-separated list of MIME types or a single string or an array.
 	 *
-	 * @argument.nameconflict The action to take when a file with the same name already exists in the destination directory.
+	 * @argument.nameconflict The action to take when a file with the same name already exists in the destination directory. The default is "error", which
+	 *                        means that the upload will be rejected if a file with the same name exists. Other options are "skip" (do not overwrite),
+	 *                        "overwrite" (replace the existing file), and "makeunique" (rename the uploaded file to make it unique).
 	 *
-	 * @argument.strict Whether to strictly enforce the system specified upload security settings.
+	 * @argument.strict Whether to strictly enforce the system specified upload security settings. The default is true, which means that the upload will
+	 *                  be rejected if it violates any security policies.
 	 *
-	 * @argument.allowedExtensions The allowed file extensions for the uploaded files.
+	 * @argument.allowedExtensions The allowed file extensions for the uploaded files. This can be a comma-separated list of extensions or a single string
+	 *                             or an array.
 	 *
-	 *
+	 * @argument.blockedExtensions The blocked file extensions for the uploaded files. This can be a comma-separated list of extensions or a single string
+	 *                             or an array.
 	 *
 	 * @throws BoxRuntimeException if no file uploads are found in the request or if the specified file field is not found.
 	 * @throws BoxIOException      if there is an error creating directories or moving files.
