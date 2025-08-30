@@ -1,4 +1,3 @@
-
 /**
  * [BoxLang]
  *
@@ -40,6 +39,8 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 
 import ortus.boxlang.runtime.dynamic.casters.StructCaster;
 import ortus.boxlang.runtime.scopes.Key;
@@ -50,6 +51,7 @@ import ortus.boxlang.runtime.types.exceptions.BoxRuntimeException;
 import ortus.boxlang.runtime.util.FileSystemUtil;
 import ortus.boxlang.web.util.KeyDictionary;
 
+@Execution( ExecutionMode.SAME_THREAD )
 public class FileUploadTest extends ortus.boxlang.web.util.BaseWebTest {
 
 	ArrayList<ortus.boxlang.web.exchange.IBoxHTTPExchange.FileUpload>	mockUploads;
@@ -59,7 +61,6 @@ public class FileUploadTest extends ortus.boxlang.web.util.BaseWebTest {
 	final String														testURLImage	= "https://ortus-public.s3.amazonaws.com/logos/ortus-medium.jpg";
 	final String														tmpDirectory	= "src/test/resources/tmp/FileUpload";
 	final String														testUpload		= tmpDirectory + "/test.jpg";
-
 	final String[]														testFields		= new String[] { "file1", "file2", "file3" };
 
 	@BeforeAll
@@ -96,7 +97,8 @@ public class FileUploadTest extends ortus.boxlang.web.util.BaseWebTest {
 			} catch ( IOException e ) {
 				throw new BoxIOException( e );
 			}
-			mockUploads.add( new ortus.boxlang.web.exchange.IBoxHTTPExchange.FileUpload( Key.of( field ), fieldFile, fieldFile.getFileName().toString() ) );
+			mockUploads.add( new ortus.boxlang.web.exchange.IBoxHTTPExchange.FileUpload( Key.of( field ), fieldFile,
+			    fieldFile.getFileName().toString() ) );
 		} );
 
 		ortus.boxlang.web.exchange.IBoxHTTPExchange.FileUpload[] uploadsArray = mockUploads
@@ -127,11 +129,19 @@ public class FileUploadTest extends ortus.boxlang.web.util.BaseWebTest {
 
 		assertThat( fileInfo.getAsString( KeyDictionary.serverFile ) ).isInstanceOf( String.class );
 		assertThat( fileInfo.getAsString( KeyDictionary.serverFile ) ).isNotEmpty();
+		assertThat( fileInfo.getAsString( KeyDictionary.serverFile ) ).doesNotContain( "/" );
+		assertThat( fileInfo.getAsString( KeyDictionary.serverFile ) ).doesNotContain( "\\" );
+		assertThat( fileInfo.getAsString( KeyDictionary.serverFile ) ).endsWith( ".jpg" );
 		assertThat( fileInfo.getAsString( KeyDictionary.clientFile ) )
-		    .isEqualTo( Path.of( tmpDirectory, testFields[ 1 ] + ".jpg" ).toAbsolutePath().toString() );
+		    .isEqualTo( testFields[ 1 ] + ".jpg" );
 		assertThat( fileInfo.getAsString( KeyDictionary.clientFile ) )
 		    .isNotEqualTo( fileInfo.getAsString( KeyDictionary.serverFile ) );
 		assertThat( fileInfo.get( KeyDictionary.clientFileExt ) ).isEqualTo( "jpg" );
+		assertThat( fileInfo.get( KeyDictionary.clientFileName ) ).isEqualTo( testFields[ 1 ] );
+		assertThat( fileInfo.get( KeyDictionary.serverFileExt ) ).isEqualTo( "jpg" );
+		assertThat( fileInfo.getAsString( KeyDictionary.serverFileName ) ).doesNotContain( "." );
+		assertThat( fileInfo.getAsString( KeyDictionary.serverFileName ) ).doesNotContain( "/" );
+		assertThat( fileInfo.getAsString( KeyDictionary.serverFileName ) ).doesNotContain( "\\" );
 		assertThat( fileInfo.get( KeyDictionary.contentType ) ).isEqualTo( "image/jpeg" );
 		assertThat( fileInfo.get( KeyDictionary.contentSubType ) ).isEqualTo( "jpeg" );
 		assertThat( fileInfo.get( KeyDictionary.fileSize ) ).isEqualTo( fileInfo.get( KeyDictionary.oldFileSize ) );
@@ -157,11 +167,19 @@ public class FileUploadTest extends ortus.boxlang.web.util.BaseWebTest {
 
 		assertThat( fileInfo.getAsString( KeyDictionary.serverFile ) ).isInstanceOf( String.class );
 		assertThat( fileInfo.getAsString( KeyDictionary.serverFile ) ).isNotEmpty();
+		assertThat( fileInfo.getAsString( KeyDictionary.serverFile ) ).doesNotContain( "/" );
+		assertThat( fileInfo.getAsString( KeyDictionary.serverFile ) ).doesNotContain( "\\" );
+		assertThat( fileInfo.getAsString( KeyDictionary.serverFile ) ).endsWith( ".jpg" );
 		assertThat( fileInfo.getAsString( KeyDictionary.clientFile ) )
-		    .isEqualTo( Path.of( tmpDirectory, testFields[ 0 ] + ".jpg" ).toAbsolutePath().toString() );
+		    .isEqualTo( testFields[ 0 ] + ".jpg" );
 		assertThat( fileInfo.getAsString( KeyDictionary.clientFile ) )
 		    .isNotEqualTo( fileInfo.getAsString( KeyDictionary.serverFile ) );
 		assertThat( fileInfo.get( KeyDictionary.clientFileExt ) ).isEqualTo( "jpg" );
+		assertThat( fileInfo.get( KeyDictionary.clientFileName ) ).isEqualTo( testFields[ 0 ] );
+		assertThat( fileInfo.get( KeyDictionary.serverFileExt ) ).isEqualTo( "jpg" );
+		assertThat( fileInfo.getAsString( KeyDictionary.serverFileName ) ).doesNotContain( "." );
+		assertThat( fileInfo.getAsString( KeyDictionary.serverFileName ) ).doesNotContain( "/" );
+		assertThat( fileInfo.getAsString( KeyDictionary.serverFileName ) ).doesNotContain( "\\" );
 		assertThat( fileInfo.get( KeyDictionary.contentType ) ).isEqualTo( "image/jpeg" );
 		assertThat( fileInfo.get( KeyDictionary.contentSubType ) ).isEqualTo( "jpeg" );
 		assertThat( fileInfo.get( KeyDictionary.fileSize ) ).isEqualTo( fileInfo.get( KeyDictionary.oldFileSize ) );
@@ -192,7 +210,7 @@ public class FileUploadTest extends ortus.boxlang.web.util.BaseWebTest {
 		IStruct fileInfo = variables.getAsStruct( result );
 
 		assertThat( fileInfo.getAsString( KeyDictionary.clientFile ) )
-		    .isEqualTo( Path.of( tmpDirectory, testFields[ 0 ] + ".jpg" ).toAbsolutePath().toString() );
+		    .isEqualTo( testFields[ 0 ] + ".jpg" );
 		assertFalse( fileInfo.getAsBoolean( KeyDictionary.fileWasSaved ) );
 
 		// Test with strict mode on
@@ -206,8 +224,7 @@ public class FileUploadTest extends ortus.boxlang.web.util.BaseWebTest {
 		    strict=true
 		            );
 		            """,
-		    context )
-		);
+		    context ) );
 
 		mockUploads.clear();
 		// Now test with a server defined disallow
@@ -218,7 +235,8 @@ public class FileUploadTest extends ortus.boxlang.web.util.BaseWebTest {
 			} catch ( IOException e ) {
 				throw new BoxIOException( e );
 			}
-			mockUploads.add( new ortus.boxlang.web.exchange.IBoxHTTPExchange.FileUpload( Key.of( field ), fieldFile, fieldFile.getFileName().toString() ) );
+			mockUploads.add( new ortus.boxlang.web.exchange.IBoxHTTPExchange.FileUpload( Key.of( field ), fieldFile,
+			    fieldFile.getFileName().toString() ) );
 		} );
 
 		ortus.boxlang.web.exchange.IBoxHTTPExchange.FileUpload[] uploadsArray = mockUploads
@@ -240,7 +258,8 @@ public class FileUploadTest extends ortus.boxlang.web.util.BaseWebTest {
 		// );
 
 		// Now test server-level disallowed with strict off
-		// We have to change the file field because the error above will have deleted the disallowed file
+		// We have to change the file field because the error above will have deleted
+		// the disallowed file
 		variables.put( Key.of( "filefield" ), testFields[ 1 ] );
 		runtime.executeSource(
 		    """
@@ -257,7 +276,7 @@ public class FileUploadTest extends ortus.boxlang.web.util.BaseWebTest {
 		assertThat( variables.get( result ) ).isInstanceOf( IStruct.class );
 		fileInfo = variables.getAsStruct( result );
 		assertThat( fileInfo.getAsString( KeyDictionary.clientFile ) )
-		    .isEqualTo( Path.of( tmpDirectory, testFields[ 1 ] + ".exe" ).toAbsolutePath().toString() );
+		    .isEqualTo( testFields[ 1 ] + ".exe" );
 		assertTrue( fileInfo.getAsBoolean( KeyDictionary.fileWasSaved ) );
 
 	}
@@ -281,14 +300,143 @@ public class FileUploadTest extends ortus.boxlang.web.util.BaseWebTest {
 		variables.getAsArray( result ).stream().map( StructCaster::cast ).forEach( fileInfo -> {
 			assertThat( fileInfo.getAsString( KeyDictionary.serverFile ) ).isInstanceOf( String.class );
 			assertThat( fileInfo.getAsString( KeyDictionary.serverFile ) ).isNotEmpty();
+			assertThat( fileInfo.getAsString( KeyDictionary.serverFile ) ).doesNotContain( "/" );
+			assertThat( fileInfo.getAsString( KeyDictionary.serverFile ) ).doesNotContain( "\\" );
+			assertThat( fileInfo.getAsString( KeyDictionary.serverFile ) ).endsWith( ".jpg" );
 			assertThat( fileInfo.getAsString( KeyDictionary.clientFile ) )
 			    .isNotEqualTo( fileInfo.getAsString( KeyDictionary.serverFile ) );
 			assertThat( fileInfo.get( KeyDictionary.clientFileExt ) ).isEqualTo( "jpg" );
+			assertThat( fileInfo.getAsString( KeyDictionary.clientFileName ) ).doesNotContain( "." );
+			assertThat( fileInfo.getAsString( KeyDictionary.clientFileName ) ).isAnyOf( testFields[ 0 ], testFields[ 1 ], testFields[ 2 ] );
+			assertThat( fileInfo.get( KeyDictionary.serverFileExt ) ).isEqualTo( "jpg" );
+			assertThat( fileInfo.getAsString( KeyDictionary.serverFileName ) ).doesNotContain( "." );
+			assertThat( fileInfo.getAsString( KeyDictionary.serverFileName ) ).doesNotContain( "/" );
+			assertThat( fileInfo.getAsString( KeyDictionary.serverFileName ) ).doesNotContain( "\\" );
 			assertThat( fileInfo.get( KeyDictionary.contentType ) ).isEqualTo( "image/jpeg" );
 			assertThat( fileInfo.get( KeyDictionary.contentSubType ) ).isEqualTo( "jpeg" );
 			assertThat( fileInfo.get( KeyDictionary.fileSize ) ).isEqualTo( fileInfo.get( KeyDictionary.oldFileSize ) );
 		} );
 
+	}
+
+	@DisplayName( "It tests the BIF FileUpload with blocked extensions" )
+	@Test
+	public void testBifFileUploadBlockedExtensions() {
+		// Reset uploads to ensure clean state
+		setupUploadsForTest();
+
+		variables.put( Key.of( "filefield" ), testFields[ 0 ] );
+		variables.put( Key.directory, Path.of( tmpDirectory ).toAbsolutePath().toString() );
+
+		// Test blocking jpg files with strict mode off
+		runtime.executeSource(
+		    """
+		            result = FileUpload(
+		            	filefield = filefield,
+		            	destination = directory,
+		          nameconflict = "makeunique",
+		       blockedExtensions = "jpg",
+		    strict=false
+		            );
+		            """,
+		    context );
+
+		assertThat( variables.get( result ) ).isInstanceOf( IStruct.class );
+
+		IStruct fileInfo = variables.getAsStruct( result );
+
+		assertThat( fileInfo.getAsString( KeyDictionary.clientFile ) )
+		    .isEqualTo( testFields[ 0 ] + ".jpg" );
+		assertFalse( fileInfo.getAsBoolean( KeyDictionary.fileWasSaved ) );
+
+		// Reset uploads again for next test
+		setupUploadsForTest();
+
+		// Test blocking jpg files with strict mode on - should throw exception
+		assertThrows( BoxRuntimeException.class, () -> runtime.executeSource(
+		    """
+		            result = FileUpload(
+		            	filefield = filefield,
+		            	destination = directory,
+		          nameconflict = "makeunique",
+		       blockedExtensions = "jpg",
+		    strict=true
+		            );
+		            """,
+		    context ) );
+
+		// Reset uploads again for next test
+		setupUploadsForTest();
+
+		// Test blocking other extensions (not jpg) - should allow jpg upload
+		runtime.executeSource(
+		    """
+		            result = FileUpload(
+		            	filefield = filefield,
+		            	destination = directory,
+		          nameconflict = "makeunique",
+		       blockedExtensions = "exe,pdf,doc",
+		    strict=false
+		            );
+		            """,
+		    context );
+
+		assertThat( variables.get( result ) ).isInstanceOf( IStruct.class );
+		fileInfo = variables.getAsStruct( result );
+		assertThat( fileInfo.getAsString( KeyDictionary.clientFile ) )
+		    .isEqualTo( testFields[ 0 ] + ".jpg" );
+		assertTrue( fileInfo.getAsBoolean( KeyDictionary.fileWasSaved ) );
+
+		// Reset uploads again for next test
+		setupUploadsForTest();
+
+		// Test combination of allowedExtensions and blockedExtensions
+		// Allow jpg and png, but block jpg - should result in no file saved
+		runtime.executeSource(
+		    """
+		            result = FileUpload(
+		            	filefield = filefield,
+		            	destination = directory,
+		          nameconflict = "makeunique",
+		       allowedExtensions = "jpg,png",
+		       blockedExtensions = "jpg",
+		    strict=false
+		            );
+		            """,
+		    context );
+
+		assertThat( variables.get( result ) ).isInstanceOf( IStruct.class );
+		fileInfo = variables.getAsStruct( result );
+		assertThat( fileInfo.getAsString( KeyDictionary.clientFile ) )
+		    .isEqualTo( testFields[ 0 ] + ".jpg" );
+		assertFalse( fileInfo.getAsBoolean( KeyDictionary.fileWasSaved ) );
+	}
+
+	/**
+	 * Helper method to setup clean uploads for each test scenario
+	 */
+	private void setupUploadsForTest() {
+		try {
+			mockUploads.clear();
+
+			Stream.of( testFields ).forEach( field -> {
+				Path fieldFile = Path.of( tmpDirectory, field + ".jpg" );
+				try {
+					Files.copy( Path.of( testUpload ), fieldFile, StandardCopyOption.REPLACE_EXISTING );
+				} catch ( IOException e ) {
+					throw new BoxIOException( e );
+				}
+				mockUploads.add( new ortus.boxlang.web.exchange.IBoxHTTPExchange.FileUpload( Key.of( field ), fieldFile,
+				    fieldFile.getFileName().toString() ) );
+			} );
+
+			ortus.boxlang.web.exchange.IBoxHTTPExchange.FileUpload[] uploadsArray = mockUploads
+			    .toArray( new ortus.boxlang.web.exchange.IBoxHTTPExchange.FileUpload[ 0 ] );
+
+			when( mockExchange.getUploadData() ).thenReturn( uploadsArray );
+		} catch ( Exception e ) {
+			throw new RuntimeException( "Failed to setup uploads for test", e );
+		}
 	}
 
 }

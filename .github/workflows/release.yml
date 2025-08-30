@@ -147,7 +147,7 @@ jobs:
         if: env.SNAPSHOT == 'false'
         run: |
           ./gradlew publish --no-daemon --no-parallel
-          ./gradlew publishAllPublicationsToCentralPortal
+          ./gradlew publishAggregationToCentralPortal --stacktrace --info
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GPG_KEY: ${{ secrets.GPG_KEY }}
