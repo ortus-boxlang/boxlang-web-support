@@ -464,7 +464,8 @@ public class WebRequestBoxContext extends RequestBoxContext {
 		// in which case, the web request executor will always issue a final forced
 		// flush. Otherwise, just let the buffer keep accumulating
 		if ( force ) {
-			String output = "";
+			var		buffers	= super._getBuffers();
+			String	output	= "";
 			for ( StringBuffer buf : buffers ) {
 				synchronized ( buf ) {
 					output = output.concat( buf.toString() );
