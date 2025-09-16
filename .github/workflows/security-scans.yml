@@ -71,7 +71,9 @@ jobs:
           echo "Using branch: $BRANCH"
 
       - name: Build it!
-        run: ./gradlew downloadBoxLang build -x test
+        run: |
+          ./gradlew downloadBoxLang
+          ./gradlew build -x test
 
       - name: Scan generated packages (Table Output)
         uses: anchore/scan-action@v6
