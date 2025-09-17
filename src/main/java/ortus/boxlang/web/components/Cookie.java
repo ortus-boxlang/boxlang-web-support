@@ -146,22 +146,24 @@ public class Cookie extends Component {
 				// convert days to seconds
 				cookieInstance.setMaxAge( ( int ) ( numberAttempt.get().doubleValue() * 24 * 60 * 60 ) );
 			} else {
-				// now try date
-				CastAttempt<DateTime> dateAttempt = DateTimeCaster.attempt( expires );
-				if ( dateAttempt.wasSuccessful() ) {
-					cookieInstance.setExpires( dateAttempt.get().toDate() );
-				} else {
-					// finally try string
-					CastAttempt<String> stringAttempt = StringCasterStrict.attempt( expires );
-					if ( stringAttempt.wasSuccessful() ) {
-						String stringValue = stringAttempt.get();
-						if ( stringValue.equalsIgnoreCase( "now" ) ) {
-							cookieInstance.setMaxAge( 0 );
-						} else if ( stringValue.equalsIgnoreCase( "never" ) ) {
-							cookieInstance.setMaxAge( 60 * 60 * 24 * 365 * 30 ); // 30 years
-						} else {
-							throw new BoxValidationException( "Invalid cookie expiration string value: " + stringValue );
-						}
+				// Now try string
+				Boolean				maxAgeSet		= false;
+				CastAttempt<String>	stringAttempt	= StringCasterStrict.attempt( expires );
+				if ( stringAttempt.wasSuccessful() ) {
+					String stringValue = stringAttempt.get();
+					if ( stringValue.equalsIgnoreCase( "now" ) ) {
+						cookieInstance.setMaxAge( 0 );
+						maxAgeSet = true;
+					} else if ( stringValue.equalsIgnoreCase( "never" ) ) {
+						cookieInstance.setMaxAge( 60 * 60 * 24 * 365 * 30 ); // 30 years
+						maxAgeSet = true;
+					}
+				}
+				if ( !maxAgeSet ) {
+					// finally try date
+					CastAttempt<DateTime> dateAttempt = DateTimeCaster.attempt( expires );
+					if ( dateAttempt.wasSuccessful() ) {
+						cookieInstance.setExpires( dateAttempt.get().toDate() );
 					} else {
 						throw new BoxValidationException( "Invalid cookie expiration type: " + expires.getClass().getName() );
 					}
