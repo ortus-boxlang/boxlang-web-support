@@ -38,7 +38,16 @@ import ortus.boxlang.web.util.ErrorPageTemplate;
 
 /**
  * I handle default errors for a web request
- * TODO: allow custom error template to be configured
+ * 
+ * Error pages are now generated using a template system for better maintainability.
+ * The template can be found at: src/main/resources/templates/error-page.html
+ * 
+ * Template variables:
+ * - {{VERSION_INFO}} - BoxLang version info (debug mode only)
+ * - {{ERROR_CONTENT}} - Main error messages and exception details
+ * - {{DEBUG_CONTENT}} - Tag context and stack trace (debug mode only)
+ * 
+ * TODO: allow custom error template path to be configured
  */
 public class WebErrorHandler {
 
