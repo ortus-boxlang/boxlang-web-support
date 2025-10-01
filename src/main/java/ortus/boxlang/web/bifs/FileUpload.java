@@ -202,8 +202,15 @@ public class FileUpload extends BIF {
 			destinationPath = FileSystemUtil.expandPath( context, destination ).absolutePath();
 		}
 
+		String fileName = upload.originalFileName();
+
 		if ( !Files.isDirectory( destinationPath ) ) {
-			throw new BoxRuntimeException( "The specified destination path [" + destination + "] is not a directory" );
+			if ( destinationPath.getFileName().toString().contains( "." ) ) {
+				fileName		= destinationPath.getFileName().toString();
+				destinationPath	= destinationPath.getParent();
+			} else {
+				throw new BoxRuntimeException( "The specified destination path [" + destination + "] is not a directory or a path to a file" );
+			}
 		}
 
 		if ( !Files.exists( destinationPath ) && createPath ) {
@@ -217,7 +224,6 @@ public class FileUpload extends BIF {
 			throw new BoxRuntimeException( "The specified destination path [" + destination + "] does not exist" );
 		}
 
-		String	fileName		= upload.originalFileName();
 		String	extension		= Parser.getFileExtension( fileName ).get();
 		Path	filePath		= destinationPath.resolve( fileName );
 		String	nameConflict	= arguments.getAsString( Key.nameconflict ).toLowerCase();
@@ -225,9 +231,9 @@ public class FileUpload extends BIF {
 		// Prepare the upload record
 		IStruct	uploadRecord	= newUploadRecord();
 		uploadRecord.put( KeyDictionary.clientDirectory, destinationPath.toString() );
-		uploadRecord.put( KeyDictionary.clientFile, fileName );
-		uploadRecord.put( KeyDictionary.clientFileExt, extension );
-		uploadRecord.put( KeyDictionary.clientFileName, FilenameUtils.getBaseName( fileName ) );
+		uploadRecord.put( KeyDictionary.clientFile, upload.originalFileName() );
+		uploadRecord.put( KeyDictionary.clientFileExt, Parser.getFileExtension( upload.originalFileName() ).get() );
+		uploadRecord.put( KeyDictionary.clientFileName, FilenameUtils.getBaseName( upload.originalFileName() ) );
 		uploadRecord.put( KeyDictionary.attemptedServerFile, filePath.toString() );
 
 		try {

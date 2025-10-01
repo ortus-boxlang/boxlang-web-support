@@ -148,6 +148,46 @@ public class FileUploadTest extends ortus.boxlang.web.util.BaseWebTest {
 
 	}
 
+	@DisplayName( "It tests the BIF FileUpload will accept a full path as the destination" )
+	@Test
+	public void testBifFileUploadWithFileDestination() {
+		variables.put( Key.of( "filefield" ), testFields[ 1 ] );
+		variables.put( Key.directory, Path.of( tmpDirectory, "myfile.jpg" ).toAbsolutePath().toString() );
+		runtime.executeSource(
+		    """
+		      result = FileUpload(
+		      	filefield = filefield,
+		      	destination = directory,
+		    nameconflict = "makeunique"
+		      );
+		      """,
+		    context );
+
+		assertThat( variables.get( result ) ).isInstanceOf( IStruct.class );
+
+		IStruct fileInfo = variables.getAsStruct( result );
+
+		assertThat( fileInfo.getAsString( KeyDictionary.serverFile ) ).isInstanceOf( String.class );
+		assertThat( fileInfo.getAsString( KeyDictionary.serverFile ) ).isNotEmpty();
+		assertThat( fileInfo.getAsString( KeyDictionary.serverFile ) ).doesNotContain( "/" );
+		assertThat( fileInfo.getAsString( KeyDictionary.serverFile ) ).doesNotContain( "\\" );
+		assertThat( fileInfo.getAsString( KeyDictionary.serverFile ) ).isEqualTo( "myfile.jpg" );
+		assertThat( fileInfo.getAsString( KeyDictionary.clientFile ) )
+		    .isEqualTo( testFields[ 1 ] + ".jpg" );
+		assertThat( fileInfo.getAsString( KeyDictionary.clientFile ) )
+		    .isNotEqualTo( fileInfo.getAsString( KeyDictionary.serverFile ) );
+		assertThat( fileInfo.get( KeyDictionary.clientFileExt ) ).isEqualTo( "jpg" );
+		assertThat( fileInfo.get( KeyDictionary.clientFileName ) ).isEqualTo( "file2" );
+		assertThat( fileInfo.get( KeyDictionary.serverFileExt ) ).isEqualTo( "jpg" );
+		assertThat( fileInfo.getAsString( KeyDictionary.serverFileName ) ).doesNotContain( "." );
+		assertThat( fileInfo.getAsString( KeyDictionary.serverFileName ) ).doesNotContain( "/" );
+		assertThat( fileInfo.getAsString( KeyDictionary.serverFileName ) ).doesNotContain( "\\" );
+		assertThat( fileInfo.get( KeyDictionary.contentType ) ).isEqualTo( "image/jpeg" );
+		assertThat( fileInfo.get( KeyDictionary.contentSubType ) ).isEqualTo( "jpeg" );
+		assertThat( fileInfo.get( KeyDictionary.oldFileSize ) ).isNull();
+
+	}
+
 	@DisplayName( "It tests the BIF FileUpload without a FileField" )
 	@Test
 	public void testBifFileUploadNoField() {
