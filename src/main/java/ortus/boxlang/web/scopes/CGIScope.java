@@ -43,7 +43,7 @@ public class CGIScope extends BaseScope {
 	/**
 	 * THE KEYS THAT ARE KNOWN TO THE CGI SCOPE
 	 */
-	private Set<Key>			knownKeys	= new TreeSet<>( Arrays.asList(
+	private static final Set<Key>	knownKeys	= new TreeSet<>( Arrays.asList(
 	    Key.auth_password,
 	    Key.auth_type,
 	    Key.auth_user,
@@ -99,12 +99,12 @@ public class CGIScope extends BaseScope {
 	 * Public Properties
 	 * --------------------------------------------------------------------------
 	 */
-	public static final Key		name		= Key.of( "cgi" );
+	public static final Key			name		= Key.of( "cgi" );
 
 	/**
 	 * The Linked Exchange
 	 */
-	protected IBoxHTTPExchange	exchange;
+	protected IBoxHTTPExchange		exchange;
 
 	/**
 	 * --------------------------------------------------------------------------

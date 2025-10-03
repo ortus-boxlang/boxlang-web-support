@@ -96,4 +96,24 @@ public class CookieScopeTest {
 		assertThat( variables.getAsString( Key.of( "checkCResult" ) ) ).isEqualTo( "baz" );
 	}
 
+	@DisplayName( "It can set a cookie expiration value with a date string" )
+	@Test
+	public void testSetCookieExpirationAsDateStringInComponent() {
+		// @formatter:off
+		instance.executeSource( """
+			cookieStruct = {
+				"name": "foo",
+				"value": "bar",
+				"expires": "Fri, 31 Dec 2038 23:59:59 GMT",
+			};
+			bx:cookie attributeCollection=cookieStruct;
+			check = cookie.keyExists( "foo" );
+			checkResult = cookie[ "foo" ];
+		""", context );
+		// @formatter:on
+		Object check = variables.get( Key.of( "check" ) );
+		assertThat( ( Boolean ) check ).isTrue();
+		assertThat( variables.getAsString( Key.of( "checkResult" ) ) ).isEqualTo( "bar" );
+	}
+
 }
