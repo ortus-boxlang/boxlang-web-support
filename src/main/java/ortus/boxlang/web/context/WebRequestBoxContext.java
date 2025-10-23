@@ -195,7 +195,7 @@ public class WebRequestBoxContext extends RequestBoxContext {
 
 						sessionCookie	= new BoxCookie( sessionCookieDefaults.getAsString( Key._NAME ),
 						    this.sessionID.getName() )
-						    .setPath( "/" );
+						        .setPath( "/" );
 
 						Optional.ofNullable( sessionCookieSettings.get( KeyDictionary.httpOnly ) ).map( BooleanCaster::cast ).map( sessionCookie::setHttpOnly );
 
@@ -464,9 +464,9 @@ public class WebRequestBoxContext extends RequestBoxContext {
 		// in which case, the web request executor will always issue a final forced
 		// flush. Otherwise, just let the buffer keep accumulating
 		if ( force ) {
-			var		buffers	= super._getBuffers();
-			String	output	= "";
-			for ( StringBuffer buf : buffers ) {
+			var		theBuffers	= super._getBuffers();
+			String	output		= "";
+			for ( StringBuffer buf : theBuffers ) {
 				synchronized ( buf ) {
 					output = output.concat( buf.toString() );
 					buf.setLength( 0 );
