@@ -195,7 +195,7 @@ public class WebRequestBoxContext extends RequestBoxContext {
 
 						sessionCookie	= new BoxCookie( sessionCookieDefaults.getAsString( Key._NAME ),
 						    this.sessionID.getName() )
-						        .setPath( "/" );
+						    .setPath( "/" );
 
 						Optional.ofNullable( sessionCookieSettings.get( KeyDictionary.httpOnly ) ).map( BooleanCaster::cast ).map( sessionCookie::setHttpOnly );
 
