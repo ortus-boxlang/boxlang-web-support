@@ -25,6 +25,7 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import ortus.boxlang.compiler.parser.Parser;
 import ortus.boxlang.runtime.bifs.BIF;
@@ -376,19 +377,19 @@ public class FileUpload extends BIF {
 		Boolean	hasApplicationPermission	= true;
 		Boolean	hasRequestPermission		= true;
 
-		if ( allowedExtensions != null ) {
+		if ( !StringUtils.isEmpty( allowedExtensions ) ) {
 			hasRequestPermission = ListUtil.asList( allowedExtensions, ListUtil.DEFAULT_DELIMITER ).stream()
 			    .map( StringCaster::cast )
 			    .anyMatch( ext -> ext.equals( "*" ) || ext.equalsIgnoreCase( uploadExtension ) );
 		}
 
-		if ( blockedExtensions != null ) {
+		if ( !StringUtils.isEmpty( blockedExtensions ) ) {
 			hasRequestPermission = hasRequestPermission && ListUtil.asList( blockedExtensions, ListUtil.DEFAULT_DELIMITER ).stream()
 			    .map( StringCaster::cast )
 			    .noneMatch( ext -> ext.equalsIgnoreCase( uploadExtension ) );
 		}
 
-		if ( allowedMimeTypes != null && allowedExtensions == null && blockedExtensions == null ) {
+		if ( !StringUtils.isEmpty( allowedMimeTypes ) && StringUtils.isEmpty( allowedExtensions ) && StringUtils.isEmpty( blockedExtensions ) ) {
 			hasRequestPermission = ListUtil.asList( allowedMimeTypes, ListUtil.DEFAULT_DELIMITER ).stream()
 			    .map( StringCaster::cast )
 			    .anyMatch( ext -> ext.equals( "*" ) || ext.equalsIgnoreCase( uploadMimeType ) );
