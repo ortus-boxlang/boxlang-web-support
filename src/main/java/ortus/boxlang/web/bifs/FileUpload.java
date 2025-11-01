@@ -191,16 +191,20 @@ public class FileUpload extends BIF {
 	 * @return An IStruct containing information about the uploaded file.
 	 */
 	private IStruct uploadFile( IBoxHTTPExchange.FileUpload upload, IStruct arguments, IBoxContext context ) {
-		String	destination		= arguments.getAsString( Key.destination );
-		Path	destinationPath	= null;
-		Boolean	createPath		= false;
+		String	destination				= arguments.getAsString( Key.destination );
+		Path	destinationPath			= null;
+		Boolean	createPath				= false;
+		String	tempDirectory			= FileSystemUtil.getTempDirectory();
+		boolean	isTemplateRelativePath	= destination.startsWith( "." );
 
-		if ( !Path.of( destination ).isAbsolute() ) {
+		if ( !Path.of( destination ).isAbsolute() && !isTemplateRelativePath ) {
 			// If the destination is not an absolute path, resolve it relative to the system's temporary directory
-			destinationPath	= Path.of( FileSystemUtil.getTempDirectory(), destination );
+			destinationPath	= Path.of( tempDirectory, destination ).normalize();
 			createPath		= true;
 		} else {
-			destinationPath = FileSystemUtil.expandPath( context, destination ).absolutePath();
+			destinationPath	= FileSystemUtil.expandPath( context, destination ).absolutePath();
+			// If our temp directory is passed in as the absolute path, we create the necessary directories
+			createPath		= destinationPath.toString().startsWith( tempDirectory );
 		}
 
 		String fileName = upload.originalFileName();
@@ -221,6 +225,7 @@ public class FileUpload extends BIF {
 				throw new BoxIOException( "The specified destination path [" + destination + "] could not be created", e );
 			}
 		}
+
 		if ( !Files.exists( destinationPath ) ) {
 			throw new BoxRuntimeException( "The specified destination path [" + destination + "] does not exist" );
 		}
