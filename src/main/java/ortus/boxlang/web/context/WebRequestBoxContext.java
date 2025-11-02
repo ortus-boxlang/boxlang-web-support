@@ -214,7 +214,7 @@ public class WebRequestBoxContext extends RequestBoxContext {
 	 *
 	 * @return The BoxCookie instance
 	 */
-	private BoxCookie generateSessionCookie( Key sessionid ) {
+	private BoxCookie generateSessionCookie( Key newId ) {
 
 		IStruct appSettings = getConfig().getAsStruct( Key.applicationSettings );
 
@@ -225,7 +225,7 @@ public class WebRequestBoxContext extends RequestBoxContext {
 		} );
 
 		BoxCookie sessionCookie = new BoxCookie( sessionCookieDefaults.getAsString( Key._NAME ),
-		    this.sessionID.getName() )
+		    newId.getName() )
 		        .setPath( "/" );
 
 		Optional.ofNullable( sessionCookieSettings.get( KeyDictionary.httpOnly ) ).map( BooleanCaster::cast ).map( sessionCookie::setHttpOnly );
