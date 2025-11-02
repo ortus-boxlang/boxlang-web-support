@@ -207,7 +207,14 @@ public class WebRequestBoxContext extends RequestBoxContext {
 		return this.sessionID;
 	}
 
-	BoxCookie generateSessionCookie( Key sessionid ) {
+	/**
+	 * Generate a session cookie based on the settings in the application config
+	 *
+	 * @param sessionid The session ID key
+	 *
+	 * @return The BoxCookie instance
+	 */
+	private BoxCookie generateSessionCookie( Key sessionid ) {
 
 		IStruct appSettings = getConfig().getAsStruct( Key.applicationSettings );
 
