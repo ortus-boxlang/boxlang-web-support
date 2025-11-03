@@ -116,6 +116,7 @@ public class MyStreamingBIF extends BIF {
 - Clean up resources (cancel scheduled tasks)
 
 **SSEEmitter Implementation Details**:
+- Implements `AutoCloseable` for try-with-resources support in Java callers
 - Use `AtomicBoolean` for thread-safe closed state
 - Synchronize writer access for concurrent operations
 - Use `scheduledExecutor.scheduledExecutor().scheduleAtFixedRate()` for keep-alive
@@ -123,6 +124,7 @@ public class MyStreamingBIF extends BIF {
 - Handle multi-line data by splitting and prefixing each line with `data:`
 - Use `IsSimpleValue.isSimpleValue()` to detect complex types for JSON serialization
 - Truncate debug log data to 100 chars to prevent log flooding
+- **Future Enhancement**: IBoxHTTPExchange could support onComplete/onClose listeners for automatic cleanup if handler exits unexpectedly
 
 ### BoxLang-Java Interop Patterns
 **CRITICAL**: When passing Java objects to BoxLang closures:

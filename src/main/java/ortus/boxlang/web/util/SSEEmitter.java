@@ -41,7 +41,7 @@ import ortus.boxlang.web.exchange.IBoxHTTPExchange;
  * proper cleanup of resources.
  *
  * Implements AutoCloseable for try-with-resources support:
- * 
+ *
  * <pre>
  * try (SSEEmitter emitter = new SSEEmitter(...)) {
  *     emitter.send("data");
@@ -109,6 +109,11 @@ public class SSEEmitter implements AutoCloseable {
 		this.context		= context;
 
 		appLogger.debug( "SSE Emitter created - retry: " + retry + "ms, keepAlive: " + keepAliveInterval + "ms" );
+
+		// Note: IBoxHTTPExchange does not currently support onComplete/onClose listeners.
+		// If such support is added in the future, register a listener here to ensure
+		// close() is called even if the handler exits unexpectedly:
+		// exchange.onComplete(() -> this.close());
 
 		// Start keep-alive task if enabled
 		if ( keepAliveInterval > 0 ) {
