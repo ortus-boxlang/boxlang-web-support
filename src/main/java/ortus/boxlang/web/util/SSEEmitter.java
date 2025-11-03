@@ -81,6 +81,7 @@ public class SSEEmitter implements AutoCloseable {
 	 * --------------------------------------------------------------------------
 	 */
 
+	private final String				connectionId;
 	private final IBoxHTTPExchange		exchange;
 	private final PrintWriter			writer;
 	private final AtomicBoolean			closed				= new AtomicBoolean( false );
@@ -101,13 +102,14 @@ public class SSEEmitter implements AutoCloseable {
 		Objects.requireNonNull( retry, "Retry interval cannot be null. Use 0 to disable." );
 		Objects.requireNonNull( keepAliveInterval, "Keep-alive interval cannot be null. Use 0 to disable." );
 
+		this.connectionId	= java.util.UUID.randomUUID().toString().substring( 0, 8 );
 		this.exchange		= exchange;
 		this.writer			= exchange.getResponseWriter();
 		this.retry			= retry;
 		this.firstMessage	= new AtomicBoolean( true );
 		this.context		= context;
 
-		appLogger.debug( "SSE Emitter created - retry: " + retry + "ms, keepAlive: " + keepAliveInterval + "ms" );
+		appLogger.debug( "[SSE:" + connectionId + "] Emitter created - retry: " + retry + "ms, keepAlive: " + keepAliveInterval + "ms" );
 
 		// Note: IBoxHTTPExchange does not currently support onComplete/onClose listeners.
 		// If such support is added in the future, register a listener here to ensure
@@ -132,7 +134,7 @@ public class SSEEmitter implements AutoCloseable {
 	 */
 	public void send( Object data, String event, Object id ) {
 		if ( closed.get() ) {
-			appLogger.debug( "SSE send ignored - stream is closed" );
+			appLogger.debug( "[SSE:" + connectionId + "] send ignored - stream is closed" );
 			return;
 		}
 
@@ -140,7 +142,7 @@ public class SSEEmitter implements AutoCloseable {
 			synchronized ( writer ) {
 				// Send retry on first message only
 				if ( firstMessage.getAndSet( false ) && retry > 0 ) {
-					appLogger.debug( "SSE sending retry header: " + retry + "ms" );
+					appLogger.debug( "[SSE:" + connectionId + "] sending retry header: " + retry + "ms" );
 					writer.write( "retry: " + retry + "\n" );
 				}
 
@@ -148,7 +150,7 @@ public class SSEEmitter implements AutoCloseable {
 				if ( event != null && !event.isEmpty() ) {
 					// SSE spec: event field cannot contain newlines, strip them out
 					String sanitizedEvent = event.replaceAll( "[\\r\\n]", "" );
-					appLogger.debug( "SSE sending event: " + sanitizedEvent );
+					appLogger.debug( "[SSE:" + connectionId + "] sending event: " + sanitizedEvent );
 					writer.write( "event: " + sanitizedEvent + "\n" );
 				}
 
@@ -156,7 +158,7 @@ public class SSEEmitter implements AutoCloseable {
 				if ( id != null ) {
 					// SSE spec: id field cannot contain newlines, strip them out
 					String sanitizedId = StringCaster.cast( id ).replaceAll( "[\\r\\n]", "" );
-					appLogger.debug( "SSE sending id: " + sanitizedId );
+					appLogger.debug( "[SSE:" + connectionId + "] sending id: " + sanitizedId );
 					writer.write( "id: " + sanitizedId + "\n" );
 				}
 
@@ -168,12 +170,14 @@ public class SSEEmitter implements AutoCloseable {
 					dataString = StringCaster.cast( data );
 				} else {
 					// Complex types -> JSON
-					appLogger.debug( "SSE serializing complex data to JSON" );
+					appLogger.debug( "[SSE:" + connectionId + "] serializing complex data to JSON" );
 					dataString = JSONUtil.getJSONBuilder().asString( data );
 				}
 
 				if ( appLogger.isDebugEnabled() ) {
-					appLogger.debug( "SSE sending data: " + ( dataString.length() > 100 ? dataString.substring( 0, 100 ) + "..." : dataString ) );
+					appLogger
+					    .debug(
+					        "[SSE:" + connectionId + "] sending data: " + ( dataString.length() > 100 ? dataString.substring( 0, 100 ) + "..." : dataString ) );
 				}
 
 				// Handle multi-line data (each line must be prefixed with "data: ")
@@ -187,12 +191,12 @@ public class SSEEmitter implements AutoCloseable {
 				writer.write( "\n" );
 				writer.flush();
 				if ( writer.checkError() ) {
-					appLogger.debug( "SSE client disconnected (writer error)" );
+					appLogger.debug( "[SSE:" + connectionId + "] client disconnected (writer error)" );
 					close();
 				}
 			}
 		} catch ( Exception e ) {
-			appLogger.debug( "SSE client disconnected during send: " + e.getMessage() );
+			appLogger.debug( "[SSE:" + connectionId + "] client disconnected during send: " + e.getMessage() );
 			// Client disconnected
 			close();
 		}
@@ -222,16 +226,16 @@ public class SSEEmitter implements AutoCloseable {
 
 		try {
 			synchronized ( writer ) {
-				appLogger.debug( "SSE sending comment: " + text );
+				appLogger.debug( "[SSE:" + connectionId + "] sending comment: " + text );
 				writer.write( ":" + text + "\n\n" );
 				writer.flush();
 				if ( writer.checkError() ) {
-					appLogger.debug( "SSE client disconnected (writer error)" );
+					appLogger.debug( "[SSE:" + connectionId + "] client disconnected (writer error)" );
 					close();
 				}
 			}
 		} catch ( Exception e ) {
-			appLogger.error( "Failed to send SSE comment: " + e.getMessage(), e );
+			appLogger.error( "[SSE:" + connectionId + "] Failed to send comment: " + e.getMessage(), e );
 			// Client disconnected
 			close();
 		}
@@ -242,7 +246,7 @@ public class SSEEmitter implements AutoCloseable {
 	 */
 	public void close() {
 		if ( this.closed.compareAndSet( false, true ) ) {
-			appLogger.debug( "SSE stream closing" );
+			appLogger.debug( "[SSE:" + connectionId + "] stream closing" );
 		}
 		cleanup();
 	}
@@ -257,6 +261,15 @@ public class SSEEmitter implements AutoCloseable {
 	}
 
 	/**
+	 * Get the connection ID for this emitter.
+	 *
+	 * @return The connection ID
+	 */
+	public String getConnectionId() {
+		return this.connectionId;
+	}
+
+	/**
 	 * Handle errors that occur during streaming.
 	 * Logs the error and sends an error event to the client.
 	 *
@@ -264,7 +277,7 @@ public class SSEEmitter implements AutoCloseable {
 	 */
 	public void handleError( Exception error ) {
 		// Log to application logger
-		appLogger.error( "SSE Error: " + error.getMessage(), error );
+		appLogger.error( "[SSE:" + connectionId + "] Error: " + error.getMessage(), error );
 		// Send to console as well
 		error.printStackTrace();
 
@@ -291,11 +304,11 @@ public class SSEEmitter implements AutoCloseable {
 	 */
 	public void cleanup() {
 		if ( this.keepAliveTask != null && !this.keepAliveTask.isCancelled() ) {
-			appLogger.debug( "SSE cancelling keep-alive task" );
+			appLogger.debug( "[SSE:" + connectionId + "] cancelling keep-alive task" );
 			keepAliveTask.cancel( true );
 			this.keepAliveTask = null;
 		}
-		appLogger.debug( "SSE cleanup complete" );
+		appLogger.debug( "[SSE:" + connectionId + "] cleanup complete" );
 	}
 
 	/**
@@ -304,7 +317,7 @@ public class SSEEmitter implements AutoCloseable {
 	 * @param intervalMs The interval in milliseconds
 	 */
 	private void startKeepAlive( int intervalMs ) {
-		appLogger.debug( "SSE starting keep-alive task with interval: " + intervalMs + "ms" );
+		appLogger.debug( "[SSE:" + connectionId + "] starting keep-alive task with interval: " + intervalMs + "ms" );
 		// Many proxies flush sooner if you send something right away. so delay is 0
 		this.keepAliveTask = scheduledExecutor.scheduledExecutor().scheduleAtFixedRate(
 		    () -> {

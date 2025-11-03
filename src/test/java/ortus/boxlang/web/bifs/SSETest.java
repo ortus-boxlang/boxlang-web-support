@@ -66,9 +66,11 @@ public class SSETest extends BaseWebTest {
 		assertThat( output ).contains( "\n\n" ); // SSE message terminator
 
 		// Verify headers were set
-		verify( mockExchange ).setResponseHeader( "Content-Type", "text/event-stream" );
-		verify( mockExchange ).setResponseHeader( "Cache-Control", "no-cache" );
+		verify( mockExchange ).setResponseHeader( "Content-Type", "text/event-stream; charset=utf-8" );
+		verify( mockExchange ).setResponseHeader( "Cache-Control", "no-cache, no-transform" );
 		verify( mockExchange ).setResponseHeader( "Connection", "keep-alive" );
+		verify( mockExchange ).setResponseHeader( "X-Accel-Buffering", "no" );
+		verify( mockExchange ).setResponseHeader( "Content-Encoding", "identity" );
 	}
 
 	@Test
