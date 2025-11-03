@@ -116,6 +116,18 @@ public class SSEEmitter implements AutoCloseable {
 		// close() is called even if the handler exits unexpectedly:
 		// exchange.onComplete(() -> this.close());
 
+		// First-byte fast flush: Immediately send a comment and tiny event to punch through buffers/proxies
+		// This helps establish the connection quickly and prevents timeouts
+		try {
+			appLogger.debug( "[SSE:" + connectionId + "] Sending first-byte fast flush" );
+			writer.write( ":hi\n" );
+			writer.write( "data: \n\n" ); // Empty data event
+			writer.flush();
+		} catch ( Exception e ) {
+			appLogger.debug( "[SSE:" + connectionId + "] Failed to send first-byte flush: " + e.getMessage() );
+			// Not critical - continue anyway
+		}
+
 		// Start keep-alive task if enabled
 		if ( keepAliveInterval > 0 ) {
 			startKeepAlive( keepAliveInterval );
