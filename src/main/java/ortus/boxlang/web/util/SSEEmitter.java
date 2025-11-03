@@ -100,14 +100,14 @@ public class SSEEmitter implements AutoCloseable {
 	 * --------------------------------------------------------------------------
 	 */
 
-	private final String				connectionId;
-	private final IBoxHTTPExchange		exchange;
-	private final PrintWriter			writer;
-	private final AtomicBoolean			closed				= new AtomicBoolean( false );
-	private final AtomicBoolean			firstMessage;
-	private final Integer				retry;
-	private ScheduledFuture<?>			keepAliveTask;
-	private final IBoxContext			context;
+	private final String			connectionId;
+	private final IBoxHTTPExchange	exchange;
+	private final PrintWriter		writer;
+	private final AtomicBoolean		closed	= new AtomicBoolean( false );
+	private final AtomicBoolean		firstMessage;
+	private final Integer			retry;
+	private ScheduledFuture<?>		keepAliveTask;
+	private final IBoxContext		context;
 
 	/**
 	 * Creates a new SSE emitter.
