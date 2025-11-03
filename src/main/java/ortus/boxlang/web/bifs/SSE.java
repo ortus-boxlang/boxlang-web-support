@@ -150,10 +150,13 @@ public class SSE extends BIF {
 		}
 
 		// Set SSE response headers
-		exchange.setResponseHeader( "Content-Type", "text/event-stream" );
-		exchange.setResponseHeader( "Cache-Control", "no-cache" );
+		exchange.setResponseHeader( "Content-Type", "text/event-stream; charset=utf-8" );
+		exchange.setResponseHeader( "Cache-Control", "no-cache, no-transform" );
 		exchange.setResponseHeader( "Connection", "keep-alive" );
-		exchange.setResponseHeader( "X-Accel-Buffering", "no" ); // Disable nginx buffering
+		// Disable nginx buffering
+		exchange.setResponseHeader( "X-Accel-Buffering", "no" );
+		// avoid gzip buffering in some stacks
+		exchange.setResponseHeader( "Content-Encoding", "identity" );
 
 		// Clear any existing buffer to prevent content corruption
 		context.clearBuffer();

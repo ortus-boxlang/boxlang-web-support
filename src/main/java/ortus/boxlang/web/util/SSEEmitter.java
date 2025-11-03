@@ -172,7 +172,9 @@ public class SSEEmitter implements AutoCloseable {
 					dataString = JSONUtil.getJSONBuilder().asString( data );
 				}
 
-				appLogger.debug( "SSE sending data: " + ( dataString.length() > 100 ? dataString.substring( 0, 100 ) + "..." : dataString ) );
+				if ( appLogger.isDebugEnabled() ) {
+					appLogger.debug( "SSE sending data: " + ( dataString.length() > 100 ? dataString.substring( 0, 100 ) + "..." : dataString ) );
+				}
 
 				// Handle multi-line data (each line must be prefixed with "data: ")
 				// Split on any line ending: \r\n (CRLF), \n (LF), or \r (CR)
