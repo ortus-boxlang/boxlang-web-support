@@ -32,8 +32,8 @@ public class MyComponent extends Component {
             new Attribute(Key.myAttr, "string", Set.of(Validator.NON_EMPTY))
         };
     }
-    
-    public BodyResult _invoke(IBoxContext context, IStruct attributes, 
+
+    public BodyResult _invoke(IBoxContext context, IStruct attributes,
                               ComponentBody body, IStruct executionState) {
         WebRequestBoxContext requestContext = context.getParentOfType(WebRequestBoxContext.class);
         IBoxHTTPExchange exchange = requestContext.getHTTPExchange();
@@ -63,18 +63,71 @@ public class MyBIF extends BIF {
 3. **Always throw `new AbortException()`** to prevent additional content appending
 4. Consider setting an abort flag in context if servlet doesn't respect AbortException
 
+### Server-Sent Events (SSE) Pattern
+For real-time server-to-client streaming:
+```java
+@BoxBIF
+public class MyStreamingBIF extends BIF {
+    public Object _invoke(IBoxContext context, ArgumentsScope arguments) {
+        // 1. Get web context and exchange
+        WebRequestBoxContext requestContext = context.getParentOfType(WebRequestBoxContext.class);
+        IBoxHTTPExchange exchange = requestContext.getHTTPExchange();
+
+        // 2. Set SSE headers
+        exchange.setResponseHeader("Content-Type", "text/event-stream");
+        exchange.setResponseHeader("Cache-Control", "no-cache");
+        exchange.setResponseHeader("Connection", "keep-alive");
+
+        // 3. Clear buffer to prevent corruption
+        context.clearBuffer();
+
+        // 4. Create SSEEmitter helper (handles formatting, keep-alive, errors)
+        SSEEmitter emitter = new SSEEmitter(exchange, retry, keepAliveInterval, context);
+
+        // 5. For async execution, use io-tasks executor with context preservation
+        if (async) {
+            runtime.getExecutorService().getExecutor("io-tasks").submit(
+                () -> {
+                    try {
+                        callback.invoke(context, new Object[]{emitter});
+                    } finally {
+                        emitter.cleanup();
+                    }
+                }
+            );
+            return null; // Returns immediately
+        }
+
+        // 6. Synchronous execution (blocks until complete)
+        callback.invoke(context, new Object[]{emitter});
+
+        // 7. Throw AbortException to prevent further output
+        throw new AbortException();
+    }
+}
+```
+
+**SSEEmitter Responsibilities**:
+- Format messages per SSE spec (`data: ...\n\n`)
+- Auto-serialize complex data to JSON via `JSONUtil.getJSONBuilder().asString(data)`
+- Handle keep-alive comments via scheduled io-tasks
+- Detect client disconnects (IOException on flush)
+- Log errors to `runtime.getLoggingService().getLogger("boxlang.application")`
+- Clean up resources (cancel scheduled tasks)
+
 ### Testing Patterns
 - Extend `BaseWebTest` for web-enabled tests
 - Mock `IBoxHTTPExchange` for HTTP operations
-- Use `WebRequestBoxContext` for request-scoped testing
+- Use `when(mockExchange.getResponseWriter()).thenReturn(printWriter)` to capture output
 - Test output in BoxLang syntax: `runtime.executeSource("...", context)`
+- Expect `AbortException` for BIFs that should terminate output
 
 ## Key Directories
 
 - **`src/main/java/ortus/boxlang/web/`**: Core web functionality
   - `bifs/`: Web-specific built-in functions
   - `components/`: Web components (Content, Header, Cookie, etc.)
-  - `context/`: WebRequestBoxContext and related classes  
+  - `context/`: WebRequestBoxContext and related classes
   - `exchange/`: HTTP abstraction layer interfaces
   - `interceptors/`: Event-driven request processing hooks
   - `scopes/`: Web-specific scopes (URL, Form, CGI, etc.)
@@ -84,7 +137,7 @@ public class MyBIF extends BIF {
 ## Build & Development
 
 - **Build**: `./gradlew build` (includes shadow JAR creation)
-- **Tests**: `./gradlew test` 
+- **Tests**: `./gradlew test`
 - **Local Development**: Can reference local BoxLang build via `../boxlang/build/libs/`
 - **Versioning**: Automatic `-snapshot` suffix for development branch
 - **Code Style**: Spotless plugin enforces formatting (`./gradlew spotlessApply`)

@@ -26,19 +26,11 @@ import ortus.boxlang.runtime.scopes.Key;
  */
 public class KeyDictionary {
 
-	// Global keys
-	public static final Key	bx_template_path	= Key.of( "bx_template_path" );
-	public static final Key	disposition			= Key.of( "disposition" );
-	public static final Key	fileName			= Key.of( "fileName" );
-	public static final Key	htmlFooter			= Key.of( "htmlFooter" );
-	public static final Key	htmlHead			= Key.of( "htmlHead" );
-	public static final Key	onRequestEnd		= Key.of( "onRequestEnd" );
-	public static final Key	success				= Key.of( "success" );
-
-	// File Upload keys
+	public static final Key	async				= Key.of( "async" );
 	public static final Key	allowedExtensions	= Key.of( "allowedExtensions" );
 	public static final Key	attemptedServerFile	= Key.of( "attemptedServerFile" );
 	public static final Key	blockedExtensions	= Key.of( "blockedExtensions" );
+	public static final Key	bx_template_path	= Key.of( "bx_template_path" );
 	public static final Key	clientDirectory		= Key.of( "clientDirectory" );
 	public static final Key	clientFile			= Key.of( "clientFile" );
 	public static final Key	clientFileExt		= Key.of( "clientFileExt" );
@@ -46,7 +38,11 @@ public class KeyDictionary {
 	public static final Key	contentSubType		= Key.of( "contentSubType" );
 	public static final Key	contentType			= Key.of( "contentType" );
 	public static final Key	dateLastAccessed	= Key.of( "dateLastAccessed" );
+	public static final Key	disableUpdate		= Key.of( "disableUpdate" );
+	public static final Key	disposition			= Key.of( "disposition" );
+	public static final Key	encodevalue			= Key.of( "encodevalue" );
 	public static final Key	fileExisted			= Key.of( "fileExisted" );
+	public static final Key	fileName			= Key.of( "fileName" );
 	public static final Key	fileSize			= Key.of( "fileSize" );
 	public static final Key	fileUpload			= Key.of( "fileUpload" );
 	public static final Key	fileUploadAll		= Key.of( "fileUploadAll" );
@@ -54,23 +50,25 @@ public class KeyDictionary {
 	public static final Key	fileWasOverwritten	= Key.of( "fileWasOverwritten" );
 	public static final Key	fileWasRenamed		= Key.of( "fileWasRenamed" );
 	public static final Key	fileWasSaved		= Key.of( "fileWasSaved" );
+	public static final Key	keepAliveInterval	= Key.of( "keepAliveInterval" );
+	public static final Key	htmlFooter			= Key.of( "htmlFooter" );
+	public static final Key	htmlHead			= Key.of( "htmlHead" );
+	public static final Key	httpOnly			= Key.of( "httponly" );
 	public static final Key	oldFileSize			= Key.of( "oldFileSize" );
+	public static final Key	onRequestEnd		= Key.of( "onRequestEnd" );
+	public static final Key	retry				= Key.of( "retry" );
+	public static final Key	sameSite			= Key.of( "sameSite" );
+	public static final Key	sameSiteMode		= Key.of( "sameSiteMode" );
+	public static final Key	secure				= Key.of( "secure" );
 	public static final Key	serverDirectory		= Key.of( "serverDirectory" );
 	public static final Key	serverFile			= Key.of( "serverFile" );
 	public static final Key	serverFileExt		= Key.of( "serverFileExt" );
 	public static final Key	serverFileName		= Key.of( "serverFileName" );
+	public static final Key	sessionCookie		= Key.of( "sessionCookie" );
+	public static final Key	success				= Key.of( "success" );
 	public static final Key	timeCreated			= Key.of( "timeCreated" );
 	public static final Key	timeLastModified	= Key.of( "timeLastModified" );
 	public static final Key	upload				= Key.of( "upload" );
 	public static final Key	uploadAll			= Key.of( "uploadAll" );
-
-	// Session Cookie Settings
-	public static final Key	disableUpdate		= Key.of( "disableUpdate" );
-	public static final Key	encodevalue			= Key.of( "encodevalue" );
-	public static final Key	httpOnly			= Key.of( "httponly" );
-	public static final Key	sameSite			= Key.of( "sameSite" );
-	public static final Key	sameSiteMode		= Key.of( "sameSiteMode" );
-	public static final Key	secure				= Key.of( "secure" );
-	public static final Key	sessionCookie		= Key.of( "sessionCookie" );
 
 }
