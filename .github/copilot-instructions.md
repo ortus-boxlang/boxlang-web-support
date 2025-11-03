@@ -110,10 +110,26 @@ public class MyStreamingBIF extends BIF {
 **SSEEmitter Responsibilities**:
 - Format messages per SSE spec (`data: ...\n\n`)
 - Auto-serialize complex data to JSON via `JSONUtil.getJSONBuilder().asString(data)`
-- Handle keep-alive comments via scheduled io-tasks
+- Handle keep-alive comments via scheduled-tasks executor
 - Detect client disconnects (IOException on flush)
-- Log errors to `runtime.getLoggingService().getLogger("boxlang.application")`
+- Log errors to `runtime.getLoggingService().APPLICATION_LOGGER`
 - Clean up resources (cancel scheduled tasks)
+
+**SSEEmitter Implementation Details**:
+- Use `AtomicBoolean` for thread-safe closed state
+- Synchronize writer access for concurrent operations
+- Use `scheduledExecutor.scheduledExecutor().scheduleAtFixedRate()` for keep-alive
+- Store `ScheduledFuture<?>` for task cancellation in cleanup
+- Handle multi-line data by splitting and prefixing each line with `data:`
+- Use `IsSimpleValue.isSimpleValue()` to detect complex types for JSON serialization
+- Truncate debug log data to 100 chars to prevent log flooding
+
+### BoxLang-Java Interop Patterns
+**CRITICAL**: When passing Java objects to BoxLang closures:
+- **Named arguments NOT supported**: BoxLang cannot call Java methods with named arguments
+- **Use positional arguments only**: `emit.send(data, event, id)` ✅ NOT `emit.send(data="x", event="y")` ❌
+- **Error message**: "Methods on Java objects cannot be called with named arguments"
+- **Testing**: Always test with `runtime.executeSource()` to catch interop issues
 
 ### Testing Patterns
 - Extend `BaseWebTest` for web-enabled tests
@@ -121,6 +137,8 @@ public class MyStreamingBIF extends BIF {
 - Use `when(mockExchange.getResponseWriter()).thenReturn(printWriter)` to capture output
 - Test output in BoxLang syntax: `runtime.executeSource("...", context)`
 - Expect `AbortException` for BIFs that should terminate output
+- Use `Thread.sleep()` after async operations to allow completion
+- Test edge cases: multi-line data, arrays, structs, closed streams, buffer clearing
 
 ## Key Directories
 
@@ -148,6 +166,20 @@ Always navigate up the context hierarchy to get web context:
 WebRequestBoxContext requestContext = context.getParentOfType(WebRequestBoxContext.class);
 IBoxHTTPExchange exchange = requestContext.getHTTPExchange();
 ```
+
+## Executor Services
+BoxLang provides specialized thread executors via `runtime.getAsyncService().getExecutor(name)`:
+- **`io-tasks`**: Virtual thread executor for I/O-bound operations (SSE, file operations, HTTP calls)
+- **`scheduled-tasks`**: ScheduledExecutorService for periodic tasks (keep-alive, polling)
+- **Context preservation**: Wrap callbacks with `ThreadBoxContext.runInContext()` when needed
+
+## Logging Best Practices
+- Use `runtime.getLoggingService().APPLICATION_LOGGER` for application-level logs
+- **Debug logging**: Log at DEBUG level for detailed operation traces (enable via config)
+- **Error logging**: Use `logger.error(message, exception)` with stack traces
+- **Data truncation**: Truncate large payloads in debug logs (e.g., `data.substring(0, 100) + "..."`)
+- **Client disconnects**: Log at DEBUG (expected), not ERROR
+- **Log formatting**: Include operation context (e.g., "SSE sending data: ...")
 
 ## Security Notes
 - Path traversal protection in WebRequestExecutor (blocks `../`, `..;`, etc.)
