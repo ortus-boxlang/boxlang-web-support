@@ -247,6 +247,33 @@ public class SSETest extends BaseWebTest {
 	}
 
 	@Test
+	@DisplayName( "It handles CRLF line endings correctly" )
+	public void testCRLFLineEndings() {
+		try {
+			// Simulate Windows-style CRLF line endings
+			runtime.executeSource(
+			    """
+			    sse(function(emit) {
+			        emit.send("Windows\r
+Line\r
+Data");
+			        emit.close();
+			    });
+			    """,
+			    context
+			);
+		} catch ( AbortException e ) {
+			// Expected
+		}
+
+		String output = outputWriter.toString();
+		// Each line should be prefixed with "data: " regardless of line ending style
+		assertThat( output ).contains( "data: Windows" );
+		assertThat( output ).contains( "data: Line" );
+		assertThat( output ).contains( "data: Data" );
+	}
+
+	@Test
 	@DisplayName( "It sends array data as JSON" )
 	public void testArrayData() {
 		try {

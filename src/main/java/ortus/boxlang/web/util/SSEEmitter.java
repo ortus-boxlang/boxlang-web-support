@@ -159,8 +159,8 @@ public class SSEEmitter implements AutoCloseable {
 
 				// Serialize and send data
 				String dataString;
-				if ( data instanceof String ) {
-					dataString = ( String ) data;
+				if ( data instanceof String castedData ) {
+					dataString = castedData;
 				} else if ( IsSimpleValue.isSimpleValue( data ) ) {
 					dataString = StringCaster.cast( data );
 				} else {
@@ -172,7 +172,8 @@ public class SSEEmitter implements AutoCloseable {
 				appLogger.debug( "SSE sending data: " + ( dataString.length() > 100 ? dataString.substring( 0, 100 ) + "..." : dataString ) );
 
 				// Handle multi-line data (each line must be prefixed with "data: ")
-				String[] lines = dataString.split( "\n" );
+				// Split on any line ending: \r\n (CRLF), \n (LF), or \r (CR)
+				String[] lines = dataString.split( "\\r?\\n|\\r" );
 				for ( String line : lines ) {
 					writer.write( "data: " + line + "\n" );
 				}

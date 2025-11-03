@@ -118,6 +118,7 @@ public class MyStreamingBIF extends BIF {
 - Detect client disconnects (IOException on flush)
 - Log errors to `runtime.getLoggingService().APPLICATION_LOGGER`
 - Clean up resources (cancel scheduled tasks)
+- **CORS Support**: SSE BIF provides optional `cors` argument for cross-origin requests (e.g., `cors="*"` or `cors="https://app.example.com"`)
 
 **SSEEmitter Implementation Details**:
 - Implements `AutoCloseable` for try-with-resources support in Java callers
@@ -125,7 +126,7 @@ public class MyStreamingBIF extends BIF {
 - Synchronize writer access for concurrent operations
 - Use `scheduledExecutor.scheduledExecutor().scheduleAtFixedRate()` for keep-alive
 - Store `ScheduledFuture<?>` for task cancellation in cleanup
-- Handle multi-line data by splitting and prefixing each line with `data:`
+- Handle multi-line data by splitting on any line ending (CRLF `\r\n`, LF `\n`, CR `\r`) and prefixing each line with `data:`
 - Use `IsSimpleValue.isSimpleValue()` to detect complex types for JSON serialization
 - Truncate debug log data to 100 chars to prevent log flooding
 - **Future Enhancement**: IBoxHTTPExchange could support onComplete/onClose listeners for automatic cleanup if handler exits unexpectedly
