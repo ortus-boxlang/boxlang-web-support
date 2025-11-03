@@ -303,6 +303,7 @@ public class SSEEmitter implements AutoCloseable {
 	 */
 	private void startKeepAlive( int intervalMs ) {
 		appLogger.debug( "SSE starting keep-alive task with interval: " + intervalMs + "ms" );
+		// Many proxies flush sooner if you send something right away. so delay is 0
 		this.keepAliveTask = scheduledExecutor.scheduledExecutor().scheduleAtFixedRate(
 		    () -> {
 			    if ( !closed.get() ) {
@@ -314,7 +315,7 @@ public class SSEEmitter implements AutoCloseable {
 				    }
 			    }
 		    },
-		    intervalMs,
+		    0L,
 		    intervalMs,
 		    TimeUnit.MILLISECONDS
 		);
