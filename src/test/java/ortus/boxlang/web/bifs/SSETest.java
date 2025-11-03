@@ -28,6 +28,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import ortus.boxlang.runtime.scopes.Key;
 import ortus.boxlang.runtime.types.exceptions.AbortException;
 import ortus.boxlang.web.util.BaseWebTest;
 
@@ -451,5 +452,35 @@ public class SSETest extends BaseWebTest {
 		// Verify wildcard CORS
 		verify( mockExchange ).setResponseHeader( "Access-Control-Allow-Origin", "*" );
 		verify( mockExchange ).setResponseHeader( "Access-Control-Allow-Credentials", "true" );
+	}
+
+	@Test
+	@DisplayName( "It splits large data chunks over 32KB" )
+	public void testLargeChunkSplitting() {
+		try {
+			// Create a string larger than 32KB (32768 bytes)
+			String largeData = "x".repeat( 40000 ); // 40KB of data
+			context.getScopeNearby( Key.of( "variables" ) ).put( Key.of( "largeData" ), largeData );
+
+			runtime.executeSource(
+			    """
+			    sse( emit => {
+			        emit.send(largeData);
+			        emit.close();
+			    });
+			    """,
+			    context
+			);
+		} catch ( AbortException e ) {
+			// Expected
+		}
+
+		String output = outputWriter.toString();
+		// Should be split into multiple data: lines
+		// 40000 bytes = 32768 (first chunk) + 7232 (second chunk)
+		assertThat( output ).contains( "data: " );
+		// Verify the data is present (as multiple chunks)
+		long dataLineCount = output.lines().filter( line -> line.startsWith( "data: x" ) ).count();
+		assertThat( dataLineCount ).isGreaterThan( 1L ); // Should be at least 2 chunks
 	}
 }

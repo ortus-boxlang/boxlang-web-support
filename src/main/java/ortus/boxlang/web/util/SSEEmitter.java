@@ -76,6 +76,12 @@ public class SSEEmitter implements AutoCloseable {
 	private static final BoxLangLogger	appLogger			= runtime.getLoggingService().APPLICATION_LOGGER;
 
 	/**
+	 * Maximum chunk size for SSE data lines (32KB).
+	 * Lines longer than this will be split into multiple data: lines.
+	 */
+	private static final int			MAX_CHUNK_SIZE		= 32 * 1024;
+
+	/**
 	 * --------------------------------------------------------------------------
 	 * Helper Methods
 	 * --------------------------------------------------------------------------
@@ -215,7 +221,19 @@ public class SSEEmitter implements AutoCloseable {
 				// Split on any line ending: \r\n (CRLF), \n (LF), or \r (CR)
 				String[] lines = dataString.split( "\\r?\\n|\\r" );
 				for ( String line : lines ) {
-					writer.write( "data: " + line + "\n" );
+					// Guardrail: split very large chunks (> 32KB) to prevent buffer issues
+					if ( line.length() > MAX_CHUNK_SIZE ) {
+						appLogger.debug( "[SSE:" + connectionId + "] splitting large line (" + line.length() + " bytes) into chunks" );
+						int offset = 0;
+						while ( offset < line.length() ) {
+							int		chunkEnd	= Math.min( offset + MAX_CHUNK_SIZE, line.length() );
+							String	chunk		= line.substring( offset, chunkEnd );
+							writer.write( "data: " + chunk + "\n" );
+							offset = chunkEnd;
+						}
+					} else {
+						writer.write( "data: " + line + "\n" );
+					}
 				}
 
 				// End of message
