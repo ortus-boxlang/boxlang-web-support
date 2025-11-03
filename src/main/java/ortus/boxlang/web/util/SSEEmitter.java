@@ -19,6 +19,7 @@ package ortus.boxlang.web.util;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.Objects;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -39,12 +40,20 @@ import ortus.boxlang.web.exchange.IBoxHTTPExchange;
  * events to the client. It handles automatic keep-alive comments, error handling, and
  * proper cleanup of resources.
  *
+ * Implements AutoCloseable for try-with-resources support:
+ * 
+ * <pre>
+ * try (SSEEmitter emitter = new SSEEmitter(...)) {
+ *     emitter.send("data");
+ * } // Automatically calls close()
+ * </pre>
+ *
  * SSE Message Format:
  * - data: <message>\n\n
  * - event: <eventName>\ndata: <message>\nid: <id>\n\n
  * - :<comment>\n\n
  */
-public class SSEEmitter {
+public class SSEEmitter implements AutoCloseable {
 
 	/**
 	 * --------------------------------------------------------------------------
@@ -90,6 +99,9 @@ public class SSEEmitter {
 	 * @param context           The BoxLang context for logging
 	 */
 	public SSEEmitter( IBoxHTTPExchange exchange, Integer retry, Integer keepAliveInterval, IBoxContext context ) {
+		Objects.requireNonNull( retry, "Retry interval cannot be null. Use 0 to disable." );
+		Objects.requireNonNull( keepAliveInterval, "Keep-alive interval cannot be null. Use 0 to disable." );
+
 		this.exchange		= exchange;
 		this.writer			= exchange.getResponseWriter();
 		this.retry			= retry;
@@ -163,6 +175,10 @@ public class SSEEmitter {
 				// End of message
 				writer.write( "\n" );
 				writer.flush();
+				if ( writer.checkError() ) {
+					appLogger.debug( "SSE client disconnected (writer error)" );
+					close();
+				}
 			}
 		} catch ( IOException e ) {
 			appLogger.debug( "SSE client disconnected during send: " + e.getMessage() );
@@ -198,6 +214,10 @@ public class SSEEmitter {
 				appLogger.debug( "SSE sending comment: " + text );
 				writer.write( ":" + text + "\n\n" );
 				writer.flush();
+				if ( writer.checkError() ) {
+					appLogger.debug( "SSE client disconnected (writer error)" );
+					close();
+				}
 			}
 		} catch ( Exception e ) {
 			appLogger.error( "Failed to send SSE comment: " + e.getMessage(), e );
@@ -212,8 +232,8 @@ public class SSEEmitter {
 	public void close() {
 		if ( this.closed.compareAndSet( false, true ) ) {
 			appLogger.debug( "SSE stream closing" );
-			cleanup();
 		}
+		cleanup();
 	}
 
 	/**
@@ -240,8 +260,10 @@ public class SSEEmitter {
 		// Try to send error event to client
 		if ( !this.closed.get() ) {
 			try {
+				var errorStruct = new java.util.LinkedHashMap<String, Object>();
+				errorStruct.put( "error", error.getMessage().replace( "\"", "\\\"" ) );
 				send(
-				    "{ \"error\": \"" + error.getMessage().replace( "\"", "\\\"" ) + "\" }",
+				    errorStruct,
 				    "error",
 				    null
 				);
