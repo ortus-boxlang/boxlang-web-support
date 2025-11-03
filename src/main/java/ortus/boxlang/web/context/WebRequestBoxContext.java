@@ -208,6 +208,11 @@ public class WebRequestBoxContext extends RequestBoxContext {
 	}
 
 	/**
+	 * <<<<<<< Updated upstream
+	 * =======
+	 * <<<<<<< Updated upstream
+	 * =======
+	 * >>>>>>> Stashed changes
 	 * Generate a session cookie based on the settings in the application config
 	 *
 	 * @param sessionid The session ID key
@@ -251,6 +256,10 @@ public class WebRequestBoxContext extends RequestBoxContext {
 	}
 
 	/**
+	 * <<<<<<< Updated upstream
+	 * =======
+	 * >>>>>>> Stashed changes
+	 * >>>>>>> Stashed changes
 	 * Invalidate a session
 	 */
 	public void resetSession() {
@@ -259,13 +268,18 @@ public class WebRequestBoxContext extends RequestBoxContext {
 			BoxCookie sessionCookie = httpExchange
 			    .getRequestCookie( sessionCookieDefaults.getAsString( Key._NAME ) );
 			if ( sessionCookie != null ) {
+				String identifier = sessionCookie.getValue();
 				// set the max age to 0 to delete the cookie and add it to the response
 				sessionCookie.setMaxAge( 0 );
 				// modify the value reference to ensure that getSessionId() generates a new response cookie
 				sessionCookie.setValue( "" );
 				httpExchange.addResponseCookie( sessionCookie );
+				if ( !identifier.isEmpty() ) {
+					getApplicationListener().invalidateSession( Key.of( identifier ) );
+				}
+			} else {
+				getApplicationListener().invalidateSession( getSessionID() );
 			}
-			getApplicationListener().invalidateSession( getSessionID() );
 		}
 	}
 
