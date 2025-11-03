@@ -74,4 +74,14 @@ public class CGIScopeTest extends BaseWebTest {
 		assertThat( cgiScope.containsKey( Key.of( "server_name" ) ) ).isTrue();
 	}
 
+	@DisplayName( "Mapped values should be null" )
+	@Test
+	public void testMappedValuesShouldBeNull() {
+		IScope cgiScope = new CGIScope( mockExchange );
+		// assert no values are null
+		for ( var entry : cgiScope.entrySet() ) {
+			assertThat( entry.getValue() ).isNotNull();
+		}
+	}
+
 }

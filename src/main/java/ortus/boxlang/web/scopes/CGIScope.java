@@ -299,7 +299,7 @@ public class CGIScope extends BaseScope {
 			}
 		}
 
-		return null;
+		return "";
 	}
 
 	/**
