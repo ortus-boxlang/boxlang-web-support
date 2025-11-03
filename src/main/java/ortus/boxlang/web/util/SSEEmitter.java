@@ -77,6 +77,25 @@ public class SSEEmitter implements AutoCloseable {
 
 	/**
 	 * --------------------------------------------------------------------------
+	 * Helper Methods
+	 * --------------------------------------------------------------------------
+	 */
+
+	/**
+	 * Sanitize a field value for SSE by removing newlines and colons.
+	 * SSE spec requires that field values (event, id) cannot contain newlines.
+	 * Colons are also escaped to prevent protocol confusion.
+	 *
+	 * @param v The value to sanitize
+	 *
+	 * @return Sanitized string with newlines and colons removed, or empty string if null
+	 */
+	private static String sseField( String v ) {
+		return v == null ? "" : v.replace( "\r", "" ).replace( "\n", "" );
+	}
+
+	/**
+	 * --------------------------------------------------------------------------
 	 * Emitter Properties
 	 * --------------------------------------------------------------------------
 	 */
@@ -161,7 +180,7 @@ public class SSEEmitter implements AutoCloseable {
 				// Send event name if provided
 				if ( event != null && !event.isEmpty() ) {
 					// SSE spec: event field cannot contain newlines, strip them out
-					String sanitizedEvent = event.replaceAll( "[\\r\\n]", "" );
+					String sanitizedEvent = sseField( event );
 					appLogger.debug( "[SSE:" + connectionId + "] sending event: " + sanitizedEvent );
 					writer.write( "event: " + sanitizedEvent + "\n" );
 				}
@@ -169,7 +188,7 @@ public class SSEEmitter implements AutoCloseable {
 				// Send ID if provided
 				if ( id != null ) {
 					// SSE spec: id field cannot contain newlines, strip them out
-					String sanitizedId = StringCaster.cast( id ).replaceAll( "[\\r\\n]", "" );
+					String sanitizedId = sseField( StringCaster.cast( id ) );
 					appLogger.debug( "[SSE:" + connectionId + "] sending id: " + sanitizedId );
 					writer.write( "id: " + sanitizedId + "\n" );
 				}
