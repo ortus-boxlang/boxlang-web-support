@@ -49,7 +49,8 @@ public class SSE extends BIF {
 		    new Argument( true, Argument.FUNCTION, Key.callback ),
 		    new Argument( false, Argument.BOOLEAN, KeyDictionary.async, false ),
 		    new Argument( false, Argument.NUMERIC, KeyDictionary.retry, 0 ),
-		    new Argument( false, Argument.NUMERIC, KeyDictionary.keepAliveInterval, 0 )
+		    new Argument( false, Argument.NUMERIC, KeyDictionary.keepAliveInterval, 0 ),
+		    new Argument( false, Argument.STRING, KeyDictionary.cors, "" )
 		};
 		this.targetExecutor	= runtime.getAsyncService().getExecutor( "io-tasks" );
 	}
@@ -93,6 +94,14 @@ public class SSE extends BIF {
 	 *     keepAliveInterval = 30000,
 	 *     async = true
 	 * );
+	 *
+	 * // With CORS enabled for cross-origin requests
+	 * sse(
+	 *     callback = emit => {
+	 *         emit.send({ message: "Hello from API" });
+	 *     },
+	 *     cors = "*"  // or specific origin like "https://app.example.com"
+	 * );
 	 * </pre>
 	 *
 	 * <h2>Emitter Methods</h2>
@@ -117,6 +126,10 @@ public class SSE extends BIF {
 	 * @argument.keepAliveInterval If greater than 0, automatically sends keep-alive comments at this interval
 	 *                             (in milliseconds) to prevent connection timeouts. Default is 0 (disabled).
 	 *
+	 * @argument.cors Optional CORS origin to allow cross-origin requests. Use "*" for all origins, a specific
+	 *                origin like "https://app.example.com", or leave empty (default) for no CORS headers.
+	 *                When set, adds Access-Control-Allow-Origin and Access-Control-Allow-Credentials headers.
+	 *
 	 * @throws BoxRuntimeException if the callback is not a valid function
 	 */
 	public Object _invoke( IBoxContext context, ArgumentsScope arguments ) {
@@ -124,10 +137,17 @@ public class SSE extends BIF {
 		boolean					async				= arguments.getAsBoolean( KeyDictionary.async );
 		Integer					retry				= arguments.getAsInteger( KeyDictionary.retry );
 		Integer					keepAliveInterval	= arguments.getAsInteger( KeyDictionary.keepAliveInterval );
+		String					cors				= arguments.getAsString( KeyDictionary.cors );
 
 		// Get the HTTP exchange from the context
 		WebRequestBoxContext	requestContext		= context.getParentOfType( WebRequestBoxContext.class );
 		IBoxHTTPExchange		exchange			= requestContext.getHTTPExchange();
+
+		// Set CORS headers if specified
+		if ( cors != null && !cors.isEmpty() ) {
+			exchange.setResponseHeader( "Access-Control-Allow-Origin", cors );
+			exchange.setResponseHeader( "Access-Control-Allow-Credentials", "true" );
+		}
 
 		// Set SSE response headers
 		exchange.setResponseHeader( "Content-Type", "text/event-stream" );

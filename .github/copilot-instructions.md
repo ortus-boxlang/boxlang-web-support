@@ -78,6 +78,10 @@ public class MyStreamingBIF extends BIF {
         exchange.setResponseHeader("Cache-Control", "no-cache");
         exchange.setResponseHeader("Connection", "keep-alive");
 
+        // Optional: Set CORS headers if needed
+        exchange.setResponseHeader("Access-Control-Allow-Origin", "*");
+        exchange.setResponseHeader("Access-Control-Allow-Credentials", "true");
+
         // 3. Clear buffer to prevent corruption
         context.clearBuffer();
 

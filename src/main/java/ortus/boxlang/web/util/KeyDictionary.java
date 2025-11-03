@@ -37,6 +37,7 @@ public class KeyDictionary {
 	public static final Key	clientFileName		= Key.of( "clientFileName" );
 	public static final Key	contentSubType		= Key.of( "contentSubType" );
 	public static final Key	contentType			= Key.of( "contentType" );
+	public static final Key	cors				= Key.of( "cors" );
 	public static final Key	dateLastAccessed	= Key.of( "dateLastAccessed" );
 	public static final Key	disableUpdate		= Key.of( "disableUpdate" );
 	public static final Key	disposition			= Key.of( "disposition" );

@@ -344,4 +344,57 @@ public class SSETest extends BaseWebTest {
 		String output = outputWriter.toString();
 		assertThat( output ).contains( "data: Auto-closed message" );
 	}
+
+	@Test
+	@DisplayName( "It sets CORS headers when cors argument is provided" )
+	public void testCORSHeaders() {
+		try {
+			runtime.executeSource(
+			    """
+			    sse(
+			        callback = function(emit) {
+			            emit.send("CORS enabled");
+			            emit.close();
+			        },
+			        cors = "https://app.example.com"
+			    );
+			    """,
+			    context
+			);
+		} catch ( AbortException e ) {
+			// Expected
+		}
+
+		// Verify CORS headers were set
+		verify( mockExchange ).setResponseHeader( "Access-Control-Allow-Origin", "https://app.example.com" );
+		verify( mockExchange ).setResponseHeader( "Access-Control-Allow-Credentials", "true" );
+
+		String output = outputWriter.toString();
+		assertThat( output ).contains( "data: CORS enabled" );
+	}
+
+	@Test
+	@DisplayName( "It allows wildcard CORS" )
+	public void testCORSWildcard() {
+		try {
+			runtime.executeSource(
+			    """
+			    sse(
+			        callback = function(emit) {
+			            emit.send("Public SSE");
+			            emit.close();
+			        },
+			        cors = "*"
+			    );
+			    """,
+			    context
+			);
+		} catch ( AbortException e ) {
+			// Expected
+		}
+
+		// Verify wildcard CORS
+		verify( mockExchange ).setResponseHeader( "Access-Control-Allow-Origin", "*" );
+		verify( mockExchange ).setResponseHeader( "Access-Control-Allow-Credentials", "true" );
+	}
 }
