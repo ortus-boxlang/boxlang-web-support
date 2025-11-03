@@ -119,6 +119,32 @@ public class SSETest extends BaseWebTest {
 	}
 
 	@Test
+	@DisplayName( "It sanitizes newlines from event and id fields" )
+	public void testEventIdSanitization() {
+		try {
+			runtime.executeSource(
+			    """
+			    sse(function(emit) {
+			        // Event and ID with newlines should be stripped
+			        emit.send("Data", "user\nEvent\r\nTest", "123\n456");
+			        emit.close();
+			    });
+			    """,
+			    context
+			);
+		} catch ( AbortException e ) {
+			// Expected
+		}
+
+		String output = outputWriter.toString();
+		// Newlines should be stripped from event and id
+		assertThat( output ).contains( "event: userEventTest" );
+		assertThat( output ).contains( "id: 123456" );
+		// Data can contain newlines (multi-line handling)
+		assertThat( output ).contains( "data: Data" );
+	}
+
+	@Test
 	@DisplayName( "It can send retry header on first message" )
 	public void testRetryHeader() {
 		try {
@@ -253,13 +279,13 @@ public class SSETest extends BaseWebTest {
 			// Simulate Windows-style CRLF line endings
 			runtime.executeSource(
 			    """
-			    sse(function(emit) {
-			        emit.send("Windows\r
-Line\r
-Data");
-			        emit.close();
-			    });
-			    """,
+			    			    sse(function(emit) {
+			    			        emit.send("Windows\r
+			    Line\r
+			    Data");
+			    			        emit.close();
+			    			    });
+			    			    """,
 			    context
 			);
 		} catch ( AbortException e ) {

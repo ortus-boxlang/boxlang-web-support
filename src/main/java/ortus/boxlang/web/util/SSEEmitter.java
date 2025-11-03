@@ -17,7 +17,6 @@
  */
 package ortus.boxlang.web.util;
 
-import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Objects;
 import java.util.concurrent.ScheduledFuture;
@@ -147,14 +146,18 @@ public class SSEEmitter implements AutoCloseable {
 
 				// Send event name if provided
 				if ( event != null && !event.isEmpty() ) {
-					appLogger.debug( "SSE sending event: " + event );
-					writer.write( "event: " + event + "\n" );
+					// SSE spec: event field cannot contain newlines, strip them out
+					String sanitizedEvent = event.replaceAll( "[\\r\\n]", "" );
+					appLogger.debug( "SSE sending event: " + sanitizedEvent );
+					writer.write( "event: " + sanitizedEvent + "\n" );
 				}
 
 				// Send ID if provided
 				if ( id != null ) {
-					appLogger.debug( "SSE sending id: " + id );
-					writer.write( "id: " + id + "\n" );
+					// SSE spec: id field cannot contain newlines, strip them out
+					String sanitizedId = StringCaster.cast( id ).replaceAll( "[\\r\\n]", "" );
+					appLogger.debug( "SSE sending id: " + sanitizedId );
+					writer.write( "id: " + sanitizedId + "\n" );
 				}
 
 				// Serialize and send data
@@ -186,7 +189,7 @@ public class SSEEmitter implements AutoCloseable {
 					close();
 				}
 			}
-		} catch ( IOException e ) {
+		} catch ( Exception e ) {
 			appLogger.debug( "SSE client disconnected during send: " + e.getMessage() );
 			// Client disconnected
 			close();

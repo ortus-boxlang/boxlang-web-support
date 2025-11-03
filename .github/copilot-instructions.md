@@ -127,6 +127,7 @@ public class MyStreamingBIF extends BIF {
 - Use `scheduledExecutor.scheduledExecutor().scheduleAtFixedRate()` for keep-alive
 - Store `ScheduledFuture<?>` for task cancellation in cleanup
 - Handle multi-line data by splitting on any line ending (CRLF `\r\n`, LF `\n`, CR `\r`) and prefixing each line with `data:`
+- **Sanitize `event` and `id` fields**: Strip all newlines (`\r` and `\n`) as SSE spec forbids newlines in these fields
 - Use `IsSimpleValue.isSimpleValue()` to detect complex types for JSON serialization
 - Truncate debug log data to 100 chars to prevent log flooding
 - **Future Enhancement**: IBoxHTTPExchange could support onComplete/onClose listeners for automatic cleanup if handler exits unexpectedly
