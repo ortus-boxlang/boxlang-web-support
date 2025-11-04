@@ -261,6 +261,19 @@ public class SSEEmitter implements AutoCloseable {
 	}
 
 	/**
+	 * Send an SSE event to the client.
+	 *
+	 * Complex data types (structs, arrays) are automatically serialized to JSON.
+	 * Simple values are sent as-is.
+	 *
+	 * @param data  The data to send
+	 * @param event Optional event name
+	 */
+	public void send( Object data, String event ) {
+		send( data, event, null );
+	}
+
+	/**
 	 * Send an SSE comment (useful for keep-alive).
 	 *
 	 * Comments are lines starting with ':' and are ignored by the client.
