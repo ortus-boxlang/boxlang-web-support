@@ -17,6 +17,9 @@
  */
 package ortus.boxlang.web.bifs;
 
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+
 import ortus.boxlang.runtime.async.executors.BoxExecutor;
 import ortus.boxlang.runtime.bifs.BIF;
 import ortus.boxlang.runtime.bifs.BoxBIF;
@@ -50,6 +53,7 @@ public class SSE extends BIF {
 		    new Argument( false, Argument.BOOLEAN, KeyDictionary.async, false ),
 		    new Argument( false, Argument.NUMERIC, KeyDictionary.retry, 0 ),
 		    new Argument( false, Argument.NUMERIC, KeyDictionary.keepAliveInterval, 0 ),
+		    new Argument( false, Argument.NUMERIC, KeyDictionary.timeout, 0 ),
 		    new Argument( false, Argument.STRING, KeyDictionary.cors, "" )
 		};
 		this.targetExecutor	= runtime.getAsyncService().getExecutor( "io-tasks" );
@@ -95,6 +99,18 @@ public class SSE extends BIF {
 	 *     async = true
 	 * );
 	 *
+	 * // With timeout to prevent runaway connections
+	 * sse(
+	 *     callback = emit => {
+	 *         for(var i = 1; i <= 100; i++) {
+	 *             emit.send({ count: i });
+	 *             sleep(1000);
+	 *         }
+	 *     },
+	 *     async = true,
+	 *     timeout = 30000  // Close after 30 seconds max
+	 * );
+	 *
 	 * // With CORS enabled for cross-origin requests
 	 * sse(
 	 *     callback = emit => {
@@ -126,6 +142,10 @@ public class SSE extends BIF {
 	 * @argument.keepAliveInterval If greater than 0, automatically sends keep-alive comments at this interval
 	 *                             (in milliseconds) to prevent connection timeouts. Default is 0 (disabled).
 	 *
+	 * @argument.timeout Maximum time in milliseconds to wait for async execution to complete. If the timeout
+	 *                   is exceeded, the connection will be gracefully closed. Default is 0 (no timeout).
+	 *                   Only applies when async=true.
+	 *
 	 * @argument.cors Optional CORS origin to allow cross-origin requests. Use "*" for all origins, a specific
 	 *                origin like "https://app.example.com", or leave empty (default) for no CORS headers.
 	 *                When set, adds Access-Control-Allow-Origin and Access-Control-Allow-Credentials headers.
@@ -137,6 +157,7 @@ public class SSE extends BIF {
 		boolean					async				= arguments.getAsBoolean( KeyDictionary.async );
 		Integer					retry				= arguments.getAsInteger( KeyDictionary.retry );
 		Integer					keepAliveInterval	= arguments.getAsInteger( KeyDictionary.keepAliveInterval );
+		Integer					timeout				= arguments.getAsInteger( KeyDictionary.timeout );
 		String					cors				= arguments.getAsString( KeyDictionary.cors );
 
 		// Get the HTTP exchange from the context
@@ -166,6 +187,10 @@ public class SSE extends BIF {
 
 		// Execute the callback
 		if ( async ) {
+			// Use CountDownLatch to block the request thread until async task completes
+			// This prevents WebRequestExecutor from closing the connection prematurely
+			CountDownLatch latch = new CountDownLatch( 1 );
+
 			// Run in background thread with context preservation
 			this.targetExecutor.submit(
 			    () -> {
@@ -175,11 +200,34 @@ public class SSE extends BIF {
 					    emitter.handleError( e );
 				    } finally {
 					    emitter.cleanup();
+					    latch.countDown(); // Signal completion
 				    }
 			    }
 			);
-			// Return immediately for async execution
-			return null;
+
+			// Block the request thread until the async task completes or timeout is reached
+			try {
+				boolean completed;
+				if ( timeout > 0 ) {
+					// Wait with timeout
+					completed = latch.await( timeout, TimeUnit.MILLISECONDS );
+					if ( !completed ) {
+						// Timeout reached - gracefully close the connection
+						runtime.getLoggingService().APPLICATION_LOGGER
+						    .warn( "SSE async execution timed out after " + timeout + "ms. Closing connection gracefully." );
+						emitter.close();
+						// Still wait a bit for cleanup to finish
+						latch.await( 1, TimeUnit.SECONDS );
+					}
+				} else {
+					// Wait indefinitely
+					latch.await();
+				}
+			} catch ( InterruptedException e ) {
+				Thread.currentThread().interrupt();
+				emitter.close();
+				throw new BoxRuntimeException( "SSE async execution was interrupted", e );
+			}
 		} else {
 			// Execute synchronously (blocking)
 			try {
