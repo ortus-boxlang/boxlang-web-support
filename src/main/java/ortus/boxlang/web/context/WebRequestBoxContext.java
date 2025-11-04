@@ -26,6 +26,7 @@ import java.util.UUID;
 
 import ortus.boxlang.runtime.BoxRuntime;
 import ortus.boxlang.runtime.context.IBoxContext;
+import ortus.boxlang.runtime.context.IBoxContext.ScopeSearchResult;
 import ortus.boxlang.runtime.context.RequestBoxContext;
 import ortus.boxlang.runtime.dynamic.casters.BooleanCaster;
 import ortus.boxlang.runtime.dynamic.casters.StringCaster;
@@ -183,38 +184,19 @@ public class WebRequestBoxContext extends RequestBoxContext {
 					    .getRequestCookie( sessionCookieDefaults.getAsString( Key._NAME ) );
 					if ( sessionCookie != null ) {
 						String idValue = sessionCookie.getValue();
-						// We need to ensure that we are not dealing with the null value set by `resetSession()`
-						if ( idValue != null ) {
+						// We need to ensure that we are not dealing with an empty value or a null derivation
+						if ( idValue != null && !idValue.isEmpty() && !idValue.toLowerCase().equals( "null" ) ) {
 							this.sessionID = Key.of( sessionCookie.getValue() );
 						} else {
-							this.sessionID = Key.of( UUID.randomUUID().toString() );
+							this.sessionID	= Key.of( UUID.randomUUID().toString() );
+							sessionCookie	= generateSessionCookie( this.sessionID );
+							httpExchange.addResponseCookie( sessionCookie );
 						}
 					} else {
 						// Otherwise generate a new one
 						this.sessionID	= Key.of( UUID.randomUUID().toString() );
 
-						sessionCookie	= new BoxCookie( sessionCookieDefaults.getAsString( Key._NAME ),
-						    this.sessionID.getName() )
-						    .setPath( "/" );
-
-						Optional.ofNullable( sessionCookieSettings.get( KeyDictionary.httpOnly ) ).map( BooleanCaster::cast ).map( sessionCookie::setHttpOnly );
-
-						Optional.ofNullable( sessionCookieSettings.get( KeyDictionary.secure ) ).map( BooleanCaster::cast ).map( sessionCookie::setSecure );
-
-						Optional.ofNullable( sessionCookieSettings.get( Key.domain ) ).map( StringCaster::cast ).map( sessionCookie::setDomain );
-
-						Optional.ofNullable( sessionCookieSettings.get( KeyDictionary.sameSite ) ).map( StringCaster::cast )
-						    .map( sessionCookie::setSameSiteMode );
-
-						Object expiration = sessionCookieSettings.get( Key.timeout );
-						if ( expiration instanceof DateTime expireDateTime ) {
-							sessionCookie.setExpires( Date.from( expireDateTime.toInstant() ) );
-						} else if ( expiration instanceof Duration expireDuration ) {
-							sessionCookie.setExpires( Date.from( Instant.now().plus( expireDuration ) ) );
-						} else {
-							sessionCookie.setExpires(
-							    Date.from( sessionCookieDefaults.getAsDateTime( Key.timeout ).toInstant() ) );
-						}
+						sessionCookie	= generateSessionCookie( this.sessionID );
 
 						httpExchange.addResponseCookie( sessionCookie );
 					}
@@ -226,13 +208,74 @@ public class WebRequestBoxContext extends RequestBoxContext {
 	}
 
 	/**
+	 * <<<<<<< Updated upstream
+	 * =======
+	 * <<<<<<< Updated upstream
+	 * =======
+	 * >>>>>>> Stashed changes
+	 * Generate a session cookie based on the settings in the application config
+	 *
+	 * @param sessionid The session ID key
+	 *
+	 * @return The BoxCookie instance
+	 */
+	private BoxCookie generateSessionCookie( Key newId ) {
+
+		IStruct appSettings = getConfig().getAsStruct( Key.applicationSettings );
+
+		appSettings.putIfAbsent( KeyDictionary.sessionCookie, new Struct() );
+		IStruct sessionCookieSettings = appSettings.getAsStruct( KeyDictionary.sessionCookie );
+		sessionCookieDefaults.entrySet().stream().forEach( entry -> {
+			sessionCookieSettings.putIfAbsent( entry.getKey(), entry.getValue() );
+		} );
+
+		BoxCookie sessionCookie = new BoxCookie( sessionCookieDefaults.getAsString( Key._NAME ),
+		    newId.getName() )
+		    .setPath( "/" );
+
+		Optional.ofNullable( sessionCookieSettings.get( KeyDictionary.httpOnly ) ).map( BooleanCaster::cast ).map( sessionCookie::setHttpOnly );
+
+		Optional.ofNullable( sessionCookieSettings.get( KeyDictionary.secure ) ).map( BooleanCaster::cast ).map( sessionCookie::setSecure );
+
+		Optional.ofNullable( sessionCookieSettings.get( Key.domain ) ).map( StringCaster::cast ).map( sessionCookie::setDomain );
+
+		Optional.ofNullable( sessionCookieSettings.get( KeyDictionary.sameSite ) ).map( StringCaster::cast )
+		    .map( sessionCookie::setSameSiteMode );
+
+		Object expiration = sessionCookieSettings.get( Key.timeout );
+		if ( expiration instanceof DateTime expireDateTime ) {
+			sessionCookie.setExpires( Date.from( expireDateTime.toInstant() ) );
+		} else if ( expiration instanceof Duration expireDuration ) {
+			sessionCookie.setExpires( Date.from( Instant.now().plus( expireDuration ) ) );
+		} else {
+			sessionCookie.setExpires(
+			    Date.from( sessionCookieDefaults.getAsDateTime( Key.timeout ).toInstant() ) );
+		}
+
+		return sessionCookie;
+	}
+
+	/**
 	 * Invalidate a session
 	 */
 	public void resetSession() {
 		synchronized ( this ) {
 			this.sessionID = null;
-			httpExchange.addResponseCookie( new BoxCookie( sessionCookieDefaults.getAsString( Key._NAME ), null ) );
-			getApplicationListener().invalidateSession( getSessionID() );
+			BoxCookie sessionCookie = httpExchange
+			    .getRequestCookie( sessionCookieDefaults.getAsString( Key._NAME ) );
+			if ( sessionCookie != null ) {
+				String identifier = sessionCookie.getValue();
+				// set the max age to 0 to delete the cookie and add it to the response
+				sessionCookie.setMaxAge( 0 );
+				// modify the value reference to ensure that getSessionId() generates a new response cookie
+				sessionCookie.setValue( "" );
+				httpExchange.addResponseCookie( sessionCookie );
+				if ( !identifier.isEmpty() ) {
+					getApplicationListener().invalidateSession( Key.of( identifier ) );
+				}
+			} else {
+				getApplicationListener().invalidateSession( getSessionID() );
+			}
 		}
 	}
 
@@ -464,9 +507,9 @@ public class WebRequestBoxContext extends RequestBoxContext {
 		// in which case, the web request executor will always issue a final forced
 		// flush. Otherwise, just let the buffer keep accumulating
 		if ( force ) {
-			var		buffers	= super._getBuffers();
-			String	output	= "";
-			for ( StringBuffer buf : buffers ) {
+			var		theBuffers	= super._getBuffers();
+			String	output		= "";
+			for ( StringBuffer buf : theBuffers ) {
 				synchronized ( buf ) {
 					output = output.concat( buf.toString() );
 					buf.setLength( 0 );

@@ -25,6 +25,7 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import ortus.boxlang.compiler.parser.Parser;
 import ortus.boxlang.runtime.bifs.BIF;
@@ -190,16 +191,20 @@ public class FileUpload extends BIF {
 	 * @return An IStruct containing information about the uploaded file.
 	 */
 	private IStruct uploadFile( IBoxHTTPExchange.FileUpload upload, IStruct arguments, IBoxContext context ) {
-		String	destination		= arguments.getAsString( Key.destination );
-		Path	destinationPath	= null;
-		Boolean	createPath		= false;
+		String	destination				= arguments.getAsString( Key.destination );
+		Path	destinationPath			= null;
+		Boolean	createPath				= false;
+		String	tempDirectory			= FileSystemUtil.getTempDirectory();
+		boolean	isTemplateRelativePath	= destination.startsWith( "." );
 
-		if ( !Path.of( destination ).isAbsolute() ) {
+		if ( !Path.of( destination ).isAbsolute() && !isTemplateRelativePath ) {
 			// If the destination is not an absolute path, resolve it relative to the system's temporary directory
-			destinationPath	= Path.of( FileSystemUtil.getTempDirectory(), destination );
+			destinationPath	= Path.of( tempDirectory, destination ).normalize();
 			createPath		= true;
 		} else {
-			destinationPath = FileSystemUtil.expandPath( context, destination ).absolutePath();
+			destinationPath	= FileSystemUtil.expandPath( context, destination ).absolutePath();
+			// If our temp directory is passed in as the absolute path, we create the necessary directories
+			createPath		= destinationPath.toString().startsWith( tempDirectory );
 		}
 
 		String fileName = upload.originalFileName();
@@ -220,6 +225,7 @@ public class FileUpload extends BIF {
 				throw new BoxIOException( "The specified destination path [" + destination + "] could not be created", e );
 			}
 		}
+
 		if ( !Files.exists( destinationPath ) ) {
 			throw new BoxRuntimeException( "The specified destination path [" + destination + "] does not exist" );
 		}
@@ -376,19 +382,19 @@ public class FileUpload extends BIF {
 		Boolean	hasApplicationPermission	= true;
 		Boolean	hasRequestPermission		= true;
 
-		if ( allowedExtensions != null ) {
+		if ( !StringUtils.isEmpty( allowedExtensions ) ) {
 			hasRequestPermission = ListUtil.asList( allowedExtensions, ListUtil.DEFAULT_DELIMITER ).stream()
 			    .map( StringCaster::cast )
 			    .anyMatch( ext -> ext.equals( "*" ) || ext.equalsIgnoreCase( uploadExtension ) );
 		}
 
-		if ( blockedExtensions != null ) {
+		if ( !StringUtils.isEmpty( blockedExtensions ) ) {
 			hasRequestPermission = hasRequestPermission && ListUtil.asList( blockedExtensions, ListUtil.DEFAULT_DELIMITER ).stream()
 			    .map( StringCaster::cast )
 			    .noneMatch( ext -> ext.equalsIgnoreCase( uploadExtension ) );
 		}
 
-		if ( allowedMimeTypes != null && allowedExtensions == null && blockedExtensions == null ) {
+		if ( !StringUtils.isEmpty( allowedMimeTypes ) && StringUtils.isEmpty( allowedExtensions ) && StringUtils.isEmpty( blockedExtensions ) ) {
 			hasRequestPermission = ListUtil.asList( allowedMimeTypes, ListUtil.DEFAULT_DELIMITER ).stream()
 			    .map( StringCaster::cast )
 			    .anyMatch( ext -> ext.equals( "*" ) || ext.equalsIgnoreCase( uploadMimeType ) );

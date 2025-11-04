@@ -1,0 +1,401 @@
+/**
+ * [BoxLang]
+ *
+ * Copyright [2025] [Ortus Solutions, Corp]
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package ortus.boxlang.web.util;
+
+import java.io.PrintWriter;
+import java.util.Objects;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import ortus.boxlang.runtime.BoxRuntime;
+import ortus.boxlang.runtime.async.executors.BoxExecutor;
+import ortus.boxlang.runtime.bifs.global.decision.IsSimpleValue;
+import ortus.boxlang.runtime.context.IBoxContext;
+import ortus.boxlang.runtime.dynamic.casters.StringCaster;
+import ortus.boxlang.runtime.logging.BoxLangLogger;
+import ortus.boxlang.runtime.types.util.JSONUtil;
+import ortus.boxlang.web.exchange.IBoxHTTPExchange;
+
+/**
+ * Helper class for Server-Sent Events (SSE) streaming.
+ *
+ * This class wraps the HTTP response writer and provides methods for sending SSE-formatted
+ * events to the client. It handles automatic keep-alive comments, error handling, and
+ * proper cleanup of resources.
+ *
+ * Implements AutoCloseable for try-with-resources support:
+ *
+ * <pre>
+ * try (SSEEmitter emitter = new SSEEmitter(...)) {
+ *     emitter.send("data");
+ * } // Automatically calls close()
+ * </pre>
+ *
+ * SSE Message Format:
+ * - data: <message>\n\n
+ * - event: <eventName>\ndata: <message>\nid: <id>\n\n
+ * - :<comment>\n\n
+ */
+public class SSEEmitter implements AutoCloseable {
+
+	/**
+	 * --------------------------------------------------------------------------
+	 * Static Properties
+	 * --------------------------------------------------------------------------
+	 */
+
+	/**
+	 * The BoxRuntime instance for logging and utilities
+	 */
+	private static final BoxRuntime		runtime				= BoxRuntime.getInstance();
+
+	/**
+	 * The target Scheduled Executor for scheduled tasks
+	 */
+	private static final BoxExecutor	scheduledExecutor	= runtime.getAsyncService().getExecutor( "scheduled-tasks" );
+
+	/**
+	 * The application logger
+	 */
+	private static final BoxLangLogger	appLogger			= runtime.getLoggingService().APPLICATION_LOGGER;
+
+	/**
+	 * Maximum chunk size for SSE data lines (32KB).
+	 * Lines longer than this will be split into multiple data: lines.
+	 */
+	private static final int			MAX_CHUNK_SIZE		= 32 * 1024;
+
+	/**
+	 * --------------------------------------------------------------------------
+	 * Helper Methods
+	 * --------------------------------------------------------------------------
+	 */
+
+	/**
+	 * Sanitize a field value for SSE by removing newlines and colons.
+	 * SSE spec requires that field values (event, id) cannot contain newlines.
+	 * Colons are also escaped to prevent protocol confusion.
+	 *
+	 * @param v The value to sanitize
+	 *
+	 * @return Sanitized string with newlines and colons removed, or empty string if null
+	 */
+	private static String sseField( String v ) {
+		return v == null ? "" : v.replace( "\r", "" ).replace( "\n", "" );
+	}
+
+	/**
+	 * --------------------------------------------------------------------------
+	 * Emitter Properties
+	 * --------------------------------------------------------------------------
+	 */
+
+	private final String			connectionId;
+	private final IBoxHTTPExchange	exchange;
+	private final PrintWriter		writer;
+	private final AtomicBoolean		closed	= new AtomicBoolean( false );
+	private final AtomicBoolean		firstMessage;
+	private final Integer			retry;
+	private ScheduledFuture<?>		keepAliveTask;
+	private final IBoxContext		context;
+
+	/**
+	 * Creates a new SSE emitter.
+	 *
+	 * @param exchange          The HTTP exchange for this request
+	 * @param retry             The retry interval in milliseconds (0 = not sent)
+	 * @param keepAliveInterval The interval for keep-alive comments in milliseconds (0 = disabled)
+	 * @param context           The BoxLang context for logging
+	 */
+	public SSEEmitter( IBoxHTTPExchange exchange, Integer retry, Integer keepAliveInterval, IBoxContext context ) {
+		Objects.requireNonNull( retry, "Retry interval cannot be null. Use 0 to disable." );
+		Objects.requireNonNull( keepAliveInterval, "Keep-alive interval cannot be null. Use 0 to disable." );
+
+		this.connectionId	= java.util.UUID.randomUUID().toString().substring( 0, 8 );
+		this.exchange		= exchange;
+		this.writer			= exchange.getResponseWriter();
+		this.retry			= retry;
+		this.firstMessage	= new AtomicBoolean( true );
+		this.context		= context;
+
+		appLogger.debug( "[SSE:" + connectionId + "] Emitter created - retry: " + retry + "ms, keepAlive: " + keepAliveInterval + "ms" );
+
+		// Note: IBoxHTTPExchange does not currently support onComplete/onClose listeners.
+		// If such support is added in the future, register a listener here to ensure
+		// close() is called even if the handler exits unexpectedly:
+		// exchange.onComplete(() -> this.close());
+
+		// First-byte fast flush: Immediately send a comment and tiny event to punch through buffers/proxies
+		// This helps establish the connection quickly and prevents timeouts
+		try {
+			appLogger.debug( "[SSE:" + connectionId + "] Sending first-byte fast flush" );
+			writer.write( ":hi\n" );
+			writer.write( "data: \n\n" ); // Empty data event
+			writer.flush();
+		} catch ( Exception e ) {
+			appLogger.debug( "[SSE:" + connectionId + "] Failed to send first-byte flush: " + e.getMessage() );
+			// Not critical - continue anyway
+		}
+
+		// Start keep-alive task if enabled
+		if ( keepAliveInterval > 0 ) {
+			startKeepAlive( keepAliveInterval );
+		}
+	}
+
+	/**
+	 * Send an SSE event to the client.
+	 *
+	 * Complex data types (structs, arrays) are automatically serialized to JSON.
+	 * Simple values are sent as-is.
+	 *
+	 * @param data  The data to send
+	 * @param event Optional event name
+	 * @param id    Optional event ID
+	 */
+	public void send( Object data, String event, Object id ) {
+		if ( closed.get() ) {
+			appLogger.debug( "[SSE:" + connectionId + "] send ignored - stream is closed" );
+			return;
+		}
+
+		try {
+			synchronized ( writer ) {
+				// Send retry on first message only
+				if ( firstMessage.getAndSet( false ) && retry > 0 ) {
+					appLogger.debug( "[SSE:" + connectionId + "] sending retry header: " + retry + "ms" );
+					writer.write( "retry: " + retry + "\n" );
+				}
+
+				// Send event name if provided
+				if ( event != null && !event.isEmpty() ) {
+					// SSE spec: event field cannot contain newlines, strip them out
+					String sanitizedEvent = sseField( event );
+					appLogger.debug( "[SSE:" + connectionId + "] sending event: " + sanitizedEvent );
+					writer.write( "event: " + sanitizedEvent + "\n" );
+				}
+
+				// Send ID if provided
+				if ( id != null ) {
+					// SSE spec: id field cannot contain newlines, strip them out
+					String sanitizedId = sseField( StringCaster.cast( id ) );
+					appLogger.debug( "[SSE:" + connectionId + "] sending id: " + sanitizedId );
+					writer.write( "id: " + sanitizedId + "\n" );
+				}
+
+				// Serialize and send data
+				String dataString;
+				if ( data instanceof String castedData ) {
+					dataString = castedData;
+				} else if ( IsSimpleValue.isSimpleValue( data ) ) {
+					dataString = StringCaster.cast( data );
+				} else {
+					// Complex types -> JSON
+					appLogger.debug( "[SSE:" + connectionId + "] serializing complex data to JSON" );
+					dataString = JSONUtil.getJSONBuilder().asString( data );
+				}
+
+				if ( appLogger.isDebugEnabled() ) {
+					appLogger
+					    .debug(
+					        "[SSE:" + connectionId + "] sending data: " + ( dataString.length() > 100 ? dataString.substring( 0, 100 ) + "..." : dataString ) );
+				}
+
+				// Handle multi-line data (each line must be prefixed with "data: ")
+				// Split on any line ending: \r\n (CRLF), \n (LF), or \r (CR)
+				String[] lines = dataString.split( "\\r?\\n|\\r" );
+				for ( String line : lines ) {
+					// Guardrail: split very large chunks (> 32KB) to prevent buffer issues
+					if ( line.length() > MAX_CHUNK_SIZE ) {
+						appLogger.debug( "[SSE:" + connectionId + "] splitting large line (" + line.length() + " bytes) into chunks" );
+						int offset = 0;
+						while ( offset < line.length() ) {
+							int		chunkEnd	= Math.min( offset + MAX_CHUNK_SIZE, line.length() );
+							String	chunk		= line.substring( offset, chunkEnd );
+							writer.write( "data: " + chunk + "\n" );
+							offset = chunkEnd;
+						}
+					} else {
+						writer.write( "data: " + line + "\n" );
+					}
+				}
+
+				// End of message
+				writer.write( "\n" );
+				writer.flush();
+				if ( writer.checkError() ) {
+					appLogger.debug( "[SSE:" + connectionId + "] client disconnected (writer error)" );
+					close();
+				}
+			}
+		} catch ( Exception e ) {
+			appLogger.debug( "[SSE:" + connectionId + "] client disconnected during send: " + e.getMessage() );
+			// Client disconnected
+			close();
+		}
+	}
+
+	/**
+	 * Send an SSE event with only data.
+	 *
+	 * @param data The data to send
+	 */
+	public void send( Object data ) {
+		send( data, null, null );
+	}
+
+	/**
+	 * Send an SSE event to the client.
+	 *
+	 * Complex data types (structs, arrays) are automatically serialized to JSON.
+	 * Simple values are sent as-is.
+	 *
+	 * @param data  The data to send
+	 * @param event Optional event name
+	 */
+	public void send( Object data, String event ) {
+		send( data, event, null );
+	}
+
+	/**
+	 * Send an SSE comment (useful for keep-alive).
+	 *
+	 * Comments are lines starting with ':' and are ignored by the client.
+	 *
+	 * @param text The comment text
+	 */
+	public void comment( String text ) {
+		// Ignore comments if closed
+		if ( closed.get() ) {
+			return;
+		}
+
+		try {
+			synchronized ( writer ) {
+				appLogger.debug( "[SSE:" + connectionId + "] sending comment: " + text );
+				writer.write( ":" + text + "\n\n" );
+				writer.flush();
+				if ( writer.checkError() ) {
+					appLogger.debug( "[SSE:" + connectionId + "] client disconnected (writer error)" );
+					close();
+				}
+			}
+		} catch ( Exception e ) {
+			appLogger.error( "[SSE:" + connectionId + "] Failed to send comment: " + e.getMessage(), e );
+			// Client disconnected
+			close();
+		}
+	}
+
+	/**
+	 * Close the SSE stream.
+	 */
+	public void close() {
+		if ( this.closed.compareAndSet( false, true ) ) {
+			appLogger.debug( "[SSE:" + connectionId + "] stream closing" );
+		}
+		cleanup();
+	}
+
+	/**
+	 * Check if the stream is closed (client disconnected or explicitly closed).
+	 *
+	 * @return true if closed, false otherwise
+	 */
+	public boolean isClosed() {
+		return this.closed.get();
+	}
+
+	/**
+	 * Get the connection ID for this emitter.
+	 *
+	 * @return The connection ID
+	 */
+	public String getConnectionId() {
+		return this.connectionId;
+	}
+
+	/**
+	 * Handle errors that occur during streaming.
+	 * Logs the error and sends an error event to the client.
+	 *
+	 * @param error The exception that occurred
+	 */
+	public void handleError( Exception error ) {
+		// Log to application logger
+		appLogger.error( "[SSE:" + connectionId + "] Error: " + error.getMessage(), error );
+		// Send to console as well
+		error.printStackTrace();
+
+		// Try to send error event to client
+		if ( !this.closed.get() ) {
+			try {
+				var errorStruct = new java.util.LinkedHashMap<String, Object>();
+				errorStruct.put( "error", error.getMessage().replace( "\"", "\\\"" ) );
+				send(
+				    errorStruct,
+				    "error",
+				    null
+				);
+			} catch ( Exception e ) {
+				// If we can't send the error, just close
+			}
+		}
+
+		close();
+	}
+
+	/**
+	 * Cleanup resources (cancel keep-alive task, etc.).
+	 */
+	public void cleanup() {
+		if ( this.keepAliveTask != null && !this.keepAliveTask.isCancelled() ) {
+			appLogger.debug( "[SSE:" + connectionId + "] cancelling keep-alive task" );
+			keepAliveTask.cancel( true );
+			this.keepAliveTask = null;
+		}
+		appLogger.debug( "[SSE:" + connectionId + "] cleanup complete" );
+	}
+
+	/**
+	 * Start the keep-alive task that sends periodic comments.
+	 *
+	 * @param intervalMs The interval in milliseconds
+	 */
+	private void startKeepAlive( int intervalMs ) {
+		appLogger.debug( "[SSE:" + connectionId + "] starting keep-alive task with interval: " + intervalMs + "ms" );
+		// Many proxies flush sooner if you send something right away. so delay is 0
+		this.keepAliveTask = scheduledExecutor.scheduledExecutor().scheduleAtFixedRate(
+		    () -> {
+			    if ( !closed.get() ) {
+				    comment( "keep-alive" );
+			    } else {
+				    // Self-cancel if closed
+				    if ( this.keepAliveTask != null ) {
+					    this.keepAliveTask.cancel( false );
+				    }
+			    }
+		    },
+		    0L,
+		    intervalMs,
+		    TimeUnit.MILLISECONDS
+		);
+	}
+
+}

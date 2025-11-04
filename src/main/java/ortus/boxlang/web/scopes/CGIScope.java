@@ -311,7 +311,7 @@ public class CGIScope extends BaseScope {
 		Set<Key> allKeys = new LinkedHashSet<>( knownKeys );
 		// with any additional keys added after the fact
 		allKeys.addAll( wrapped.keySet() );
-		return allKeys.stream().map( key -> new SimpleEntry<>( key, unWrapNullInternal( getRaw( key ) ) ) )
+		return allKeys.stream().map( key -> new SimpleEntry<>( key, defaultNullToString( unWrapNullInternal( getRaw( key ) ) ) ) )
 		    .collect( Collectors.toCollection( LinkedHashSet::new ) );
 	}
 

@@ -73,31 +73,25 @@ public class WebRequestExecutor {
 			frTransService	= FRTransService.getInstance( manageFullReqestLifecycle );
 			requestString	= exchange.getRequestURI();
 
-			// I don't know if this is possible, but let's check for it just in case a path traversal is attempted.
-			// Internally, we delegate to bx:include essentially, which supports all of these, but we want to ensure
-			// nothing like this ever gets passed in as a request URI
-			if ( requestString.equals( ".." ) ||
-			    requestString.contains( "../" ) ||
-			    requestString.contains( "..\\" ) ||
-			    requestString.contains( ";.." ) ||
-			    requestString.contains( "..;" ) ) {
-				throw new BoxRuntimeException( "Invalid request URI: [" + requestString + "]. Path traversal detected." );
-			}
-			trans	= frTransService.startTransaction( "Web Request", requestString );
-
-			// Load up the runtime, context and app listener
-			context	= new WebRequestBoxContext( BoxRuntime.getInstance().getRuntimeContext(), exchange, webRoot );
-			RequestBoxContext.setCurrent( context );
-			context.loadApplicationDescriptor( new URI( requestString ) );
-			appListener = context.getApplicationListener();
-
 			// Target Detection
 			String	ext			= "";
 			Path	requestPath	= Path.of( requestString );
-			String	fileName	= Path.of( requestString ).getFileName().toString().toLowerCase();
+			String	fileName	= requestPath.getFileName().toString().toLowerCase();
 			if ( fileName.contains( "." ) ) {
 				ext = fileName.substring( fileName.lastIndexOf( "." ) + 1 );
 			}
+
+			// Load up the runtime, context and app listener
+			context = new WebRequestBoxContext( BoxRuntime.getInstance().getRuntimeContext(), exchange, webRoot );
+			RequestBoxContext.setCurrent( context );
+
+			// Validate request URI for security issues
+			validateRequestURI( requestString, fileName );
+
+			trans = frTransService.startTransaction( "Web Request", requestString );
+
+			context.loadApplicationDescriptor( new URI( requestString ) );
+			appListener = context.getApplicationListener();
 
 			// Pass through to the Application.bx onRequestStart method
 			boolean result = appListener.onRequestStart( context, new Object[] { requestString } );
@@ -105,34 +99,7 @@ public class WebRequestExecutor {
 			// If we have a result, then we can continue
 			if ( result ) {
 				if ( VALID_REMOTE_REQUEST_EXTENSIONS.contains( ext ) ) {
-					Struct args = new Struct();
-					// URL vars override form vars
-					args.addAll( context.getScope( FormScope.name ) );
-					args.addAll( context.getScope( URLScope.name ) );
-					if ( args.containsKey( Key.method ) ) {
-						args.remove( Key.method );
-					}
-					if ( args.containsKey( Key.returnFormat ) ) {
-						args.remove( Key.returnFormat );
-					}
-
-					// Fire it!
-					appListener.onClassRequest( context,
-					    new Object[] { new BoxFQN( requestPath ).toString(), args } );
-
-					// This will have been set during the request, either by a URL variable, a param in the code, or a function annotation.
-					String returnFormat = Optional.ofNullable( context.getRequestContext().getAttachment( Key.returnFormat ) )
-					    .map( Object::toString )
-					    .orElse( "plain" );
-
-					// If the content type is set, the user has already set it, so don't override it
-					// It's their responsibility to set it correctly
-					ensureContentType( exchange, switch ( returnFormat.toLowerCase() ) {
-						case "json" -> "application/json;charset=UTF-8";
-						case "xml", "wddx" -> "application/xml;charset=UTF-8";
-						case "plain" -> "text/html;charset=UTF-8";
-						case null, default -> "text/html;charset=UTF-8";
-					} );
+					handleClassRemoteMethod( context, appListener, requestPath, exchange );
 				} else {
 					ensureContentType( exchange, DEFAULT_CONTENT_TYPE );
 					appListener.onRequest( context, new Object[] { requestString } );
@@ -282,6 +249,82 @@ public class WebRequestExecutor {
 		if ( contentType == null || contentType.isEmpty() ) {
 			exchange.setResponseHeader( "Content-Type", defaultContentType );
 		}
+	}
+
+	/**
+	 * Validates the request URI for security issues including path traversal and application file access
+	 *
+	 * @param requestURI The request URI to validate
+	 * @param fileName   The file name extracted from the request URI and lower cased.
+	 * 
+	 * @throws BoxRuntimeException if the request URI contains security violations
+	 */
+	private static void validateRequestURI( String requestURI, String fileName ) {
+		// Check for path traversal attempts
+		if ( requestURI.equals( ".." ) ||
+		    requestURI.contains( "../" ) ||
+		    requestURI.contains( "..\\" ) ||
+		    requestURI.contains( ";.." ) ||
+		    requestURI.contains( "..;" ) ) {
+			throw new BoxRuntimeException( "Invalid request URI: [" + requestURI + "]. Path traversal detected." );
+		}
+
+		// Block access to Application files
+		if ( fileName.equals( "application.bx" ) ||
+		    fileName.equals( "application.bxm" ) ||
+		    fileName.equals( "application.bxs" ) ||
+		    fileName.equals( "application.cfc" ) ||
+		    fileName.equals( "application.cfm" ) ||
+		    fileName.equals( "application.cfs" ) ) {
+			throw new BoxRuntimeException( "Invalid request URI: [" + requestURI + "]. Access to Application file is forbidden." );
+		}
+	}
+
+	/**
+	 * Handles remote method invocation requests for valid extensions (BX classes, CFCs)
+	 * 
+	 * @param context     The web request context
+	 * @param appListener The application listener
+	 * @param requestPath The request path as a Path object
+	 * @param exchange    The HTTP exchange object
+	 */
+	private static void handleClassRemoteMethod(
+	    WebRequestBoxContext context,
+	    BaseApplicationListener appListener,
+	    Path requestPath,
+	    IBoxHTTPExchange exchange ) {
+
+		// Build arguments from form and URL scopes
+		Struct args = new Struct();
+		// URL vars override form vars
+		args.addAll( context.getScope( FormScope.name ) );
+		args.addAll( context.getScope( URLScope.name ) );
+
+		// Remove framework-specific parameters
+		if ( args.containsKey( Key.method ) ) {
+			args.remove( Key.method );
+		}
+		if ( args.containsKey( Key.returnFormat ) ) {
+			args.remove( Key.returnFormat );
+		}
+
+		// Invoke the remote method
+		appListener.onClassRequest( context,
+		    new Object[] { new BoxFQN( requestPath ).toString(), args } );
+
+		// Determine return format from context attachment or default to plain
+		String returnFormat = Optional.ofNullable( context.getRequestContext().getAttachment( Key.returnFormat ) )
+		    .map( Object::toString )
+		    .orElse( "plain" );
+
+		// Set appropriate content type based on return format
+		// If the content type is already set, the user has control and we don't override it
+		ensureContentType( exchange, switch ( returnFormat.toLowerCase() ) {
+			case "json" -> "application/json;charset=UTF-8";
+			case "xml", "wddx" -> "application/xml;charset=UTF-8";
+			case "plain" -> "text/html;charset=UTF-8";
+			case null, default -> "text/html;charset=UTF-8";
+		} );
 	}
 
 }
