@@ -37,7 +37,7 @@ import ortus.boxlang.web.WebRequestExecutor;
 import ortus.boxlang.web.context.WebRequestBoxContext;
 import ortus.boxlang.web.exchange.IBoxHTTPExchange;
 
-@BoxComponent( allowsBody = true )
+@BoxComponent( allowsBody = true, description = "Sends content to the client, such as HTML pages, files, or binary data or it can also be used to set the content type of the response." )
 public class Content extends Component {
 
 	public Content() {

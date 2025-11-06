@@ -27,7 +27,7 @@ import ortus.boxlang.runtime.scopes.Key;
 import ortus.boxlang.runtime.types.IStruct;
 import ortus.boxlang.runtime.validation.Validator;
 
-@BoxComponent
+@BoxComponent( description = "Writes text to the head section of a generated HTML page. It is useful for embedding JavaScript code, or putting other HTML tags, such as meta, link, title, or base in an HTML page header. If there is no head section in the HTML page, the function will create one." )
 public class HtmlHead extends Component {
 
 	public HtmlHead() {

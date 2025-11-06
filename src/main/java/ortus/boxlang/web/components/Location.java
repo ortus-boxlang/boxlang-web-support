@@ -30,7 +30,7 @@ import ortus.boxlang.runtime.validation.Validator;
 import ortus.boxlang.web.context.WebRequestBoxContext;
 import ortus.boxlang.web.exchange.IBoxHTTPExchange;
 
-@BoxComponent
+@BoxComponent( description = "Redirects the client to a different URL." )
 public class Location extends Component {
 
 	public Location() {

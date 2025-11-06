@@ -37,7 +37,7 @@ import ortus.boxlang.web.exchange.BoxCookie;
 import ortus.boxlang.web.exchange.IBoxHTTPExchange;
 import ortus.boxlang.web.util.KeyDictionary;
 
-@BoxComponent
+@BoxComponent( description = "Defines web browser cookie variables, including expiration and security options." )
 public class Cookie extends Component {
 
 	public Cookie() {
