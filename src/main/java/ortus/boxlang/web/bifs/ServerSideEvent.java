@@ -35,8 +35,8 @@ import ortus.boxlang.web.exchange.IBoxHTTPExchange;
 import ortus.boxlang.web.util.KeyDictionary;
 import ortus.boxlang.web.util.SSEEmitter;
 
-@BoxBIF
-public class SSE extends BIF {
+@BoxBIF( alias = "sse", description = "Enables Server-Sent Events (SSE) streaming to the client." )
+public class ServerSideEvent extends BIF {
 
 	/**
 	 * Target executor for async execution
@@ -46,7 +46,7 @@ public class SSE extends BIF {
 	/**
 	 * Constructor
 	 */
-	public SSE() {
+	public ServerSideEvent() {
 		super();
 		declaredArguments	= new Argument[] {
 		    new Argument( true, Argument.FUNCTION, Key.callback ),
