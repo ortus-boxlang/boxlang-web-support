@@ -50,7 +50,7 @@ import ortus.boxlang.web.exchange.IBoxHTTPExchange;
 import ortus.boxlang.web.util.KeyDictionary;
 
 @BoxBIF
-@BoxBIF( alias = "FileUploadAll" )
+@BoxBIF( alias = "FileUploadAll", description = "Processes all file uploads from the request into the specified destination directory." )
 public class FileUpload extends BIF {
 
 	/**

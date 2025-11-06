@@ -21,7 +21,7 @@ import ortus.boxlang.runtime.scopes.ArgumentsScope;
 import ortus.boxlang.runtime.scopes.Key;
 import ortus.boxlang.runtime.types.Argument;
 
-@BoxBIF
+@BoxBIF( description = "Sets the character encoding (character set) of Form and URL scope variable values." )
 public class SetEncoding extends BIF {
 
 	public static Key scope_name = Key.of( "scope_name" );
@@ -46,7 +46,7 @@ public class SetEncoding extends BIF {
 	 * @param arguments Argument scope for the BIF.
 	 *
 	 * @argument.scope_name The name of the scope to set the character encoding for.
-	 * 
+	 *
 	 * @argument.charset The character encoding to set.
 	 *
 	 */
