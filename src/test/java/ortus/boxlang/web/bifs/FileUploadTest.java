@@ -471,7 +471,6 @@ public class FileUploadTest extends ortus.boxlang.web.util.BaseWebTest {
 
 		IStruct fileInfo = variables.getAsStruct( result );
 
-		System.out.println( "File Info: " + fileInfo.asString() );
 
 		assertThat( fileInfo.getAsString( KeyDictionary.clientFileExt ) ).isEqualTo( "jpg" );
 		assertTrue( fileInfo.getAsBoolean( KeyDictionary.fileWasSaved ) );
