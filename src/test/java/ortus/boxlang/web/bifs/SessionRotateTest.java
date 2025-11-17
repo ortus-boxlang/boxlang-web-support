@@ -25,8 +25,6 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.util.stream.Stream;
-
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -38,6 +36,7 @@ import ortus.boxlang.runtime.scopes.Key;
 import ortus.boxlang.runtime.scopes.VariablesScope;
 import ortus.boxlang.runtime.types.IStruct;
 import ortus.boxlang.web.context.WebRequestBoxContext;
+import ortus.boxlang.web.exchange.BoxCookie;
 import ortus.boxlang.web.util.BaseWebTest;
 
 public class SessionRotateTest extends BaseWebTest {
@@ -86,12 +85,14 @@ public class SessionRotateTest extends BaseWebTest {
 		if ( requestContext instanceof WebRequestBoxContext webRequestContext ) {
 			if ( webRequestContext.getHTTPExchange() instanceof ortus.boxlang.web.util.MockHTTPExchange mockExchange ) {
 				// Debug output
-				System.out.println( "Request Cookies: " + Stream.of( mockExchange.getRequestCookies() ).map( c -> c.toString() ).toList() );
-				System.out
-				    .println( "Response Cookies: " + Stream.of( mockExchange.getResponseCookies() ).map( c -> c.toString() ).toList() );
-				ortus.boxlang.web.exchange.BoxCookie[] responseCookies = mockExchange.getResponseCookies();
-				assertThat( responseCookies.length ).isEqualTo( 1 );
-				assertThat( responseCookies[ 0 ].getValue() ).isEqualTo( variables.getAsStruct( result ).getAsString( Key.of( "jsessionID" ) ) );
+				// System.out.println( "Request Cookies: " + Stream.of( mockExchange.getRequestCookies() ).map( c -> c.toString() ).toList() );
+				// System.out
+				// .println( "Response Cookies: " + Stream.of( mockExchange.getResponseCookies() ).map( c -> c.toString() ).toList() );
+				BoxCookie[] responseCookies = mockExchange.getResponseCookies();
+				assertThat( responseCookies.length ).isEqualTo( 2 );
+				assertThat( responseCookies[ 0 ].getValue() ).isEqualTo( initialSession.getAsString( Key.of( "jsessionID" ) ) );
+				assertThat( responseCookies[ 0 ].getMaxAge() ).isEqualTo( 0 );
+				assertThat( responseCookies[ 1 ].getValue() ).isEqualTo( variables.getAsStruct( result ).getAsString( Key.of( "jsessionID" ) ) );
 			}
 		}
 	}
