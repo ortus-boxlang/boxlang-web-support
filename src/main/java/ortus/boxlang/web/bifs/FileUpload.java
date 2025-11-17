@@ -385,19 +385,30 @@ public class FileUpload extends BIF {
 		if ( !StringUtils.isEmpty( allowedExtensions ) ) {
 			hasRequestPermission = ListUtil.asList( allowedExtensions, ListUtil.DEFAULT_DELIMITER ).stream()
 			    .map( StringCaster::cast )
+			    .map( ext -> ext.startsWith( "." ) ? ext.substring( 1 ) : ext )
 			    .anyMatch( ext -> ext.equals( "*" ) || ext.equalsIgnoreCase( uploadExtension ) );
 		}
 
 		if ( !StringUtils.isEmpty( blockedExtensions ) ) {
 			hasRequestPermission = hasRequestPermission && ListUtil.asList( blockedExtensions, ListUtil.DEFAULT_DELIMITER ).stream()
 			    .map( StringCaster::cast )
+			    .map( ext -> ext.startsWith( "." ) ? ext.substring( 1 ) : ext )
 			    .noneMatch( ext -> ext.equalsIgnoreCase( uploadExtension ) );
 		}
 
 		if ( !StringUtils.isEmpty( allowedMimeTypes ) && StringUtils.isEmpty( allowedExtensions ) && StringUtils.isEmpty( blockedExtensions ) ) {
 			hasRequestPermission = ListUtil.asList( allowedMimeTypes, ListUtil.DEFAULT_DELIMITER ).stream()
 			    .map( StringCaster::cast )
-			    .anyMatch( ext -> ext.equals( "*" ) || ext.equalsIgnoreCase( uploadMimeType ) );
+			    .anyMatch( mimeType -> {
+				    if ( mimeType.equals( "*" ) || mimeType.equals( "*/*" ) ) {
+					    return true;
+				    } else if ( mimeType.endsWith( "/*" ) ) {
+					    String typePrefix = mimeType.substring( 0, mimeType.length() - 2 ).toLowerCase();
+					    return uploadMimeType.toLowerCase().startsWith( typePrefix + "/" );
+				    } else {
+					    return mimeType.equalsIgnoreCase( uploadMimeType );
+				    }
+			    } );
 		}
 
 		hasApplicationPermission = FileSystemUtil.isExtensionAllowed( context, uploadExtension );
