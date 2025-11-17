@@ -213,6 +213,7 @@ public class WebRequestBoxContext extends RequestBoxContext {
 	 * Generate a session cookie based on the settings in the application config
 	 *
 	 * @param sessionid The session ID key
+	 * @param maxAge    The max age of the cookie in seconds. If null, expiration is used
 	 *
 	 * @return The BoxCookie instance
 	 */
@@ -228,7 +229,7 @@ public class WebRequestBoxContext extends RequestBoxContext {
 
 		BoxCookie sessionCookie = new BoxCookie( sessionCookieDefaults.getAsString( Key._NAME ),
 		    newId.getName() )
-		    .setPath( "/" );
+		        .setPath( "/" );
 
 		Optional.ofNullable( sessionCookieSettings.get( KeyDictionary.httpOnly ) ).map( BooleanCaster::cast ).map( sessionCookie::setHttpOnly );
 
