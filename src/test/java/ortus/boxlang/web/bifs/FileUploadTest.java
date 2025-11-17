@@ -455,7 +455,7 @@ public class FileUploadTest extends ortus.boxlang.web.util.BaseWebTest {
 		variables.put( Key.of( "filefield" ), testFields[ 0 ] );
 		variables.put( Key.directory, Path.of( tmpDirectory ).toAbsolutePath().toString() );
 
-		// Maksure our upload works with explicitly allowed extensions first
+		// Make sure our upload works with explicitly allowed extensions first
 		runtime.executeSource(
 		    """
 		              result = FileUpload(
