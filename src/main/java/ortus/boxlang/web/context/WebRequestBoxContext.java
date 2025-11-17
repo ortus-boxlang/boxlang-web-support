@@ -267,7 +267,7 @@ public class WebRequestBoxContext extends RequestBoxContext {
 				BoxCookie sessionCookie = httpExchange
 				    .getRequestCookie( sessionCookieDefaults.getAsString( Key._NAME ) );
 				if ( sessionCookie != null ) {
-					// Add an expiration cookie to the response/
+					// Add an expiration cookie to the response.
 					BoxCookie expiryCookie = generateSessionCookie( Key.of( sessionCookie.getValue() ), 0 );
 					httpExchange.addResponseCookie( expiryCookie );
 					// throw up our flag to force new session ID
