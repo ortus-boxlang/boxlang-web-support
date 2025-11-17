@@ -404,7 +404,7 @@ public class FileUpload extends BIF {
 					    return true;
 				    } else if ( mimeType.endsWith( "/*" ) ) {
 					    String typePrefix = mimeType.substring( 0, mimeType.length() - 2 ).toLowerCase();
-					    return uploadMimeType.toLowerCase().startsWith( typePrefix + "/" );
+					    return uploadMimeType != null ? uploadMimeType.toLowerCase().startsWith( typePrefix + "/" ) : false;
 				    } else {
 					    return mimeType.equalsIgnoreCase( uploadMimeType );
 				    }
