@@ -318,18 +318,20 @@ public class FileUploadTest extends ortus.boxlang.web.util.BaseWebTest {
 		variables.put( Key.directory, Path.of( tmpDirectory ).toAbsolutePath().toString() );
 
 		// Test with strict mode off
+		//@formatter:off
 		runtime.executeSource(
 		    """
-		            result = FileUpload(
-		            	filefield = filefield,
-		            	destination = directory,
-		          nameconflict = "makeunique",
-		       allowedExtensions = "png",
-		    strict=false
-		            );
-		            """,
+			result = FileUpload(
+				filefield = filefield,
+				accept = "image/png",
+				destination = directory,
+				nameconflict = "makeunique",
+				allowedExtensions = "png",
+				strict=false
+			);
+			""",
 		    context );
-
+		//@formatter:on
 		assertThat( variables.get( result ) ).isInstanceOf( IStruct.class );
 
 		IStruct fileInfo = variables.getAsStruct( result );
@@ -453,13 +455,39 @@ public class FileUploadTest extends ortus.boxlang.web.util.BaseWebTest {
 		variables.put( Key.of( "filefield" ), testFields[ 0 ] );
 		variables.put( Key.directory, Path.of( tmpDirectory ).toAbsolutePath().toString() );
 
+		// Make sure our upload works with explicitly allowed extensions first
+		runtime.executeSource(
+		    """
+		              result = FileUpload(
+		              filefield = filefield,
+		              	destination = directory,
+		            nameconflict = "makeunique",
+		    accept="image/jpg",
+		         allowedExtensions = ".jpg",
+		      strict=true
+		              );
+		              """,
+		    context );
+
+		IStruct fileInfo = variables.getAsStruct( result );
+
+
+		assertThat( fileInfo.getAsString( KeyDictionary.clientFileExt ) ).isEqualTo( "jpg" );
+		assertTrue( fileInfo.getAsBoolean( KeyDictionary.fileWasSaved ) );
+
+		variables.put( Key.of( "filefield" ), testFields[ 0 ] );
+		variables.put( Key.directory, Path.of( tmpDirectory ).toAbsolutePath().toString() );
+
+		// Reset uploads again for next test
+		setupUploadsForTest();
+
 		// Test blocking jpg files with strict mode off
 		runtime.executeSource(
 		    """
 		            result = FileUpload(
 		            	filefield = filefield,
 		            	destination = directory,
-		          nameconflict = "makeunique",
+		          nameconflict = "overwrite",
 		       blockedExtensions = "jpg",
 		    strict=false
 		            );
@@ -468,7 +496,7 @@ public class FileUploadTest extends ortus.boxlang.web.util.BaseWebTest {
 
 		assertThat( variables.get( result ) ).isInstanceOf( IStruct.class );
 
-		IStruct fileInfo = variables.getAsStruct( result );
+		fileInfo = variables.getAsStruct( result );
 
 		assertThat( fileInfo.getAsString( KeyDictionary.clientFile ) )
 		    .isEqualTo( testFields[ 0 ] + ".jpg" );

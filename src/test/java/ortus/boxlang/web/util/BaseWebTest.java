@@ -2,8 +2,6 @@ package ortus.boxlang.web.util;
 
 import static org.mockito.Mockito.when;
 
-import java.io.OutputStream;
-import java.io.PrintWriter;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
@@ -48,18 +46,17 @@ public class BaseWebTest {
 
 	@BeforeEach
 	public void setupEach() {
+		BoxCookie sessionCookie = new BoxCookie( "jsessionid", "FAKESESSIONID1234567890" );
+		sessionCookie.setPath( "/" );
+		sessionCookie.setHttpOnly( true );
+		sessionCookie.setExpires( new java.util.Date( System.currentTimeMillis() + 86400000L ) ); // 1 day
+		sessionCookie.setMaxAge( 86400 ); // 1 day
 		// Create the mock contexts
-		mockExchange = Mockito.mock( IBoxHTTPExchange.class );
-
-		// Mock some objects which are used in the context
-		when( mockExchange.getRequestCookies() ).thenReturn( new BoxCookie[ 0 ] );
-		when( mockExchange.getRequestHeaderMap() ).thenReturn( new HashMap<String, String[]>() );
-		when( mockExchange.getRequestServerName() ).thenReturn( "localhost" );
-		when( mockExchange.getResponseWriter() ).thenReturn( new PrintWriter( OutputStream.nullOutputStream() ) );
-		when( mockExchange.getRequestCookies() ).thenReturn( new BoxCookie[ 0 ] );
-		when( mockExchange.getRequestMethod() ).thenReturn( "GET" );
-
-		context = new WebRequestBoxContext( runtime.getRuntimeContext(), mockExchange, TEST_WEBROOT );
+		BoxCookie[] cookies = new BoxCookie[] {
+		    sessionCookie
+		};
+		mockExchange	= Mockito.spy( new MockHTTPExchange( cookies, new HashMap<String, String[]>() ) );
+		context			= new WebRequestBoxContext( runtime.getRuntimeContext(), mockExchange, TEST_WEBROOT );
 
 		// This must run after the set above due to how Mockito binds
 		when( mockExchange.getWebContext() ).thenReturn( context );
