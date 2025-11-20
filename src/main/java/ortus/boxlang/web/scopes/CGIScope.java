@@ -199,18 +199,19 @@ public class CGIScope extends BaseScope {
 			return putAndReturn( key, defaultNullToString( exchange.getRequestHeader( "Content-Type" ) ) );
 		}
 		if ( key.equals( Key.content_length ) ) {
-			return putAndReturn( key, defaultNullToString( exchange.getRequestContentLength() ) );
+			return putAndReturn( key, defaultNullToString( String.valueOf( exchange.getRequestContentLength() ) ) );
 		}
 		if ( key.equals( Key.cf_template_path ) || key.equals( KeyDictionary.bx_template_path ) || key.equals( Key.path_translated ) ) {
 			return putAndReturn( key, defaultNullToString( getTemplatePath( exchange.getWebContext() ) ) );
 		}
 		if ( key.equals( Key.https ) ) {
-			return putAndReturn( key, defaultNullToString( exchange.isRequestSecure() ) );
+			return putAndReturn( key, defaultNullToString( String.valueOf( exchange.isRequestSecure() ) ) );
 		}
 		if ( key.equals( Key.http_host ) ) {
 			int port = exchange.getRequestServerPort();
 			return putAndReturn( key,
-			    port == 80 || port == 443 ? exchange.getRequestServerName() : exchange.getRequestServerName() + ":" + defaultNullToString( port ) );
+			    port == 80 || port == 443 ? exchange.getRequestServerName()
+			        : exchange.getRequestServerName() + ":" + defaultNullToString( String.valueOf( port ) ) );
 		}
 		if ( key.equals( Key.local_addr ) ) {
 			try {
@@ -227,7 +228,7 @@ public class CGIScope extends BaseScope {
 			}
 		}
 		if ( key.equals( Key.request_url ) ) {
-			return putAndReturn( key, defaultNullToString( exchange.getRequestURL() ) );
+			return putAndReturn( key, defaultNullToString( exchange.getRequestURL().toString() ) );
 		}
 		if ( key.equals( Key.remote_addr ) ) {
 			return putAndReturn( key, defaultNullToString( exchange.getRequestRemoteAddr() ) );
@@ -254,10 +255,10 @@ public class CGIScope extends BaseScope {
 			return putAndReturn( key, defaultNullToString( exchange.getRequestServerName() ) );
 		}
 		if ( key.equals( Key.server_port ) ) {
-			return putAndReturn( key, defaultNullToString( exchange.getRequestServerPort() ) );
+			return putAndReturn( key, defaultNullToString( String.valueOf( exchange.getRequestServerPort() ) ) );
 		}
 		if ( key.equals( Key.server_port_secure ) ) {
-			return putAndReturn( key, exchange.isRequestSecure() ? defaultNullToString( exchange.getRequestServerPort() ) : 0 );
+			return putAndReturn( key, exchange.isRequestSecure() ? defaultNullToString( String.valueOf( exchange.getRequestServerPort() ) ) : 0 );
 		}
 		if ( key.equals( Key.server_protocol ) ) {
 			return putAndReturn( key, defaultNullToString( exchange.getRequestProtocol() ) );
@@ -382,7 +383,7 @@ public class CGIScope extends BaseScope {
 	 * @return The wrapped value
 	 */
 	private Object defaultNullToString( Object value ) {
-		return value == null ? "" : value;
+		return value == null ? "" : value.toString();
 	}
 
 	/**
