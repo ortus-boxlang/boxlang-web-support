@@ -228,7 +228,7 @@ public class CGIScope extends BaseScope {
 			}
 		}
 		if ( key.equals( Key.request_url ) ) {
-			return putAndReturn( key, defaultNullToString( exchange.getRequestURL().toString() ) );
+			return putAndReturn( key, defaultNullToString( exchange.getRequestURL() ) );
 		}
 		if ( key.equals( Key.remote_addr ) ) {
 			return putAndReturn( key, defaultNullToString( exchange.getRequestRemoteAddr() ) );
