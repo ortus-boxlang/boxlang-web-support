@@ -17,6 +17,7 @@
  */
 package ortus.boxlang.web.components;
 
+import java.time.Duration;
 import java.util.Set;
 
 import ortus.boxlang.runtime.components.Attribute;
@@ -145,6 +146,8 @@ public class Cookie extends Component {
 			if ( numberAttempt.wasSuccessful() ) {
 				// convert days to seconds
 				cookieInstance.setMaxAge( ( int ) ( numberAttempt.get().doubleValue() * 24 * 60 * 60 ) );
+			} else if ( expires instanceof Duration expiresDuration ) {
+				cookieInstance.setMaxAge( ( int ) expiresDuration.getSeconds() );
 			} else {
 				// Now try string
 				Boolean				maxAgeSet		= false;
