@@ -205,11 +205,7 @@ public class WebRequestBoxContext extends RequestBoxContext {
 	}
 
 	/**
-	 * <<<<<<< Updated upstream
-	 * =======
-	 * <<<<<<< Updated upstream
-	 * =======
-	 * >>>>>>> Stashed changes
+	 *
 	 * Generate a session cookie based on the settings in the application config
 	 *
 	 * @param sessionid The session ID key
