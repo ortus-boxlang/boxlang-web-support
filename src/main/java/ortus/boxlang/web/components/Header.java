@@ -88,7 +88,7 @@ public class Header extends Component {
 				exchange.setResponseStatus( statusCode );
 			}
 		} else {
-			exchange.setResponseHeader( name, value );
+			exchange.addResponseHeader( name, value );
 		}
 
 		return DEFAULT_RETURN;
