@@ -23,7 +23,7 @@ import ortus.boxlang.runtime.scopes.ArgumentsScope;
 import ortus.boxlang.web.context.WebRequestBoxContext;
 import ortus.boxlang.web.exchange.IBoxHTTPExchange;
 
-@BoxBIF
+@BoxBIF( description = "Gets the current page context." )
 public class GetPageContext extends BIF {
 
 	/**
@@ -34,13 +34,13 @@ public class GetPageContext extends BIF {
 	}
 
 	/**
-	 *
-	 * Gets the current java PageContext object that provides access to page attributes and configuration, request and response objects.
+	 * Gets the current server PageContext object that provides access to page attributes and configuration, request and response objects.
 	 * If not running in a servlet, this will be a fake class attempting to provide most of the common methods.
 	 *
 	 * @param context   The context in which the BIF is being invoked.
 	 * @param arguments Argument scope for the BIF.
 	 *
+	 * @return The current PageContext object.
 	 */
 	public Object _invoke( IBoxContext context, ArgumentsScope arguments ) {
 		return new PageContext( context );
@@ -277,7 +277,7 @@ public class GetPageContext extends BIF {
 		/**
 		 * Returns the name of the scheme used to make this request, for example, http, https, or ftp. Different schemes have different rules for constructing
 		 * URLs, as noted in RFC 1738.
-		 * 
+		 *
 		 * @return a String containing the name of the scheme used to make this request
 		 */
 		public String getScheme() {

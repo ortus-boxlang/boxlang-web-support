@@ -23,7 +23,7 @@ import ortus.boxlang.runtime.types.Argument;
 import ortus.boxlang.web.context.WebRequestBoxContext;
 import ortus.boxlang.web.exchange.IBoxHTTPExchange;
 
-@BoxBIF
+@BoxBIF( description = "Forwards the current request to a different template path on the server side." )
 public class Forward extends BIF {
 
 	/**
@@ -45,7 +45,6 @@ public class Forward extends BIF {
 	 * @param arguments Argument scope for the BIF.
 	 *
 	 * @argument.template The logical path to which the request should be forwarded to.
-	 *
 	 */
 	public Object _invoke( IBoxContext context, ArgumentsScope arguments ) {
 		String					templatePath	= arguments.getAsString( Key.template );

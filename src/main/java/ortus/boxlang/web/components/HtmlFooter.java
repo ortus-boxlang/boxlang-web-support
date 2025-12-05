@@ -27,7 +27,7 @@ import ortus.boxlang.runtime.scopes.Key;
 import ortus.boxlang.runtime.types.IStruct;
 import ortus.boxlang.runtime.validation.Validator;
 
-@BoxComponent
+@BoxComponent( description = "Writes text to the footer section of a generated HTML page. It is useful for embedding JavaScript code, or putting other HTML tags or deferred scripts." )
 public class HtmlFooter extends Component {
 
 	public HtmlFooter() {
@@ -48,7 +48,6 @@ public class HtmlFooter extends Component {
 	 *
 	 *
 	 * @atribute.text Text to add to the footer area of an HTML page.
-	 *
 	 */
 	public BodyResult _invoke( IBoxContext context, IStruct attributes, ComponentBody body, IStruct executionState ) {
 

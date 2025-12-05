@@ -26,7 +26,6 @@ import java.util.UUID;
 
 import ortus.boxlang.runtime.BoxRuntime;
 import ortus.boxlang.runtime.context.IBoxContext;
-import ortus.boxlang.runtime.context.IBoxContext.ScopeSearchResult;
 import ortus.boxlang.runtime.context.RequestBoxContext;
 import ortus.boxlang.runtime.dynamic.casters.BooleanCaster;
 import ortus.boxlang.runtime.dynamic.casters.StringCaster;
@@ -119,6 +118,9 @@ public class WebRequestBoxContext extends RequestBoxContext {
 	    Key.timeout, new DateTime().modify( "yyyy", 30l ),
 	    KeyDictionary.sameSite, "Lax" );
 
+	protected boolean			sessionCookieProvided	= false;
+	protected boolean			isSessionReset			= false;
+
 	/**
 	 * --------------------------------------------------------------------------
 	 * Constructors
@@ -182,23 +184,18 @@ public class WebRequestBoxContext extends RequestBoxContext {
 					// Check for existing request cookie
 					BoxCookie sessionCookie = httpExchange
 					    .getRequestCookie( sessionCookieDefaults.getAsString( Key._NAME ) );
-					if ( sessionCookie != null ) {
+					if ( !this.isSessionReset && sessionCookie != null
+					    && ( sessionCookie.getMaxAge() == null || !Integer.valueOf( 0 ).equals( sessionCookie.getMaxAge() ) ) ) {
 						String idValue = sessionCookie.getValue();
 						// We need to ensure that we are not dealing with an empty value or a null derivation
 						if ( idValue != null && !idValue.isEmpty() && !idValue.toLowerCase().equals( "null" ) ) {
 							this.sessionID = Key.of( sessionCookie.getValue() );
 						} else {
-							this.sessionID	= Key.of( UUID.randomUUID().toString() );
-							sessionCookie	= generateSessionCookie( this.sessionID );
-							httpExchange.addResponseCookie( sessionCookie );
+							this.sessionID = Key.of( UUID.randomUUID().toString() );
 						}
 					} else {
 						// Otherwise generate a new one
-						this.sessionID	= Key.of( UUID.randomUUID().toString() );
-
-						sessionCookie	= generateSessionCookie( this.sessionID );
-
-						httpExchange.addResponseCookie( sessionCookie );
+						this.sessionID = Key.of( UUID.randomUUID().toString() );
 					}
 				}
 			}
@@ -208,18 +205,15 @@ public class WebRequestBoxContext extends RequestBoxContext {
 	}
 
 	/**
-	 * <<<<<<< Updated upstream
-	 * =======
-	 * <<<<<<< Updated upstream
-	 * =======
-	 * >>>>>>> Stashed changes
+	 *
 	 * Generate a session cookie based on the settings in the application config
 	 *
 	 * @param sessionid The session ID key
+	 * @param maxAge    The max age of the cookie in seconds. If null, expiration is used
 	 *
 	 * @return The BoxCookie instance
 	 */
-	private BoxCookie generateSessionCookie( Key newId ) {
+	private BoxCookie generateSessionCookie( Key newId, Integer maxAge ) {
 
 		IStruct appSettings = getConfig().getAsStruct( Key.applicationSettings );
 
@@ -243,13 +237,18 @@ public class WebRequestBoxContext extends RequestBoxContext {
 		    .map( sessionCookie::setSameSiteMode );
 
 		Object expiration = sessionCookieSettings.get( Key.timeout );
-		if ( expiration instanceof DateTime expireDateTime ) {
-			sessionCookie.setExpires( Date.from( expireDateTime.toInstant() ) );
-		} else if ( expiration instanceof Duration expireDuration ) {
-			sessionCookie.setExpires( Date.from( Instant.now().plus( expireDuration ) ) );
+		// The browser will not honor maxAge if expiration is present
+		if ( maxAge == null ) {
+			if ( expiration instanceof DateTime expireDateTime ) {
+				sessionCookie.setExpires( Date.from( expireDateTime.toInstant() ) );
+			} else if ( expiration instanceof Duration expireDuration ) {
+				sessionCookie.setExpires( Date.from( Instant.now().plus( expireDuration ) ) );
+			} else {
+				sessionCookie.setExpires(
+				    Date.from( sessionCookieDefaults.getAsDateTime( Key.timeout ).toInstant() ) );
+			}
 		} else {
-			sessionCookie.setExpires(
-			    Date.from( sessionCookieDefaults.getAsDateTime( Key.timeout ).toInstant() ) );
+			sessionCookie.setMaxAge( maxAge );
 		}
 
 		return sessionCookie;
@@ -261,20 +260,22 @@ public class WebRequestBoxContext extends RequestBoxContext {
 	public void resetSession() {
 		synchronized ( this ) {
 			this.sessionID = null;
-			BoxCookie sessionCookie = httpExchange
-			    .getRequestCookie( sessionCookieDefaults.getAsString( Key._NAME ) );
-			if ( sessionCookie != null ) {
-				String identifier = sessionCookie.getValue();
-				// set the max age to 0 to delete the cookie and add it to the response
-				sessionCookie.setMaxAge( 0 );
-				// modify the value reference to ensure that getSessionId() generates a new response cookie
-				sessionCookie.setValue( "" );
-				httpExchange.addResponseCookie( sessionCookie );
-				if ( !identifier.isEmpty() ) {
-					getApplicationListener().invalidateSession( Key.of( identifier ) );
+			if ( this.sessionID == null ) {
+				BoxCookie sessionCookie = httpExchange
+				    .getRequestCookie( sessionCookieDefaults.getAsString( Key._NAME ) );
+				if ( sessionCookie != null ) {
+					// Add an expiration cookie to the response.
+					BoxCookie expiryCookie = generateSessionCookie( Key.of( sessionCookie.getValue() ), 0 );
+					httpExchange.addResponseCookie( expiryCookie );
+					// throw up our flag to force new session ID
+					this.isSessionReset = true;
+					// Force a new session ID and ensure that the cookie is sent
+					getApplicationListener().invalidateSession( getSessionID() );
+					// Now reset the flag so that subsequent calls work normally
+					this.isSessionReset = false;
+				} else {
+					getApplicationListener().invalidateSession( getSessionID() );
 				}
-			} else {
-				getApplicationListener().invalidateSession( getSessionID() );
 			}
 		}
 	}
@@ -502,6 +503,17 @@ public class WebRequestBoxContext extends RequestBoxContext {
 		if ( !canOutput() && !force ) {
 			return this;
 		}
+
+		// Send our session cookie, if not already done, in order to keep alive the session and forward the expiration
+		synchronized ( this ) {
+			if ( !sessionCookieProvided ) {
+				// Ensure session cookie is sent if not already
+				BoxCookie sessionCookie = generateSessionCookie( getSessionID(), null );
+				httpExchange.addResponseCookie( sessionCookie );
+				sessionCookieProvided = true;
+			}
+		}
+
 		// This will commit the response so we don't want to do it unless we're forcing
 		// a flush, or it's the end of the request
 		// in which case, the web request executor will always issue a final forced

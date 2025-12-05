@@ -31,7 +31,7 @@ import ortus.boxlang.runtime.types.Array;
 import ortus.boxlang.runtime.validation.Validator;
 import ortus.boxlang.web.util.KeyDictionary;
 
-@BoxBIF
+@BoxBIF( description = "Writes text to the footer section of a generated HTML page." )
 public class HtmlFooter extends BIF {
 
 	/**

@@ -210,7 +210,8 @@ public class CGIScope extends BaseScope {
 		if ( key.equals( Key.http_host ) ) {
 			int port = exchange.getRequestServerPort();
 			return putAndReturn( key,
-			    port == 80 || port == 443 ? exchange.getRequestServerName() : exchange.getRequestServerName() + ":" + defaultNullToString( port ) );
+			    port == 80 || port == 443 ? exchange.getRequestServerName()
+			        : exchange.getRequestServerName() + ":" + defaultNullToString( port ) );
 		}
 		if ( key.equals( Key.local_addr ) ) {
 			try {
@@ -382,7 +383,7 @@ public class CGIScope extends BaseScope {
 	 * @return The wrapped value
 	 */
 	private Object defaultNullToString( Object value ) {
-		return value == null ? "" : value;
+		return value == null ? "" : value.toString();
 	}
 
 	/**

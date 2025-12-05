@@ -30,7 +30,7 @@ import ortus.boxlang.runtime.validation.Validator;
 import ortus.boxlang.web.context.WebRequestBoxContext;
 import ortus.boxlang.web.exchange.IBoxHTTPExchange;
 
-@BoxComponent
+@BoxComponent( description = "Generates custom HTTP response headers to return to the client." )
 public class Header extends Component {
 
 	public Header() {
@@ -88,7 +88,7 @@ public class Header extends Component {
 				exchange.setResponseStatus( statusCode );
 			}
 		} else {
-			exchange.setResponseHeader( name, value );
+			exchange.addResponseHeader( name, value );
 		}
 
 		return DEFAULT_RETURN;

@@ -27,7 +27,7 @@ import ortus.boxlang.runtime.validation.Validator;
 import ortus.boxlang.web.context.WebRequestBoxContext;
 import ortus.boxlang.web.exchange.IBoxHTTPExchange;
 
-@BoxBIF
+@BoxBIF( description = "Redirects the client to a different URL" )
 public class Location extends BIF {
 
 	/**

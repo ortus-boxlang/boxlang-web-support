@@ -25,7 +25,7 @@ import ortus.boxlang.runtime.types.Struct;
 import ortus.boxlang.web.context.WebRequestBoxContext;
 import ortus.boxlang.web.exchange.IBoxHTTPExchange;
 
-@BoxBIF
+@BoxBIF( description = "Retrieves HTTP request data such as headers, method, protocol, and optionally the body." )
 public class GetHTTPRequestData extends BIF {
 
 	/**
@@ -34,30 +34,30 @@ public class GetHTTPRequestData extends BIF {
 	public GetHTTPRequestData() {
 		super();
 		declaredArguments = new Argument[] {
-		    new Argument( true, "boolean", Key.includeBody, true ),
+		    new Argument( true, "boolean", Key.includeBody, true )
 		};
 	}
 
 	/**
-	 *
-	 * Uppercase a string
+	 * Retrieves HTTP request data including headers, method, protocol, and optionally the body.
 	 *
 	 * @param context   The context in which the BIF is being invoked.
 	 * @param arguments Argument scope for the BIF.
 	 *
-	 * @argument.string The string to uppercase
+	 * @argument.includeBody Boolean indicating whether to include the request body in the result.
 	 *
+	 * @return A struct containing the HTTP request data.
 	 */
 	public Object _invoke( IBoxContext context, ArgumentsScope arguments ) {
 		WebRequestBoxContext	requestContext	= context.getParentOfType( WebRequestBoxContext.class );
 		IBoxHTTPExchange		exchange		= requestContext.getHTTPExchange();
 
-		IStruct					headers			= new Struct();
+		IStruct					headers			= new Struct( false );
 		exchange.getRequestHeaderMap().forEach( ( key, values ) -> {
 			headers.put( key, values[ 0 ] );
 		} );
 
-		IStruct result = Struct.of(
+		IStruct result = Struct.ofNonConcurrent(
 		    Key.headers, headers,
 		    Key.method, exchange.getRequestMethod(),
 		    Key.protocol, exchange.getRequestProtocol()

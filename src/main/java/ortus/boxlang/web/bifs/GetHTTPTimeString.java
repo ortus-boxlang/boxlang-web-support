@@ -30,8 +30,7 @@ import ortus.boxlang.runtime.types.Argument;
 import ortus.boxlang.runtime.types.DateTime;
 import ortus.boxlang.runtime.util.LocalizationUtil;
 
-@BoxBIF
-
+@BoxBIF( description = "Get a HTTP time formatted string from a date object" )
 public class GetHTTPTimeString extends BIF {
 
 	/**
@@ -50,7 +49,9 @@ public class GetHTTPTimeString extends BIF {
 	 * @param context   The context in which the BIF is being invoked.
 	 * @param arguments Argument scope for the BIF.
 	 *
-	 * @argument.foo Describe any expected arguments
+	 * @argument.date (optional) The date object to convert to HTTP time string. If not provided, the current date and time is used.
+	 *
+	 * @return A string representing the date in HTTP time format.
 	 */
 	public Object _invoke( IBoxContext context, ArgumentsScope arguments ) {
 		Object dateArg = arguments.get( Key.date );
