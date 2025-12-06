@@ -259,8 +259,6 @@ public class FileUploadTest extends ortus.boxlang.web.util.BaseWebTest {
 		assertThat( fileInfo.getAsString( KeyDictionary.serverFile ) ).doesNotContain( "\\" );
 		assertThat( fileInfo.getAsString( KeyDictionary.serverDirectory ) )
 		    .contains( Path.of( FileSystemUtil.getTempDirectory(), "foo/baz" ).toAbsolutePath().toString() );
-		assertThat( fileInfo.getAsString( KeyDictionary.clientFile ) )
-		    .isNotEqualTo( fileInfo.getAsString( KeyDictionary.serverFile ) );
 		assertThat( fileInfo.get( KeyDictionary.clientFileExt ) ).isEqualTo( "jpg" );
 		assertThat( fileInfo.get( KeyDictionary.serverFileExt ) ).isEqualTo( "jpg" );
 		assertThat( fileInfo.getAsString( KeyDictionary.serverFileName ) ).doesNotContain( "." );

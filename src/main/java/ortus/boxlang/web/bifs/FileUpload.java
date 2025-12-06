@@ -209,7 +209,7 @@ public class FileUpload extends BIF {
 
 		String fileName = upload.originalFileName();
 
-		if ( !createPath && !Files.isDirectory( destinationPath ) && destinationPath.getFileName().toString().contains( "." ) ) {
+		if ( !Files.isDirectory( destinationPath ) && destinationPath.getFileName().toString().contains( "." ) ) {
 			fileName		= destinationPath.getFileName().toString();
 			destinationPath	= destinationPath.getParent();
 			if ( !Files.exists( destinationPath ) ) {
