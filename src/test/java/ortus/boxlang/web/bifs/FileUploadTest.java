@@ -268,7 +268,7 @@ public class FileUploadTest extends ortus.boxlang.web.util.BaseWebTest {
 		assertThat( fileInfo.get( KeyDictionary.contentSubType ) ).isEqualTo( "jpeg" );
 	}
 
-	@DisplayName( "It tests the BIF FileUpload will create paths in the temp directory if it is part of an absolute path" )
+	@DisplayName( "It tests the BIF FileUpload with a relative path containing a filename" )
 	@Test
 	public void testsTemplateRelativePath() {
 		variables.put( Key.of( "filefield" ), testFields[ 1 ] );

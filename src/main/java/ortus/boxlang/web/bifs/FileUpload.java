@@ -223,9 +223,7 @@ public class FileUpload extends BIF {
 			} catch ( IOException e ) {
 				throw new BoxIOException( "The specified destination path [" + destination + "] could not be created", e );
 			}
-		}
-
-		if ( !Files.exists( destinationPath ) ) {
+		} else if ( !Files.exists( destinationPath ) ) {
 			throw new BoxRuntimeException( "The specified destination path [" + destination + "] does not exist" );
 		}
 
