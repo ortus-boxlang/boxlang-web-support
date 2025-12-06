@@ -109,7 +109,8 @@ public class FileTest extends ortus.boxlang.web.util.BaseWebTest {
 		assertThat( fileInfo.getAsString( KeyDictionary.clientFile ) )
 		    .isNotEqualTo( fileInfo.getAsString( KeyDictionary.serverFile ) );
 		assertThat( fileInfo.get( KeyDictionary.clientFileExt ) ).isEqualTo( "jpg" );
-		assertThat( fileInfo.get( KeyDictionary.contentType ) ).isEqualTo( "image/jpeg" );
+		assertThat( fileInfo.get( KeyDictionary.mimeType ) ).isEqualTo( "image/jpeg" );
+		assertThat( fileInfo.get( KeyDictionary.contentType ) ).isEqualTo( "image" );
 		assertThat( fileInfo.get( KeyDictionary.contentSubType ) ).isEqualTo( "jpeg" );
 		assertThat( fileInfo.get( KeyDictionary.fileSize ) ).isEqualTo( fileInfo.get( KeyDictionary.oldFileSize ) );
 
@@ -138,7 +139,8 @@ public class FileTest extends ortus.boxlang.web.util.BaseWebTest {
 			assertThat( fileInfo.getAsString( KeyDictionary.clientFile ) )
 			    .isNotEqualTo( fileInfo.getAsString( KeyDictionary.serverFile ) );
 			assertThat( fileInfo.get( KeyDictionary.clientFileExt ) ).isEqualTo( "jpg" );
-			assertThat( fileInfo.get( KeyDictionary.contentType ) ).isEqualTo( "image/jpeg" );
+			assertThat( fileInfo.get( KeyDictionary.mimeType ) ).isEqualTo( "image/jpeg" );
+			assertThat( fileInfo.get( KeyDictionary.contentType ) ).isEqualTo( "image" );
 			assertThat( fileInfo.get( KeyDictionary.contentSubType ) ).isEqualTo( "jpeg" );
 			assertThat( fileInfo.get( KeyDictionary.fileSize ) ).isEqualTo( fileInfo.get( KeyDictionary.oldFileSize ) );
 		} );
