@@ -209,12 +209,11 @@ public class FileUpload extends BIF {
 
 		String fileName = upload.originalFileName();
 
-		if ( !Files.isDirectory( destinationPath ) ) {
-			if ( destinationPath.getFileName().toString().contains( "." ) ) {
-				fileName		= destinationPath.getFileName().toString();
-				destinationPath	= destinationPath.getParent();
-			} else {
-				throw new BoxRuntimeException( "The specified destination path [" + destination + "] is not a directory or a path to a file" );
+		if ( !createPath && !Files.isDirectory( destinationPath ) && destinationPath.getFileName().toString().contains( "." ) ) {
+			fileName		= destinationPath.getFileName().toString();
+			destinationPath	= destinationPath.getParent();
+			if ( !Files.exists( destinationPath ) ) {
+				throw new BoxRuntimeException( "The specified destination path [" + destinationPath.toString() + "] does not exist" );
 			}
 		}
 
