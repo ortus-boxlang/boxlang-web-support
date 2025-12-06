@@ -212,8 +212,8 @@ public class FileUpload extends BIF {
 		if ( !Files.isDirectory( destinationPath ) && destinationPath.getFileName().toString().contains( "." ) ) {
 			fileName		= destinationPath.getFileName().toString();
 			destinationPath	= destinationPath.getParent();
-			if ( !Files.exists( destinationPath ) ) {
-				throw new BoxRuntimeException( "The specified destination path [" + destinationPath.toString() + "] does not exist" );
+			if ( !createPath && !Files.exists( destinationPath ) ) {
+				throw new BoxRuntimeException( "The specified destination folder path [" + destinationPath.toString() + "] does not exist" );
 			}
 		}
 
@@ -221,7 +221,7 @@ public class FileUpload extends BIF {
 			try {
 				Files.createDirectories( destinationPath );
 			} catch ( IOException e ) {
-				throw new BoxIOException( "The specified destination path [" + destination + "] could not be created", e );
+				throw new BoxIOException( "The specified destination path [" + destinationPath.toString() + "] could not be created", e );
 			}
 		} else if ( !Files.exists( destinationPath ) ) {
 			throw new BoxRuntimeException( "The specified destination path [" + destination + "] does not exist" );
