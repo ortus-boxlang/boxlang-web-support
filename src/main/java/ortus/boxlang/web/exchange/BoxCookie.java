@@ -27,24 +27,26 @@ import ortus.boxlang.runtime.logging.BoxLangLogger;
 
 public class BoxCookie {
 
-	private final String		name;
+	private final String			name;
 	// This will always contain the NON-encoded value, even if encodeValue is set to true.
 	// The encoded value is returned by getEncodedValue()
-	private String				value;
-	private String				path;
-	private String				domain;
-	private Integer				maxAge;
-	private Date				expires;
-	private boolean				discard;
-	private boolean				secure;
-	private boolean				httpOnly;
-	private int					version	= 1;
-	private String				comment;
-	private boolean				sameSite;
-	private String				sameSiteMode;
-	private boolean				encodeValue;
+	private String					value;
+	private String					path;
+	private String					domain;
+	private Integer					maxAge;
+	private Date					expires;
+	private boolean					discard;
+	private boolean					secure;
+	private boolean					httpOnly;
+	private int						version				= 1;
+	private String					comment;
+	private boolean					sameSite;
+	private String					sameSiteMode;
+	private boolean					encodeValue;
 
-	private final BoxLangLogger	logger	= BoxRuntime.getInstance().getLoggingService().EXCEPTION_LOGGER;
+	private final BoxLangLogger		logger				= BoxRuntime.getInstance().getLoggingService().EXCEPTION_LOGGER;
+
+	private final SimpleDateFormat	expiresDateFormat	= new SimpleDateFormat( "EEE, dd MMM yyyy HH:mm:ss z" );
 
 	public BoxCookie( final String name, final String value ) {
 		this( name, value, true );
@@ -54,6 +56,7 @@ public class BoxCookie {
 		this.name			= name;
 		this.value			= value;
 		this.encodeValue	= encodeValue;
+		expiresDateFormat.setTimeZone( java.util.TimeZone.getTimeZone( "GMT" ) );
 	}
 
 	public BoxCookie( final String name ) {
@@ -301,7 +304,7 @@ public class BoxCookie {
 
 		// Add the Expires attribute if set
 		if ( getExpires() != null ) {
-			header.append( "Expires=" ).append( new SimpleDateFormat( "EEE, dd MMM yyyy HH:mm:ss z" ).format( getExpires() ) ).append( "; " );
+			header.append( "Expires=" ).append( expiresDateFormat.format( getExpires() ) ).append( "; " );
 		}
 
 		// Add the Secure attribute if set
