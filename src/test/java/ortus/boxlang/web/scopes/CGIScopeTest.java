@@ -19,7 +19,7 @@ public class CGIScopeTest extends BaseWebTest {
 	@BeforeEach
 	public void setupEach() {
 		super.setupEach();
-		cgiScope = new CGIScope( mockExchange );
+		cgiScope = new CGIScope( context );
 	}
 
 	@DisplayName( "It can be created" )
@@ -70,14 +70,14 @@ public class CGIScopeTest extends BaseWebTest {
 	@DisplayName( "It returns true from containsKey() for known keys" )
 	@Test
 	public void testContainsKey() {
-		IScope cgiScope = new CGIScope( mockExchange );
+		IScope cgiScope = new CGIScope( context );
 		assertThat( cgiScope.containsKey( Key.of( "server_name" ) ) ).isTrue();
 	}
 
 	@DisplayName( "Mapped values should be null" )
 	@Test
 	public void testMappedValuesShouldBeNull() {
-		IScope cgiScope = new CGIScope( mockExchange );
+		IScope cgiScope = new CGIScope( context );
 		// assert no values are null
 		for ( var entry : cgiScope.entrySet() ) {
 			assertThat( entry.getValue() ).isNotNull();
