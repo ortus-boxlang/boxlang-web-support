@@ -22,7 +22,7 @@ import java.util.stream.Collectors;
 
 import ortus.boxlang.runtime.scopes.BaseScope;
 import ortus.boxlang.runtime.scopes.Key;
-import ortus.boxlang.web.exchange.IBoxHTTPExchange;
+import ortus.boxlang.web.context.WebRequestBoxContext;
 
 /**
  * Form scope implementation in BoxLang
@@ -44,14 +44,14 @@ public class FormScope extends BaseScope {
 	 * --------------------------------------------------------------------------
 	 */
 
-	public FormScope( IBoxHTTPExchange exchange ) {
+	public FormScope( WebRequestBoxContext context ) {
 		super( FormScope.name );
-		exchange.getRequestFormMap().forEach( ( key, value ) -> {
+		context.getHTTPExchange().getRequestFormMap().forEach( ( key, value ) -> {
 			this.put( Key.of( key ), Arrays.stream( value ).collect( Collectors.joining( "," ) ) );
 		} );
 
 		// Only for POST requests
-		if ( exchange.getRequestMethod().equalsIgnoreCase( "POST" ) ) {
+		if ( context.getHTTPExchange().getRequestMethod().equalsIgnoreCase( "POST" ) ) {
 			// add form.fieldNames from our internal keys
 			this.put( fieldNames, Arrays.stream( this.keySet().toArray() ).map( Object::toString ).collect( Collectors.joining( "," ) ) );
 		}

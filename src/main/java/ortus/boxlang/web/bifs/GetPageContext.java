@@ -51,12 +51,19 @@ public class GetPageContext extends BIF {
 	 */
 	public class PageContext {
 
-		private IBoxHTTPExchange		exchange;
-		private WebRequestBoxContext	context;
+		private WebRequestBoxContext context;
 
 		public PageContext( IBoxContext context ) {
-			this.context	= context.getParentOfType( WebRequestBoxContext.class );
-			this.exchange	= this.context.getHTTPExchange();
+			this.context = context.getParentOfType( WebRequestBoxContext.class );
+		}
+
+		/**
+		 * Get the exchange
+		 * 
+		 * @return the exchange
+		 */
+		public IBoxHTTPExchange getExchange() {
+			return context.getHTTPExchange();
 		}
 
 		/**
@@ -84,10 +91,10 @@ public class GetPageContext extends BIF {
 		 * @param value
 		 */
 		public void setHeader( String name, String value ) {
-			if ( exchange.isResponseStarted() ) {
+			if ( getExchange().isResponseStarted() ) {
 				return;
 			}
-			exchange.setResponseHeader( name, value );
+			getExchange().setResponseHeader( name, value );
 		}
 
 		/**
@@ -96,7 +103,7 @@ public class GetPageContext extends BIF {
 		 * @param value
 		 */
 		public void setContentType( String value ) {
-			if ( exchange.isResponseStarted() ) {
+			if ( getExchange().isResponseStarted() ) {
 				return;
 			}
 			setHeader( "Content-Type", value );
@@ -120,10 +127,10 @@ public class GetPageContext extends BIF {
 		 * @param text
 		 */
 		public void setStatus( int code, String text ) {
-			if ( exchange.isResponseStarted() ) {
+			if ( getExchange().isResponseStarted() ) {
 				return;
 			}
-			exchange.setResponseStatus( code, text );
+			getExchange().setResponseStatus( code, text );
 		}
 
 		/**
@@ -141,7 +148,7 @@ public class GetPageContext extends BIF {
 		 * @return
 		 */
 		public int getStatus() {
-			return exchange.getResponseStatus();
+			return getExchange().getResponseStatus();
 		}
 
 		/**
@@ -149,7 +156,7 @@ public class GetPageContext extends BIF {
 		 *
 		 */
 		public void reset() {
-			exchange.reset();
+			getExchange().reset();
 			context.clearBuffer();
 		}
 
@@ -187,12 +194,12 @@ public class GetPageContext extends BIF {
 		 * @return
 		 */
 		public StringBuffer getRequestURL() {
-			return new StringBuffer( exchange.getRequestURL() );
+			return new StringBuffer( getExchange().getRequestURL() );
 		}
 
 		// Getting response content type. If we need to get request content type, we'll need to spoof actual request and response objects
 		public String getContentType() {
-			String contentType = exchange.getResponseHeader( "Content-Type" );
+			String contentType = getExchange().getResponseHeader( "Content-Type" );
 			if ( contentType == null ) {
 				return "text/html";
 			} else {
@@ -217,7 +224,7 @@ public class GetPageContext extends BIF {
 		 * @return
 		 */
 		public Map<String, String[]> getResponseHeaderMap() {
-			return exchange.getResponseHeaderMap();
+			return getExchange().getResponseHeaderMap();
 		}
 
 		/**
@@ -228,7 +235,7 @@ public class GetPageContext extends BIF {
 		 * @return
 		 */
 		public String getResponseHeader( String name ) {
-			return exchange.getResponseHeader( name );
+			return getExchange().getResponseHeader( name );
 		}
 
 		/**
@@ -237,7 +244,7 @@ public class GetPageContext extends BIF {
 		 * @return
 		 */
 		public Map<String, String[]> getRequestHeaderMap() {
-			return exchange.getRequestHeaderMap();
+			return getExchange().getRequestHeaderMap();
 		}
 
 		/**
@@ -248,7 +255,7 @@ public class GetPageContext extends BIF {
 		 * @return
 		 */
 		public String getRequestHeader( String name ) {
-			return exchange.getRequestHeader( name );
+			return getExchange().getRequestHeader( name );
 		}
 
 		/**
@@ -259,7 +266,7 @@ public class GetPageContext extends BIF {
 		 * @return
 		 */
 		public String getHeader( String name ) {
-			return exchange.getRequestHeader( name );
+			return getExchange().getRequestHeader( name );
 		}
 
 		/**
@@ -271,7 +278,7 @@ public class GetPageContext extends BIF {
 		 *
 		 */
 		public boolean isCommitted() {
-			return exchange.isResponseStarted();
+			return getExchange().isResponseStarted();
 		}
 
 		/**
@@ -281,7 +288,7 @@ public class GetPageContext extends BIF {
 		 * @return a String containing the name of the scheme used to make this request
 		 */
 		public String getScheme() {
-			return exchange.getRequestScheme();
+			return getExchange().getRequestScheme();
 		}
 
 	}

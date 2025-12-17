@@ -27,6 +27,7 @@ import java.util.stream.Collectors;
 import ortus.boxlang.runtime.scopes.BaseScope;
 import ortus.boxlang.runtime.scopes.Key;
 import ortus.boxlang.runtime.types.NullValue;
+import ortus.boxlang.web.context.WebRequestBoxContext;
 import ortus.boxlang.web.exchange.IBoxHTTPExchange;
 
 /**
@@ -40,12 +41,12 @@ public class RequestScope extends BaseScope {
 	 * Public Properties
 	 * --------------------------------------------------------------------------
 	 */
-	public static final Key		name	= Key.of( "request" );
+	public static final Key			name	= Key.of( "request" );
 
 	/**
-	 * The Linked Exchange
+	 * The Linked context
 	 */
-	protected IBoxHTTPExchange	exchange;
+	protected WebRequestBoxContext	context;
 
 	/**
 	 * --------------------------------------------------------------------------
@@ -53,9 +54,18 @@ public class RequestScope extends BaseScope {
 	 * --------------------------------------------------------------------------
 	 */
 
-	public RequestScope( IBoxHTTPExchange exchange ) {
+	public RequestScope( WebRequestBoxContext context ) {
 		super( RequestScope.name );
-		this.exchange = exchange;
+		this.context = context;
+	}
+
+	/**
+	 * Get the exchange
+	 * 
+	 * @return the exchange
+	 */
+	public IBoxHTTPExchange getExchange() {
+		return context.getHTTPExchange();
 	}
 
 	/**
@@ -67,7 +77,7 @@ public class RequestScope extends BaseScope {
 	 */
 	@Override
 	public int size() {
-		return wrapped.size() + exchange.getRequestAttributeMap().size();
+		return wrapped.size() + getExchange().getRequestAttributeMap().size();
 	}
 
 	/**
@@ -75,7 +85,7 @@ public class RequestScope extends BaseScope {
 	 */
 	@Override
 	public boolean isEmpty() {
-		return wrapped.isEmpty() && exchange.getRequestAttributeMap().isEmpty();
+		return wrapped.isEmpty() && getExchange().getRequestAttributeMap().isEmpty();
 	}
 
 	/**
@@ -86,7 +96,7 @@ public class RequestScope extends BaseScope {
 	 * @return {@code true} if this map contains a mapping for the specified
 	 */
 	public boolean containsKey( Key key ) {
-		return wrapped.containsKey( key ) || exchange.getRequestAttributeMap().containsKey( key.getName() );
+		return wrapped.containsKey( key ) || getExchange().getRequestAttributeMap().containsKey( key.getName() );
 	}
 
 	/**
@@ -98,7 +108,7 @@ public class RequestScope extends BaseScope {
 	 */
 	@Override
 	public boolean containsValue( Object value ) {
-		return wrapped.containsValue( value ) || exchange.getRequestAttributeMap().containsValue( value );
+		return wrapped.containsValue( value ) || getExchange().getRequestAttributeMap().containsValue( value );
 	}
 
 	/**
@@ -116,7 +126,7 @@ public class RequestScope extends BaseScope {
 		}
 
 		// Then look in the request attributes
-		var requestAttributes = exchange.getRequestAttributeMap();
+		var requestAttributes = getExchange().getRequestAttributeMap();
 		if ( requestAttributes.containsKey( key.getName() ) ) {
 			value = requestAttributes.get( key.getName() );
 			if ( value != null ) {
@@ -139,7 +149,7 @@ public class RequestScope extends BaseScope {
 		// Create a new HashSet and add all keys from the wrapped map
 		Set<Key> keys = new HashSet<>( wrapped.keySet() );
 		// Add all keys from the exchange's request attribute map
-		keys.addAll( exchange.getRequestAttributeMap().keySet().stream().map( Key::of ).collect( Collectors.toSet() ) );
+		keys.addAll( getExchange().getRequestAttributeMap().keySet().stream().map( Key::of ).collect( Collectors.toSet() ) );
 		return keys;
 	}
 
@@ -151,7 +161,7 @@ public class RequestScope extends BaseScope {
 		var vals = wrapped.values().stream()
 		    .map( entry -> unWrapNull( entry ) )
 		    .collect( Collectors.toList() );
-		vals.addAll( exchange.getRequestAttributeMap().values() );
+		vals.addAll( getExchange().getRequestAttributeMap().values() );
 		return vals;
 	}
 
@@ -164,7 +174,7 @@ public class RequestScope extends BaseScope {
 		    .map( entry -> new SimpleEntry<>( entry.getKey(), unWrapNull( entry.getValue() ) ) )
 		    .collect( Collectors.toCollection( LinkedHashSet::new ) );
 
-		exchange.getRequestAttributeMap().entrySet().stream()
+		getExchange().getRequestAttributeMap().entrySet().stream()
 		    .map( entry -> new SimpleEntry<>( Key.of( entry.getKey() ), entry.getValue() ) )
 		    .forEach( entries::add );
 

@@ -183,7 +183,7 @@ public class ServerSideEvent extends BIF {
 		context.clearBuffer();
 
 		// Create the SSE emitter
-		SSEEmitter emitter = new SSEEmitter( exchange, retry, keepAliveInterval, context );
+		SSEEmitter emitter = new SSEEmitter( retry, keepAliveInterval, requestContext );
 
 		// Execute the callback
 		if ( async ) {

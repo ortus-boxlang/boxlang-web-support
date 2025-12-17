@@ -29,6 +29,7 @@ import ortus.boxlang.runtime.dynamic.casters.StructCaster;
 import ortus.boxlang.runtime.scopes.BaseScope;
 import ortus.boxlang.runtime.scopes.Key;
 import ortus.boxlang.runtime.types.IStruct;
+import ortus.boxlang.web.context.WebRequestBoxContext;
 import ortus.boxlang.web.exchange.BoxCookie;
 import ortus.boxlang.web.exchange.IBoxHTTPExchange;
 
@@ -42,11 +43,11 @@ public class CookieScope extends BaseScope {
 	 * Public Properties
 	 * --------------------------------------------------------------------------
 	 */
-	public static final Key		name		= Key.of( "cookie" );
-	private static final Key	maxAgeKey	= Key.of( "maxAge" );
-	private static final Key	sameSiteKey	= Key.of( "sameSite" );
+	public static final Key			name		= Key.of( "cookie" );
+	private static final Key		maxAgeKey	= Key.of( "maxAge" );
+	private static final Key		sameSiteKey	= Key.of( "sameSite" );
 
-	protected IBoxHTTPExchange	exchange;
+	protected WebRequestBoxContext	context;
 
 	/**
 	 * --------------------------------------------------------------------------
@@ -54,12 +55,21 @@ public class CookieScope extends BaseScope {
 	 * --------------------------------------------------------------------------
 	 */
 
-	public CookieScope( IBoxHTTPExchange exchange ) {
+	public CookieScope( WebRequestBoxContext context ) {
 		super( CookieScope.name );
-		this.exchange = exchange;
-		for ( var cookie : exchange.getRequestCookies() ) {
+		this.context = context;
+		for ( var cookie : getExchange().getRequestCookies() ) {
 			this.put( Key.of( cookie.getName() ), cookie.getValue() );
 		}
+	}
+
+	/**
+	 * Get the exchange
+	 * 
+	 * @return the exchange
+	 */
+	public IBoxHTTPExchange getExchange() {
+		return context.getHTTPExchange();
 	}
 
 	/**
@@ -126,7 +136,7 @@ public class CookieScope extends BaseScope {
 
 		this.put( key, cookieValue );
 		// If the incoming value was just a struct, most of these will just be defaults
-		exchange.addResponseCookie(
+		getExchange().addResponseCookie(
 		    new BoxCookie( key.getName(), cookieValue )
 		        .setPath( path )
 		        .setDomain( domain )

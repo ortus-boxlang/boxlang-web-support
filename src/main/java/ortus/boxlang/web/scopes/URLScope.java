@@ -22,7 +22,7 @@ import java.util.stream.Collectors;
 
 import ortus.boxlang.runtime.scopes.BaseScope;
 import ortus.boxlang.runtime.scopes.Key;
-import ortus.boxlang.web.exchange.IBoxHTTPExchange;
+import ortus.boxlang.web.context.WebRequestBoxContext;
 
 /**
  * URL scope implementation in BoxLang
@@ -42,9 +42,9 @@ public class URLScope extends BaseScope {
 	 * --------------------------------------------------------------------------
 	 */
 
-	public URLScope( IBoxHTTPExchange exchange ) {
+	public URLScope( WebRequestBoxContext context ) {
 		super( URLScope.name );
-		exchange.getRequestURLMap().forEach( ( key, value ) -> {
+		context.getHTTPExchange().getRequestURLMap().forEach( ( key, value ) -> {
 			this.put( Key.of( key ), Arrays.stream( value ).collect( Collectors.joining( "," ) ) );
 		} );
 	}

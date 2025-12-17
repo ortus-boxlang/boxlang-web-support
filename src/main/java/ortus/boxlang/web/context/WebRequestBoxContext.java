@@ -39,6 +39,7 @@ import ortus.boxlang.runtime.types.UDF;
 import ortus.boxlang.runtime.types.exceptions.ScopeNotFoundException;
 import ortus.boxlang.runtime.util.Mapping;
 import ortus.boxlang.web.exchange.BoxCookie;
+import ortus.boxlang.web.exchange.DetachedHTTPExchange;
 import ortus.boxlang.web.exchange.IBoxHTTPExchange;
 import ortus.boxlang.web.scopes.CGIScope;
 import ortus.boxlang.web.scopes.CookieScope;
@@ -138,11 +139,11 @@ public class WebRequestBoxContext extends RequestBoxContext {
 		httpExchange.setWebContext( this );
 		this.httpExchange	= httpExchange;
 		this.webRoot		= webRoot;
-		URLScope			= new URLScope( httpExchange );
-		formScope			= new FormScope( httpExchange );
-		CGIScope			= new CGIScope( httpExchange );
-		cookieScope			= new CookieScope( httpExchange );
-		requestScope		= new RequestScope( httpExchange );
+		URLScope			= new URLScope( this );
+		formScope			= new FormScope( this );
+		CGIScope			= new CGIScope( this );
+		cookieScope			= new CookieScope( this );
+		requestScope		= new RequestScope( this );
 	}
 
 	/**
@@ -225,7 +226,7 @@ public class WebRequestBoxContext extends RequestBoxContext {
 
 		BoxCookie sessionCookie = new BoxCookie( sessionCookieDefaults.getAsString( Key._NAME ),
 		    newId.getName() )
-		    .setPath( "/" );
+		        .setPath( "/" );
 
 		Optional.ofNullable( sessionCookieSettings.get( KeyDictionary.httpOnly ) ).map( BooleanCaster::cast ).map( sessionCookie::setHttpOnly );
 
@@ -616,6 +617,25 @@ public class WebRequestBoxContext extends RequestBoxContext {
 		}
 		// It's another content type like binary or JSON, etc
 		return false;
+	}
+
+	@Override
+	public void shutdown() {
+		if ( hasDependentThreads() ) {
+			detachFromHTTPExchange();
+		}
+		super.shutdown();
+	}
+
+	/**
+	 * Detach this context from the HTTP exchange to allow background threads to
+	 * complete without holding onto the exchange
+	 */
+	private void detachFromHTTPExchange() {
+		// Replace the exchange with a detached version
+		// It has a copy of all the original data, but all mutator methods are no-ops and it holds
+		// no actual references to the upstream servlet or server objects
+		setHTTPExchange( DetachedHTTPExchange.from( getHTTPExchange() ) );
 	}
 
 }

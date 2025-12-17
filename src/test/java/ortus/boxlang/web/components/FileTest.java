@@ -32,7 +32,7 @@ import ortus.boxlang.web.util.KeyDictionary;
 
 public class FileTest extends ortus.boxlang.web.util.BaseWebTest {
 
-	ArrayList<ortus.boxlang.web.exchange.IBoxHTTPExchange.FileUpload>	mockUploads		= new ArrayList<ortus.boxlang.web.exchange.IBoxHTTPExchange.FileUpload>();;
+	ArrayList<ortus.boxlang.web.exchange.IBoxHTTPExchange.FileUpload>	mockUploads		= new ArrayList<ortus.boxlang.web.exchange.IBoxHTTPExchange.FileUpload>();
 	public final String													TEST_WEBROOT	= Path.of( "src/test/resources/webroot" ).toAbsolutePath().toString();
 	// Test Constants
 	Key																	result			= new Key( "result" );
