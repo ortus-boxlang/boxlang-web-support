@@ -48,7 +48,7 @@ public class FormScope extends BaseScope {
 	public FormScope( WebRequestBoxContext context ) {
 		super( FormScope.name );
 		context.getHTTPExchange().getRequestFormMap().forEach( ( key, value ) -> {
-			// Convention for foo[]=brad foo[]=luis which creates array instead of comma delimited string
+			// Convention for foo[]=brad foo[]=luis which creates array instead of comma delimited string.
 			if ( key.endsWith( "[]" ) ) {
 				this.put( Key.of( key.substring( 0, key.length() - 2 ) ), new Array( value ) );
 			} else {
