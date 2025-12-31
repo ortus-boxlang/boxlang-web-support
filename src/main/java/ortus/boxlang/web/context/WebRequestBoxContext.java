@@ -36,6 +36,7 @@ import ortus.boxlang.runtime.types.DateTime;
 import ortus.boxlang.runtime.types.IStruct;
 import ortus.boxlang.runtime.types.Struct;
 import ortus.boxlang.runtime.types.UDF;
+import ortus.boxlang.runtime.types.exceptions.BoxRuntimeException;
 import ortus.boxlang.runtime.types.exceptions.ScopeNotFoundException;
 import ortus.boxlang.runtime.util.Mapping;
 import ortus.boxlang.web.exchange.BoxCookie;
@@ -226,7 +227,7 @@ public class WebRequestBoxContext extends RequestBoxContext {
 
 		BoxCookie sessionCookie = new BoxCookie( sessionCookieDefaults.getAsString( Key._NAME ),
 		    newId.getName() )
-		    .setPath( "/" );
+		        .setPath( "/" );
 
 		Optional.ofNullable( sessionCookieSettings.get( KeyDictionary.httpOnly ) ).map( BooleanCaster::cast ).map( sessionCookie::setHttpOnly );
 
@@ -541,6 +542,10 @@ public class WebRequestBoxContext extends RequestBoxContext {
 	 * @return The HTTP exchange
 	 */
 	public IBoxHTTPExchange getHTTPExchange() {
+		if ( httpExchange == null ) {
+			throw new BoxRuntimeException(
+			    "This context has been shutdown, and discarded the HTTP exchange.  No threads should be using this context.  Please report this as a bug." );
+		}
 		return httpExchange;
 	}
 
@@ -623,6 +628,8 @@ public class WebRequestBoxContext extends RequestBoxContext {
 	public void shutdown() {
 		if ( hasDependentThreads() ) {
 			detachFromHTTPExchange();
+		} else {
+			this.httpExchange = null;
 		}
 		super.shutdown();
 	}

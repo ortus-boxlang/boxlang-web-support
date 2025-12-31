@@ -22,6 +22,7 @@ import java.util.stream.Collectors;
 
 import ortus.boxlang.runtime.scopes.BaseScope;
 import ortus.boxlang.runtime.scopes.Key;
+import ortus.boxlang.runtime.types.Array;
 import ortus.boxlang.web.context.WebRequestBoxContext;
 
 /**
@@ -45,7 +46,12 @@ public class URLScope extends BaseScope {
 	public URLScope( WebRequestBoxContext context ) {
 		super( URLScope.name );
 		context.getHTTPExchange().getRequestURLMap().forEach( ( key, value ) -> {
-			this.put( Key.of( key ), Arrays.stream( value ).collect( Collectors.joining( "," ) ) );
+			// Convention for ?foo[]=brad&foo[]=luis which creates array instead of comma delimited string
+			if ( key.endsWith( "[]" ) ) {
+				this.put( Key.of( key.substring( 0, key.length() - 2 ) ), new Array( value ) );
+			} else {
+				this.put( Key.of( key ), Arrays.stream( value ).collect( Collectors.joining( "," ) ) );
+			}
 		} );
 	}
 
