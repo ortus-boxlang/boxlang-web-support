@@ -80,8 +80,8 @@ public class WhitespaceManagingPrintWriter extends PrintWriter {
 
 			// Handle the tag name (only lowercase the characters immediately)
 			if ( firstTagChar && !isWS && ch != '>' ) {
-				// If the first character isn't 'p', 'c', or 't', abort the tag
-				if ( ! ( ch == 'p' || ch == 'c' || ch == 't' ) ) {
+				// If the first character isn't 'p', 'c', 't', or 's', abort the tag
+				if ( ! ( ch == 'p' || ch == 'c' || ch == 't' || ch == 's' ) ) {
 					inTag = false;  // Stop tracking the tag
 					super.write( ch );
 					previousCharWasWhitespace = isWS;
@@ -100,8 +100,8 @@ public class WhitespaceManagingPrintWriter extends PrintWriter {
 				String tagName = tagBuffer.toString();
 				// System.out.println( "Tag name: " + tagName );
 
-				// Handle opening <pre>, <code>, or <textarea> tags
-				if ( "pre".equals( tagName ) || "code".equals( tagName ) || "textarea".equals( tagName ) ) {
+				// Handle opening <pre>, <code>, <textarea>, or <script> tags
+				if ( "pre".equals( tagName ) || "code".equals( tagName ) || "textarea".equals( tagName ) || "script".equals( tagName ) ) {
 					preserveWhitespace = !closeTag;
 				}
 
