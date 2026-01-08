@@ -55,6 +55,7 @@ public class KeyDictionary {
 	public static final Key	htmlFooter			= Key.of( "htmlFooter" );
 	public static final Key	htmlHead			= Key.of( "htmlHead" );
 	public static final Key	httpOnly			= Key.of( "httponly" );
+	public static final Key	mimeType			= Key.of( "mimeType" );
 	public static final Key	oldFileSize			= Key.of( "oldFileSize" );
 	public static final Key	onRequestEnd		= Key.of( "onRequestEnd" );
 	public static final Key	retry				= Key.of( "retry" );

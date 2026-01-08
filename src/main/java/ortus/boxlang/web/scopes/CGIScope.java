@@ -102,9 +102,9 @@ public class CGIScope extends BaseScope {
 	public static final Key			name		= Key.of( "cgi" );
 
 	/**
-	 * The Linked Exchange
+	 * The Linked context
 	 */
-	protected IBoxHTTPExchange		exchange;
+	protected WebRequestBoxContext	context;
 
 	/**
 	 * --------------------------------------------------------------------------
@@ -112,9 +112,18 @@ public class CGIScope extends BaseScope {
 	 * --------------------------------------------------------------------------
 	 */
 
-	public CGIScope( IBoxHTTPExchange exchange ) {
+	public CGIScope( WebRequestBoxContext context ) {
 		super( CGIScope.name );
-		this.exchange = exchange;
+		this.context = context;
+	}
+
+	/**
+	 * Get the exchange
+	 * 
+	 * @return the exchange
+	 */
+	public IBoxHTTPExchange getExchange() {
+		return context.getHTTPExchange();
 	}
 
 	/**
@@ -132,7 +141,7 @@ public class CGIScope extends BaseScope {
 	 */
 	private String getTemplatePath( IBoxContext context ) {
 		WebRequestBoxContext	webContext	= context.getParentOfType( WebRequestBoxContext.class );
-		String					requestURI	= exchange.getRequestURI();
+		String					requestURI	= getExchange().getRequestURI();
 
 		// Null checks
 		if ( requestURI == null ) {
@@ -196,22 +205,22 @@ public class CGIScope extends BaseScope {
 		}
 
 		if ( key.equals( Key.content_type ) ) {
-			return putAndReturn( key, defaultNullToString( exchange.getRequestHeader( "Content-Type" ) ) );
+			return putAndReturn( key, defaultNullToString( getExchange().getRequestHeader( "Content-Type" ) ) );
 		}
 		if ( key.equals( Key.content_length ) ) {
-			return putAndReturn( key, defaultNullToString( exchange.getRequestContentLength() ) );
+			return putAndReturn( key, defaultNullToString( getExchange().getRequestContentLength() ) );
 		}
 		if ( key.equals( Key.cf_template_path ) || key.equals( KeyDictionary.bx_template_path ) || key.equals( Key.path_translated ) ) {
-			return putAndReturn( key, defaultNullToString( getTemplatePath( exchange.getWebContext() ) ) );
+			return putAndReturn( key, defaultNullToString( getTemplatePath( getExchange().getWebContext() ) ) );
 		}
 		if ( key.equals( Key.https ) ) {
-			return putAndReturn( key, defaultNullToString( exchange.isRequestSecure() ) );
+			return putAndReturn( key, defaultNullToString( getExchange().isRequestSecure() ) );
 		}
 		if ( key.equals( Key.http_host ) ) {
-			int port = exchange.getRequestServerPort();
+			int port = getExchange().getRequestServerPort();
 			return putAndReturn( key,
-			    port == 80 || port == 443 ? exchange.getRequestServerName()
-			        : exchange.getRequestServerName() + ":" + defaultNullToString( port ) );
+			    port == 80 || port == 443 ? getExchange().getRequestServerName()
+			        : getExchange().getRequestServerName() + ":" + defaultNullToString( port ) );
 		}
 		if ( key.equals( Key.local_addr ) ) {
 			try {
@@ -228,40 +237,40 @@ public class CGIScope extends BaseScope {
 			}
 		}
 		if ( key.equals( Key.request_url ) ) {
-			return putAndReturn( key, defaultNullToString( exchange.getRequestURL() ) );
+			return putAndReturn( key, defaultNullToString( getExchange().getRequestURL() ) );
 		}
 		if ( key.equals( Key.remote_addr ) ) {
-			return putAndReturn( key, defaultNullToString( exchange.getRequestRemoteAddr() ) );
+			return putAndReturn( key, defaultNullToString( getExchange().getRequestRemoteAddr() ) );
 		}
 		if ( key.equals( Key.remote_host ) ) {
-			return putAndReturn( key, defaultNullToString( exchange.getRequestRemoteHost() ) );
+			return putAndReturn( key, defaultNullToString( getExchange().getRequestRemoteHost() ) );
 		}
 		if ( key.equals( Key.remote_user ) ) {
-			return putAndReturn( key, defaultNullToString( exchange.getRequestRemoteUser() ) );
+			return putAndReturn( key, defaultNullToString( getExchange().getRequestRemoteUser() ) );
 		}
 		if ( key.equals( Key.path_info ) ) {
-			return putAndReturn( key, defaultNullToString( exchange.getRequestPathInfo() ) );
+			return putAndReturn( key, defaultNullToString( getExchange().getRequestPathInfo() ) );
 		}
 		if ( key.equals( Key.query_string ) ) {
-			return putAndReturn( key, defaultNullToString( exchange.getRequestQueryString() ) );
+			return putAndReturn( key, defaultNullToString( getExchange().getRequestQueryString() ) );
 		}
 		if ( key.equals( Key.request_method ) ) {
-			return putAndReturn( key, defaultNullToString( exchange.getRequestMethod() ) );
+			return putAndReturn( key, defaultNullToString( getExchange().getRequestMethod() ) );
 		}
 		if ( key.equals( Key.script_name ) ) {
-			return putAndReturn( key, defaultNullToString( exchange.getRequestURI() ) );
+			return putAndReturn( key, defaultNullToString( getExchange().getRequestURI() ) );
 		}
 		if ( key.equals( Key.server_name ) ) {
-			return putAndReturn( key, defaultNullToString( exchange.getRequestServerName() ) );
+			return putAndReturn( key, defaultNullToString( getExchange().getRequestServerName() ) );
 		}
 		if ( key.equals( Key.server_port ) ) {
-			return putAndReturn( key, defaultNullToString( exchange.getRequestServerPort() ) );
+			return putAndReturn( key, defaultNullToString( getExchange().getRequestServerPort() ) );
 		}
 		if ( key.equals( Key.server_port_secure ) ) {
-			return putAndReturn( key, exchange.isRequestSecure() ? defaultNullToString( exchange.getRequestServerPort() ) : 0 );
+			return putAndReturn( key, getExchange().isRequestSecure() ? defaultNullToString( getExchange().getRequestServerPort() ) : 0 );
 		}
 		if ( key.equals( Key.server_protocol ) ) {
-			return putAndReturn( key, defaultNullToString( exchange.getRequestProtocol() ) );
+			return putAndReturn( key, defaultNullToString( getExchange().getRequestProtocol() ) );
 		}
 
 		// TODO: All other CGI keys
@@ -289,12 +298,12 @@ public class CGIScope extends BaseScope {
 		 */
 
 		// HTTP header fallbacks
-		String header = exchange.getRequestHeader( key.getName() );
+		String header = getExchange().getRequestHeader( key.getName() );
 		if ( header != null ) {
 			return putAndReturn( key, header );
 		}
 		if ( key.getName().toLowerCase().startsWith( "http_" ) && key.getName().length() > 5 ) {
-			header = exchange.getRequestHeader( key.getName().substring( 5 ).replace( "_", "-" ) );
+			header = getExchange().getRequestHeader( key.getName().substring( 5 ).replace( "_", "-" ) );
 			if ( header != null ) {
 				return putAndReturn( key, header );
 			}
@@ -323,7 +332,7 @@ public class CGIScope extends BaseScope {
 	 */
 	public Set<Key> getDumpKeys() {
 		// return the keys in alphabetical order
-		return this.knownKeys;
+		return CGIScope.knownKeys;
 
 	}
 
@@ -334,7 +343,7 @@ public class CGIScope extends BaseScope {
 	 */
 	public Set<String> getDumpKeysAsString() {
 		// return the keys in alphabetical order
-		return this.knownKeys.stream().map( Key::getName ).collect( TreeSet::new, Set::add, Set::addAll );
+		return CGIScope.knownKeys.stream().map( Key::getName ).collect( TreeSet::new, Set::add, Set::addAll );
 	}
 
 	/**
@@ -342,7 +351,7 @@ public class CGIScope extends BaseScope {
 	 */
 	@Override
 	public Set<Key> keySet() {
-		return this.knownKeys;
+		return CGIScope.knownKeys;
 	}
 
 	/**
@@ -352,7 +361,7 @@ public class CGIScope extends BaseScope {
 	 */
 	@Override
 	public int size() {
-		return this.knownKeys.size();
+		return CGIScope.knownKeys.size();
 	}
 
 	// overide containskey()
@@ -366,7 +375,7 @@ public class CGIScope extends BaseScope {
 	@Override
 	public boolean containsKey( Key key ) {
 		// Always return true for known keys which are created on-access
-		return this.knownKeys.contains( key ) ? true : wrapped.containsKey( key );
+		return CGIScope.knownKeys.contains( key ) ? true : wrapped.containsKey( key );
 	}
 
 	/**

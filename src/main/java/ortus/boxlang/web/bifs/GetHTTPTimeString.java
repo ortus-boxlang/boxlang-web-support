@@ -59,7 +59,7 @@ public class GetHTTPTimeString extends BIF {
 			dateArg = new DateTime( LocalizationUtil.parseZoneId( null, context ) );
 		}
 		DateTime	dateRef		= DateTimeCaster.cast( dateArg );
-		DateTime	converted	= dateRef.convertToZone( ZoneId.of( "UTC" ) );
+		DateTime	converted	= dateRef.convertToZone( ZoneId.of( "GMT" ) );
 		converted.setFormat( "EEE, dd MMM yyyy HH:mm:ss z" );
 
 		return converted.toString();

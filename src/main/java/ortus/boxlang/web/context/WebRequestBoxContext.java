@@ -36,9 +36,11 @@ import ortus.boxlang.runtime.types.DateTime;
 import ortus.boxlang.runtime.types.IStruct;
 import ortus.boxlang.runtime.types.Struct;
 import ortus.boxlang.runtime.types.UDF;
+import ortus.boxlang.runtime.types.exceptions.BoxRuntimeException;
 import ortus.boxlang.runtime.types.exceptions.ScopeNotFoundException;
 import ortus.boxlang.runtime.util.Mapping;
 import ortus.boxlang.web.exchange.BoxCookie;
+import ortus.boxlang.web.exchange.DetachedHTTPExchange;
 import ortus.boxlang.web.exchange.IBoxHTTPExchange;
 import ortus.boxlang.web.scopes.CGIScope;
 import ortus.boxlang.web.scopes.CookieScope;
@@ -138,11 +140,11 @@ public class WebRequestBoxContext extends RequestBoxContext {
 		httpExchange.setWebContext( this );
 		this.httpExchange	= httpExchange;
 		this.webRoot		= webRoot;
-		URLScope			= new URLScope( httpExchange );
-		formScope			= new FormScope( httpExchange );
-		CGIScope			= new CGIScope( httpExchange );
-		cookieScope			= new CookieScope( httpExchange );
-		requestScope		= new RequestScope( httpExchange );
+		URLScope			= new URLScope( this );
+		formScope			= new FormScope( this );
+		CGIScope			= new CGIScope( this );
+		cookieScope			= new CookieScope( this );
+		requestScope		= new RequestScope( this );
 	}
 
 	/**
@@ -540,6 +542,10 @@ public class WebRequestBoxContext extends RequestBoxContext {
 	 * @return The HTTP exchange
 	 */
 	public IBoxHTTPExchange getHTTPExchange() {
+		if ( httpExchange == null ) {
+			throw new BoxRuntimeException(
+			    "This context has been shutdown, and discarded the HTTP exchange.  No threads should be using this context.  Please report this as a bug." );
+		}
 		return httpExchange;
 	}
 
@@ -616,6 +622,27 @@ public class WebRequestBoxContext extends RequestBoxContext {
 		}
 		// It's another content type like binary or JSON, etc
 		return false;
+	}
+
+	@Override
+	public void shutdown() {
+		if ( hasDependentThreads() ) {
+			detachFromHTTPExchange();
+		} else {
+			this.httpExchange = null;
+		}
+		super.shutdown();
+	}
+
+	/**
+	 * Detach this context from the HTTP exchange to allow background threads to
+	 * complete without holding onto the exchange
+	 */
+	private void detachFromHTTPExchange() {
+		// Replace the exchange with a detached version
+		// It has a copy of all the original data, but all mutator methods are no-ops and it holds
+		// no actual references to the upstream servlet or server objects
+		setHTTPExchange( DetachedHTTPExchange.from( getHTTPExchange() ) );
 	}
 
 }

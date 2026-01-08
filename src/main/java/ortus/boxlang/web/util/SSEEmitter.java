@@ -26,10 +26,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import ortus.boxlang.runtime.BoxRuntime;
 import ortus.boxlang.runtime.async.executors.BoxExecutor;
 import ortus.boxlang.runtime.bifs.global.decision.IsSimpleValue;
-import ortus.boxlang.runtime.context.IBoxContext;
 import ortus.boxlang.runtime.dynamic.casters.StringCaster;
 import ortus.boxlang.runtime.logging.BoxLangLogger;
 import ortus.boxlang.runtime.types.util.JSONUtil;
+import ortus.boxlang.web.context.WebRequestBoxContext;
 import ortus.boxlang.web.exchange.IBoxHTTPExchange;
 
 /**
@@ -106,14 +106,13 @@ public class SSEEmitter implements AutoCloseable {
 	 * --------------------------------------------------------------------------
 	 */
 
-	private final String			connectionId;
-	private final IBoxHTTPExchange	exchange;
-	private final PrintWriter		writer;
-	private final AtomicBoolean		closed	= new AtomicBoolean( false );
-	private final AtomicBoolean		firstMessage;
-	private final Integer			retry;
-	private ScheduledFuture<?>		keepAliveTask;
-	private final IBoxContext		context;
+	private final String				connectionId;
+	private final PrintWriter			writer;
+	private final AtomicBoolean			closed	= new AtomicBoolean( false );
+	private final AtomicBoolean			firstMessage;
+	private final Integer				retry;
+	private ScheduledFuture<?>			keepAliveTask;
+	private final WebRequestBoxContext	context;
 
 	/**
 	 * Creates a new SSE emitter.
@@ -123,23 +122,23 @@ public class SSEEmitter implements AutoCloseable {
 	 * @param keepAliveInterval The interval for keep-alive comments in milliseconds (0 = disabled)
 	 * @param context           The BoxLang context for logging
 	 */
-	public SSEEmitter( IBoxHTTPExchange exchange, Integer retry, Integer keepAliveInterval, IBoxContext context ) {
+	public SSEEmitter( Integer retry, Integer keepAliveInterval, WebRequestBoxContext context ) {
 		Objects.requireNonNull( retry, "Retry interval cannot be null. Use 0 to disable." );
 		Objects.requireNonNull( keepAliveInterval, "Keep-alive interval cannot be null. Use 0 to disable." );
 
+		this.context		= context;
 		this.connectionId	= java.util.UUID.randomUUID().toString().substring( 0, 8 );
-		this.exchange		= exchange;
-		this.writer			= exchange.getResponseWriter();
+
+		this.writer			= getExchange().getResponseWriter();
 		this.retry			= retry;
 		this.firstMessage	= new AtomicBoolean( true );
-		this.context		= context;
 
 		appLogger.debug( "[SSE:" + connectionId + "] Emitter created - retry: " + retry + "ms, keepAlive: " + keepAliveInterval + "ms" );
 
 		// Note: IBoxHTTPExchange does not currently support onComplete/onClose listeners.
 		// If such support is added in the future, register a listener here to ensure
 		// close() is called even if the handler exits unexpectedly:
-		// exchange.onComplete(() -> this.close());
+		// getExchange().onComplete(() -> this.close());
 
 		// First-byte fast flush: Immediately send a comment and tiny event to punch through buffers/proxies
 		// This helps establish the connection quickly and prevents timeouts
@@ -157,6 +156,15 @@ public class SSEEmitter implements AutoCloseable {
 		if ( keepAliveInterval > 0 ) {
 			startKeepAlive( keepAliveInterval );
 		}
+	}
+
+	/**
+	 * Get the exchange
+	 * 
+	 * @return the exchange
+	 */
+	public IBoxHTTPExchange getExchange() {
+		return context.getHTTPExchange();
 	}
 
 	/**

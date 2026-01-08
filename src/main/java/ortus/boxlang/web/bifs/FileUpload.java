@@ -36,6 +36,7 @@ import ortus.boxlang.runtime.dynamic.casters.StringCaster;
 import ortus.boxlang.runtime.scopes.ArgumentsScope;
 import ortus.boxlang.runtime.scopes.Key;
 import ortus.boxlang.runtime.types.Argument;
+import ortus.boxlang.runtime.types.Array;
 import ortus.boxlang.runtime.types.DateTime;
 import ortus.boxlang.runtime.types.IStruct;
 import ortus.boxlang.runtime.types.Struct;
@@ -209,12 +210,11 @@ public class FileUpload extends BIF {
 
 		String fileName = upload.originalFileName();
 
-		if ( !Files.isDirectory( destinationPath ) ) {
-			if ( destinationPath.getFileName().toString().contains( "." ) ) {
-				fileName		= destinationPath.getFileName().toString();
-				destinationPath	= destinationPath.getParent();
-			} else {
-				throw new BoxRuntimeException( "The specified destination path [" + destination + "] is not a directory or a path to a file" );
+		if ( !Files.isDirectory( destinationPath ) && destinationPath.getFileName().toString().contains( "." ) ) {
+			fileName		= destinationPath.getFileName().toString();
+			destinationPath	= destinationPath.getParent();
+			if ( !createPath && !Files.exists( destinationPath ) ) {
+				throw new BoxRuntimeException( "The specified destination folder path [" + destinationPath.toString() + "] does not exist" );
 			}
 		}
 
@@ -222,11 +222,9 @@ public class FileUpload extends BIF {
 			try {
 				Files.createDirectories( destinationPath );
 			} catch ( IOException e ) {
-				throw new BoxIOException( "The specified destination path [" + destination + "] could not be created", e );
+				throw new BoxIOException( "The specified destination path [" + destinationPath.toString() + "] could not be created", e );
 			}
-		}
-
-		if ( !Files.exists( destinationPath ) ) {
+		} else if ( !Files.exists( destinationPath ) ) {
 			throw new BoxRuntimeException( "The specified destination path [" + destination + "] does not exist" );
 		}
 
@@ -312,8 +310,10 @@ public class FileUpload extends BIF {
 			if ( mimeType == null ) {
 				mimeType = "application/octet-stream";
 			}
-			uploadRecord.put( KeyDictionary.contentType, mimeType );
-			uploadRecord.put( KeyDictionary.contentSubType, ListUtil.asList( mimeType, "/" ).get( 1 ) );
+			Array mimeSegements = ListUtil.asList( mimeType, "/" );
+			uploadRecord.put( KeyDictionary.mimeType, mimeType );
+			uploadRecord.put( KeyDictionary.contentType, mimeSegements.get( 0 ) );
+			uploadRecord.put( KeyDictionary.contentSubType, mimeSegements.get( 1 ) );
 			uploadRecord.put( KeyDictionary.timeLastModified, operationDate );
 			uploadRecord.put( KeyDictionary.dateLastAccessed, operationDate );
 			uploadRecord.put( KeyDictionary.serverFile, fileName );

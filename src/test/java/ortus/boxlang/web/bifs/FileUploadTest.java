@@ -145,7 +145,8 @@ public class FileUploadTest extends ortus.boxlang.web.util.BaseWebTest {
 		assertThat( fileInfo.getAsString( KeyDictionary.serverFileName ) ).doesNotContain( "." );
 		assertThat( fileInfo.getAsString( KeyDictionary.serverFileName ) ).doesNotContain( "/" );
 		assertThat( fileInfo.getAsString( KeyDictionary.serverFileName ) ).doesNotContain( "\\" );
-		assertThat( fileInfo.get( KeyDictionary.contentType ) ).isEqualTo( "image/jpeg" );
+		assertThat( fileInfo.getAsString( KeyDictionary.mimeType ) ).isEqualTo( "image/jpeg" );
+		assertThat( fileInfo.get( KeyDictionary.contentType ) ).isEqualTo( "image" );
 		assertThat( fileInfo.get( KeyDictionary.contentSubType ) ).isEqualTo( "jpeg" );
 		assertThat( fileInfo.get( KeyDictionary.fileSize ) ).isEqualTo( fileInfo.get( KeyDictionary.oldFileSize ) );
 
@@ -185,7 +186,8 @@ public class FileUploadTest extends ortus.boxlang.web.util.BaseWebTest {
 		assertThat( fileInfo.getAsString( KeyDictionary.serverFileName ) ).doesNotContain( "." );
 		assertThat( fileInfo.getAsString( KeyDictionary.serverFileName ) ).doesNotContain( "/" );
 		assertThat( fileInfo.getAsString( KeyDictionary.serverFileName ) ).doesNotContain( "\\" );
-		assertThat( fileInfo.get( KeyDictionary.contentType ) ).isEqualTo( "image/jpeg" );
+		assertThat( fileInfo.getAsString( KeyDictionary.mimeType ) ).isEqualTo( "image/jpeg" );
+		assertThat( fileInfo.get( KeyDictionary.contentType ) ).isEqualTo( "image" );
 		assertThat( fileInfo.get( KeyDictionary.contentSubType ) ).isEqualTo( "jpeg" );
 		assertThat( fileInfo.get( KeyDictionary.oldFileSize ) ).isNull();
 
@@ -228,12 +230,49 @@ public class FileUploadTest extends ortus.boxlang.web.util.BaseWebTest {
 		assertThat( fileInfo.getAsString( KeyDictionary.serverFileName ) ).doesNotContain( "." );
 		assertThat( fileInfo.getAsString( KeyDictionary.serverFileName ) ).doesNotContain( "/" );
 		assertThat( fileInfo.getAsString( KeyDictionary.serverFileName ) ).doesNotContain( "\\" );
-		assertThat( fileInfo.get( KeyDictionary.contentType ) ).isEqualTo( "image/jpeg" );
+		assertThat( fileInfo.getAsString( KeyDictionary.mimeType ) ).isEqualTo( "image/jpeg" );
+		assertThat( fileInfo.get( KeyDictionary.contentType ) ).isEqualTo( "image" );
 		assertThat( fileInfo.get( KeyDictionary.contentSubType ) ).isEqualTo( "jpeg" );
 
 	}
 
-	@DisplayName( "It tests the BIF FileUpload will create paths in the temp directory if it is part of an absolute path" )
+	@DisplayName( "It tests the BIF FileUpload will create paths in the temp directory without an absolute file path" )
+	@Test
+	public void testTempDirectoryPathCreation() {
+		variables.put( Key.of( "filefield" ), testFields[ 1 ] );
+		variables.put( Key.directory, FileSystemUtil.getTempDirectory() + "//foo/baz" );
+		runtime.executeSource(
+		    """
+		        result = FileUpload(
+		    directory,
+		    filefield,
+		    "*",
+		    "makeunique"
+		        );
+		        """,
+		    context );
+
+		assertThat( variables.get( result ) ).isInstanceOf( IStruct.class );
+
+		IStruct fileInfo = variables.getAsStruct( result );
+
+		assertThat( fileInfo.getAsString( KeyDictionary.serverFile ) ).isInstanceOf( String.class );
+		assertThat( fileInfo.getAsString( KeyDictionary.serverFile ) ).isNotEmpty();
+		assertThat( fileInfo.getAsString( KeyDictionary.serverFile ) ).doesNotContain( "/" );
+		assertThat( fileInfo.getAsString( KeyDictionary.serverFile ) ).doesNotContain( "\\" );
+		assertThat( fileInfo.getAsString( KeyDictionary.serverDirectory ) )
+		    .contains( Path.of( FileSystemUtil.getTempDirectory(), "foo/baz" ).toAbsolutePath().toString() );
+		assertThat( fileInfo.get( KeyDictionary.clientFileExt ) ).isEqualTo( "jpg" );
+		assertThat( fileInfo.get( KeyDictionary.serverFileExt ) ).isEqualTo( "jpg" );
+		assertThat( fileInfo.getAsString( KeyDictionary.serverFileName ) ).doesNotContain( "." );
+		assertThat( fileInfo.getAsString( KeyDictionary.serverFileName ) ).doesNotContain( "/" );
+		assertThat( fileInfo.getAsString( KeyDictionary.serverFileName ) ).doesNotContain( "\\" );
+		assertThat( fileInfo.getAsString( KeyDictionary.mimeType ) ).isEqualTo( "image/jpeg" );
+		assertThat( fileInfo.get( KeyDictionary.contentType ) ).isEqualTo( "image" );
+		assertThat( fileInfo.get( KeyDictionary.contentSubType ) ).isEqualTo( "jpeg" );
+	}
+
+	@DisplayName( "It tests the BIF FileUpload with a relative path containing a filename" )
 	@Test
 	public void testsTemplateRelativePath() {
 		variables.put( Key.of( "filefield" ), testFields[ 1 ] );
@@ -269,7 +308,8 @@ public class FileUploadTest extends ortus.boxlang.web.util.BaseWebTest {
 		assertThat( fileInfo.getAsString( KeyDictionary.serverFileName ) ).doesNotContain( "." );
 		assertThat( fileInfo.getAsString( KeyDictionary.serverFileName ) ).doesNotContain( "/" );
 		assertThat( fileInfo.getAsString( KeyDictionary.serverFileName ) ).doesNotContain( "\\" );
-		assertThat( fileInfo.get( KeyDictionary.contentType ) ).isEqualTo( "image/jpeg" );
+		assertThat( fileInfo.getAsString( KeyDictionary.mimeType ) ).isEqualTo( "image/jpeg" );
+		assertThat( fileInfo.get( KeyDictionary.contentType ) ).isEqualTo( "image" );
 		assertThat( fileInfo.get( KeyDictionary.contentSubType ) ).isEqualTo( "jpeg" );
 	}
 
@@ -305,7 +345,8 @@ public class FileUploadTest extends ortus.boxlang.web.util.BaseWebTest {
 		assertThat( fileInfo.getAsString( KeyDictionary.serverFileName ) ).doesNotContain( "." );
 		assertThat( fileInfo.getAsString( KeyDictionary.serverFileName ) ).doesNotContain( "/" );
 		assertThat( fileInfo.getAsString( KeyDictionary.serverFileName ) ).doesNotContain( "\\" );
-		assertThat( fileInfo.get( KeyDictionary.contentType ) ).isEqualTo( "image/jpeg" );
+		assertThat( fileInfo.getAsString( KeyDictionary.mimeType ) ).isEqualTo( "image/jpeg" );
+		assertThat( fileInfo.get( KeyDictionary.contentType ) ).isEqualTo( "image" );
 		assertThat( fileInfo.get( KeyDictionary.contentSubType ) ).isEqualTo( "jpeg" );
 		assertThat( fileInfo.get( KeyDictionary.fileSize ) ).isEqualTo( fileInfo.get( KeyDictionary.oldFileSize ) );
 
@@ -439,7 +480,7 @@ public class FileUploadTest extends ortus.boxlang.web.util.BaseWebTest {
 			assertThat( fileInfo.getAsString( KeyDictionary.serverFileName ) ).doesNotContain( "." );
 			assertThat( fileInfo.getAsString( KeyDictionary.serverFileName ) ).doesNotContain( "/" );
 			assertThat( fileInfo.getAsString( KeyDictionary.serverFileName ) ).doesNotContain( "\\" );
-			assertThat( fileInfo.get( KeyDictionary.contentType ) ).isEqualTo( "image/jpeg" );
+			assertThat( fileInfo.get( KeyDictionary.contentType ) ).isEqualTo( "image" );
 			assertThat( fileInfo.get( KeyDictionary.contentSubType ) ).isEqualTo( "jpeg" );
 			assertThat( fileInfo.get( KeyDictionary.fileSize ) ).isEqualTo( fileInfo.get( KeyDictionary.oldFileSize ) );
 		} );

@@ -32,7 +32,7 @@ import ortus.boxlang.web.util.KeyDictionary;
 
 public class FileTest extends ortus.boxlang.web.util.BaseWebTest {
 
-	ArrayList<ortus.boxlang.web.exchange.IBoxHTTPExchange.FileUpload>	mockUploads		= new ArrayList<ortus.boxlang.web.exchange.IBoxHTTPExchange.FileUpload>();;
+	ArrayList<ortus.boxlang.web.exchange.IBoxHTTPExchange.FileUpload>	mockUploads		= new ArrayList<ortus.boxlang.web.exchange.IBoxHTTPExchange.FileUpload>();
 	public final String													TEST_WEBROOT	= Path.of( "src/test/resources/webroot" ).toAbsolutePath().toString();
 	// Test Constants
 	Key																	result			= new Key( "result" );
@@ -109,7 +109,8 @@ public class FileTest extends ortus.boxlang.web.util.BaseWebTest {
 		assertThat( fileInfo.getAsString( KeyDictionary.clientFile ) )
 		    .isNotEqualTo( fileInfo.getAsString( KeyDictionary.serverFile ) );
 		assertThat( fileInfo.get( KeyDictionary.clientFileExt ) ).isEqualTo( "jpg" );
-		assertThat( fileInfo.get( KeyDictionary.contentType ) ).isEqualTo( "image/jpeg" );
+		assertThat( fileInfo.get( KeyDictionary.mimeType ) ).isEqualTo( "image/jpeg" );
+		assertThat( fileInfo.get( KeyDictionary.contentType ) ).isEqualTo( "image" );
 		assertThat( fileInfo.get( KeyDictionary.contentSubType ) ).isEqualTo( "jpeg" );
 		assertThat( fileInfo.get( KeyDictionary.fileSize ) ).isEqualTo( fileInfo.get( KeyDictionary.oldFileSize ) );
 
@@ -138,7 +139,8 @@ public class FileTest extends ortus.boxlang.web.util.BaseWebTest {
 			assertThat( fileInfo.getAsString( KeyDictionary.clientFile ) )
 			    .isNotEqualTo( fileInfo.getAsString( KeyDictionary.serverFile ) );
 			assertThat( fileInfo.get( KeyDictionary.clientFileExt ) ).isEqualTo( "jpg" );
-			assertThat( fileInfo.get( KeyDictionary.contentType ) ).isEqualTo( "image/jpeg" );
+			assertThat( fileInfo.get( KeyDictionary.mimeType ) ).isEqualTo( "image/jpeg" );
+			assertThat( fileInfo.get( KeyDictionary.contentType ) ).isEqualTo( "image" );
 			assertThat( fileInfo.get( KeyDictionary.contentSubType ) ).isEqualTo( "jpeg" );
 			assertThat( fileInfo.get( KeyDictionary.fileSize ) ).isEqualTo( fileInfo.get( KeyDictionary.oldFileSize ) );
 		} );

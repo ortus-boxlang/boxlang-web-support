@@ -64,7 +64,7 @@ public class GetHTTPTimeStringTest {
 	@Test
 	public void testBif() {
 		DateTime	dateRef		= new DateTime();
-		DateTime	converted	= dateRef.convertToZone( ZoneId.of( "UTC" ) );
+		DateTime	converted	= dateRef.convertToZone( ZoneId.of( "GMT" ) );
 		converted.setFormat( "EEE, dd MMM yyyy HH:mm:ss z" );
 		String resultRef = converted.toString();
 		variables.put( Key.date, dateRef );
