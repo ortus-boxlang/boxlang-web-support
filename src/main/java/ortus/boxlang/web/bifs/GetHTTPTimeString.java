@@ -30,7 +30,7 @@ import ortus.boxlang.runtime.types.Argument;
 import ortus.boxlang.runtime.types.DateTime;
 import ortus.boxlang.runtime.util.LocalizationUtil;
 
-@BoxBIF( description = "Get a HTTP time formatted string from a date object" )
+@BoxBIF( description = "Returns the legacy HTTP TimeString as specified for the now-obsolete RFC 1123/RCF 822" )
 public class GetHTTPTimeString extends BIF {
 
 	/**
@@ -44,7 +44,13 @@ public class GetHTTPTimeString extends BIF {
 	}
 
 	/**
-	 * Describe what the invocation of your bif function does
+	 * Returns the legacy HTTP TimeString as specified for the now-obsolete RFC 1123/RCF 822.
+	 *
+	 * Example: `Sat, 10 Jan 2026 17:09:26 GMT`
+	 *
+	 * This method should be used for legacy compatibility with older CFML engines and is not recommended for new code.
+	 * The updated specification, [RFC 2822](https://www.rfc-editor.org/rfc/rfc2822) should be used for new implemenations. ( e.g. `Sat, 10 Jan 2026
+	 * 17:09:26 -0000`)
 	 *
 	 * @param context   The context in which the BIF is being invoked.
 	 * @param arguments Argument scope for the BIF.
