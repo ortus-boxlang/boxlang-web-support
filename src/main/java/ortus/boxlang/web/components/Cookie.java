@@ -50,7 +50,7 @@ public class Cookie extends Component {
 		    new Attribute( Key.httpOnly, "boolean" ),
 		    new Attribute( Key.expires, "any" ),
 		    new Attribute( Key.samesite, "string" ),
-		    new Attribute( Key.path, "string" ),
+		    new Attribute( Key.path, "string", "/" ),
 		    new Attribute( Key.domain, "string" ),
 		    new Attribute( KeyDictionary.encodevalue, "boolean", true )
 		};
