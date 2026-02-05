@@ -40,6 +40,8 @@ import ortus.boxlang.web.exchange.IBoxHTTPExchange;
  * TODO: allow custom error template to be configured
  */
 public class WebErrorHandler {
+	
+	
 
 	/**
 	 * Handle an error
