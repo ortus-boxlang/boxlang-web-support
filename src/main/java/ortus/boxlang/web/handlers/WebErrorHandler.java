@@ -46,7 +46,6 @@ import ortus.boxlang.web.exchange.IBoxHTTPExchange;
  * TODO: allow custom error template to be configured
  */
 public class WebErrorHandler {
-	// System.out.println("WebErrorHandler loaded");
 
 	/**
 	 * Handle an error
