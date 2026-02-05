@@ -40,6 +40,7 @@ import ortus.boxlang.web.exchange.IBoxHTTPExchange;
  * TODO: allow custom error template to be configured
  */
 public class WebErrorHandler {
+	// System.out.println("WebErrorHandler loaded");
 
 	/**
 	 * Handle an error
@@ -382,5 +383,9 @@ public class WebErrorHandler {
 			return "";
 		}
 		return s.replace( "\n", "<br>" ).replace( " ", "&nbsp;" );
+	}
+
+	public static void main( String[] args ) {
+		System.out.println( "IT WORKS!" );
 	}
 }
