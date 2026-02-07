@@ -83,7 +83,7 @@ public class WebRequestExecutor {
 
 			// Allow interceptors to modify the request before we do anything with it.
 			// This allows for modules with front controllers to execute inbound requests
-			// We perform this prior to any validation or processsing is performed on the request, so interceptors have full control
+			// We perform this prior to any validation or processing is performed on the request, so interceptors have full control
 			if ( interceptorService.hasState( KeyDictionary.onWebExecutorRequest ) ) {
 				IStruct interceptData = Struct.of(
 				    KeyDictionary.updatedRequest, Struct.of( KeyDictionary.requestString, null ),
