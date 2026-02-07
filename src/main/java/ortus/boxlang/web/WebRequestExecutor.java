@@ -27,6 +27,8 @@ import ortus.boxlang.runtime.application.BaseApplicationListener;
 import ortus.boxlang.runtime.context.RequestBoxContext;
 import ortus.boxlang.runtime.interop.DynamicObject;
 import ortus.boxlang.runtime.scopes.Key;
+import ortus.boxlang.runtime.services.InterceptorService;
+import ortus.boxlang.runtime.types.IStruct;
 import ortus.boxlang.runtime.types.Struct;
 import ortus.boxlang.runtime.types.exceptions.AbortException;
 import ortus.boxlang.runtime.types.exceptions.BoxRuntimeException;
@@ -38,6 +40,7 @@ import ortus.boxlang.web.exchange.IBoxHTTPExchange;
 import ortus.boxlang.web.handlers.WebErrorHandler;
 import ortus.boxlang.web.scopes.FormScope;
 import ortus.boxlang.web.scopes.URLScope;
+import ortus.boxlang.web.util.KeyDictionary;
 
 /**
  * I handle running a web request
@@ -74,24 +77,53 @@ public class WebRequestExecutor {
 			requestString	= exchange.getRequestURI();
 
 			// Target Detection
-			String	ext			= "";
-			Path	requestPath	= Path.of( requestString );
-			String	fileName	= requestPath.getFileName().toString().toLowerCase();
-			if ( fileName.contains( "." ) ) {
-				ext = fileName.substring( fileName.lastIndexOf( "." ) + 1 );
-			}
+			String				ext					= "";
+			Path				requestPath			= Path.of( requestString );
+			InterceptorService	interceptorService	= BoxRuntime.getInstance().getInterceptorService();
 
 			// Load up the runtime, context and app listener
 			context = new WebRequestBoxContext( BoxRuntime.getInstance().getRuntimeContext(), exchange, webRoot );
 			RequestBoxContext.setCurrent( context );
 
-			// Validate request URI for security issues
-			validateRequestURI( requestString, fileName );
-
 			trans = frTransService.startTransaction( "Web Request", requestString );
 
 			context.loadApplicationDescriptor( new URI( requestString ) );
+
 			appListener = context.getApplicationListener();
+
+			// Allow interceptors to modify the request before we do anything with it.
+			// This allows for modules with front controllers to execute inbound requests
+			// We perform this prior to any validation or processing is performed on the request, so interceptors have full control
+			if ( interceptorService.hasState( KeyDictionary.onWebExecutorRequest ) ) {
+				IStruct interceptData = Struct.of(
+				    KeyDictionary.updatedRequest, Struct.of( KeyDictionary.requestString, null ),
+				    Key.context, context,
+				    Key.appListener, appListener,
+				    KeyDictionary.requestString, requestString,
+				    KeyDictionary.exchange, exchange
+				);
+
+				interceptorService.announce(
+				    KeyDictionary.onWebExecutorRequest,
+				    interceptData
+				);
+
+				if ( interceptData.getAsStruct( KeyDictionary.updatedRequest ).getAsString( KeyDictionary.requestString ) != null ) {
+					String updatedRequestString = interceptData.getAsStruct( KeyDictionary.updatedRequest ).getAsString( KeyDictionary.requestString );
+					if ( !updatedRequestString.equals( requestString ) ) {
+						requestString	= updatedRequestString;
+						requestPath		= Path.of( requestString );
+					}
+				}
+			}
+
+			String fileName = requestPath.getFileName().toString().toLowerCase();
+			if ( fileName.contains( "." ) ) {
+				ext = fileName.substring( fileName.lastIndexOf( "." ) + 1 );
+			}
+
+			// Validate request URI for security issues
+			validateRequestURI( requestString, fileName );
 
 			// Pass through to the Application.bx onRequestStart method
 			boolean result = appListener.onRequestStart( context, new Object[] { requestString } );
@@ -256,7 +288,7 @@ public class WebRequestExecutor {
 	 *
 	 * @param requestURI The request URI to validate
 	 * @param fileName   The file name extracted from the request URI and lower cased.
-	 * 
+	 *
 	 * @throws BoxRuntimeException if the request URI contains security violations
 	 */
 	private static void validateRequestURI( String requestURI, String fileName ) {
@@ -282,7 +314,7 @@ public class WebRequestExecutor {
 
 	/**
 	 * Handles remote method invocation requests for valid extensions (BX classes, CFCs)
-	 * 
+	 *
 	 * @param context     The web request context
 	 * @param appListener The application listener
 	 * @param requestPath The request path as a Path object
