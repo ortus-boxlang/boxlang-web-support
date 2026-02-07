@@ -81,6 +81,16 @@ public class WebRequestExecutor {
 			Path				requestPath			= Path.of( requestString );
 			InterceptorService	interceptorService	= BoxRuntime.getInstance().getInterceptorService();
 
+			// Load up the runtime, context and app listener
+			context = new WebRequestBoxContext( BoxRuntime.getInstance().getRuntimeContext(), exchange, webRoot );
+			RequestBoxContext.setCurrent( context );
+
+			trans = frTransService.startTransaction( "Web Request", requestString );
+
+			context.loadApplicationDescriptor( new URI( requestString ) );
+
+			appListener = context.getApplicationListener();
+
 			// Allow interceptors to modify the request before we do anything with it.
 			// This allows for modules with front controllers to execute inbound requests
 			// We perform this prior to any validation or processing is performed on the request, so interceptors have full control
@@ -98,9 +108,9 @@ public class WebRequestExecutor {
 				    interceptData
 				);
 
-				if ( !interceptData.getAsStruct( KeyDictionary.updatedRequest ).isEmpty() ) {
+				if ( interceptData.getAsStruct( KeyDictionary.updatedRequest ).getAsString( KeyDictionary.requestString ) != null ) {
 					String updatedRequestString = interceptData.getAsStruct( KeyDictionary.updatedRequest ).getAsString( KeyDictionary.requestString );
-					if ( updatedRequestString != null && !updatedRequestString.equals( requestString ) ) {
+					if ( !updatedRequestString.equals( requestString ) ) {
 						requestString	= updatedRequestString;
 						requestPath		= Path.of( requestString );
 					}
@@ -112,17 +122,8 @@ public class WebRequestExecutor {
 				ext = fileName.substring( fileName.lastIndexOf( "." ) + 1 );
 			}
 
-			// Load up the runtime, context and app listener
-			context = new WebRequestBoxContext( BoxRuntime.getInstance().getRuntimeContext(), exchange, webRoot );
-			RequestBoxContext.setCurrent( context );
-
 			// Validate request URI for security issues
 			validateRequestURI( requestString, fileName );
-
-			trans = frTransService.startTransaction( "Web Request", requestString );
-
-			context.loadApplicationDescriptor( new URI( requestString ) );
-			appListener = context.getApplicationListener();
 
 			// Pass through to the Application.bx onRequestStart method
 			boolean result = appListener.onRequestStart( context, new Object[] { requestString } );
