@@ -17,6 +17,12 @@
  */
 package ortus.boxlang.web.handlers;
 
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+import java.util.stream.Collectors;
+
 import ortus.boxlang.runtime.BoxRuntime;
 import ortus.boxlang.runtime.dynamic.casters.CastAttempt;
 import ortus.boxlang.runtime.dynamic.casters.StringCaster;
@@ -360,6 +366,40 @@ public class WebErrorHandler {
 	}
 
 	/**
+	 * Load the HTML template from resources
+	 * 
+	 * @return the template string
+	 */
+	private static String loadTemplate() {
+		try {
+			// Get a pipe to the file
+			InputStream inputStream = WebErrorHandler.class.getResourceAsStream( "/templates/error.html" );
+
+			// Check if file exists or not
+			if ( inputStream == null ) {
+				System.err.println( "Error template not found in file." );
+				return null;
+			}
+
+			// convert byes to characters
+			InputStreamReader	reader			= new InputStreamReader( inputStream, StandardCharsets.UTF_8 );
+
+			// Read efficiently with buffer
+			BufferedReader		bufferedReader	= new BufferedReader( reader );
+
+			// Read all lines and join them
+			String				template		= bufferedReader.lines().collect( Collectors.joining( "\n" ) );
+			System.out.println( "Template loaded successfully." );
+			return template;
+
+		} catch ( Exception e ) {
+			System.err.println( "Error loading template: " + e.getMessage() );
+			return null;
+
+		}
+	}
+
+	/**
 	 * Escape HTML
 	 *
 	 * @param s the string to escape
@@ -386,6 +426,14 @@ public class WebErrorHandler {
 	}
 
 	public static void main( String[] args ) {
-		System.out.println( "IT WORKS!" );
+		System.out.println( "Testing template loading." );
+
+		// Test 1: Can we load the template?
+		System.out.println( "Template content: " + loadTemplate() );
+
+		// Test 2: Can we replace placeholders?
+		String result = loadTemplate().replace( "{{ERROR_MESSAGE}}", "This is a test error message." );
+		System.out.println( "After replacing place holders: " + result );
+
 	}
 }
