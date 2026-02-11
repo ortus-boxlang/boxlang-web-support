@@ -25,6 +25,8 @@ import java.util.Set;
 import ortus.boxlang.runtime.BoxRuntime;
 import ortus.boxlang.runtime.application.BaseApplicationListener;
 import ortus.boxlang.runtime.context.RequestBoxContext;
+import ortus.boxlang.runtime.dynamic.casters.StringCaster;
+import ortus.boxlang.runtime.dynamic.casters.StructCaster;
 import ortus.boxlang.runtime.interop.DynamicObject;
 import ortus.boxlang.runtime.scopes.Key;
 import ortus.boxlang.runtime.services.InterceptorService;
@@ -33,6 +35,7 @@ import ortus.boxlang.runtime.types.Struct;
 import ortus.boxlang.runtime.types.exceptions.AbortException;
 import ortus.boxlang.runtime.types.exceptions.BoxRuntimeException;
 import ortus.boxlang.runtime.types.exceptions.MissingIncludeException;
+import ortus.boxlang.runtime.types.util.JSONUtil;
 import ortus.boxlang.runtime.util.BoxFQN;
 import ortus.boxlang.runtime.util.FRTransService;
 import ortus.boxlang.web.context.WebRequestBoxContext;
@@ -331,6 +334,16 @@ public class WebRequestExecutor {
 		// URL vars override form vars
 		args.addAll( context.getScope( FormScope.name ) );
 		args.addAll( context.getScope( URLScope.name ) );
+
+		if ( args.containsKey( Key.argumentCollection ) ) {
+			try {
+				IStruct argCollection = StructCaster.cast( JSONUtil.fromJSON( StringCaster.cast( args.get( Key.argumentCollection ) ), true ) );
+				args.addAll( argCollection );
+				args.remove( Key.argumentCollection );
+			} catch ( Exception e ) {
+				throw new BoxRuntimeException( "Remote method invocation failed. Unable to parse argumentCollection JSON: " + e.getMessage(), e );
+			}
+		}
 
 		// Remove framework-specific parameters
 		if ( args.containsKey( Key.method ) ) {
