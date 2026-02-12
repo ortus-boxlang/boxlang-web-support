@@ -57,4 +57,4 @@ This document lists the core web interception points and the structure of the `d
 
 ---
 
-If you want these entries expanded with example payloads or source links, tell me which events to expand.
+If you want these entries expanded with example payloads or source links, tell me 
