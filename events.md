@@ -56,5 +56,4 @@ This document lists the core web interception points and the structure of the `d
 | `config` | `Configuration` | The runtime `Configuration` object being loaded (mutable). |
 
 ---
-
-If you want these entries expanded with example payloads or source links, tell me 
+ 

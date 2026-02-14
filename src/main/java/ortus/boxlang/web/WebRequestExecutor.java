@@ -19,6 +19,8 @@ package ortus.boxlang.web;
 
 import java.net.URI;
 import java.nio.file.Path;
+import java.security.Key;
+import java.sql.Struct;
 import java.util.Optional;
 import java.util.Set;
 
@@ -28,10 +30,8 @@ import ortus.boxlang.runtime.context.RequestBoxContext;
 import ortus.boxlang.runtime.dynamic.casters.StringCaster;
 import ortus.boxlang.runtime.dynamic.casters.StructCaster;
 import ortus.boxlang.runtime.interop.DynamicObject;
-import ortus.boxlang.runtime.scopes.Key;
 import ortus.boxlang.runtime.services.InterceptorService;
 import ortus.boxlang.runtime.types.IStruct;
-import ortus.boxlang.runtime.types.Struct;
 import ortus.boxlang.runtime.types.exceptions.AbortException;
 import ortus.boxlang.runtime.types.exceptions.BoxRuntimeException;
 import ortus.boxlang.runtime.types.exceptions.MissingIncludeException;
@@ -79,7 +79,7 @@ public class WebRequestExecutor {
 			frTransService	= FRTransService.getInstance( manageFullReqestLifecycle );
 			requestString	= exchange.getRequestURI();
 
-			// Target Detection
+			// Target Detection Setup
 			String				ext					= "";
 			Path				requestPath			= Path.of( requestString );
 			InterceptorService	interceptorService	= BoxRuntime.getInstance().getInterceptorService();
@@ -88,20 +88,17 @@ public class WebRequestExecutor {
 			context = new WebRequestBoxContext( BoxRuntime.getInstance().getRuntimeContext(), exchange, webRoot );
 			RequestBoxContext.setCurrent( context );
 
-			trans = frTransService.startTransaction( "Web Request", requestString );
-
 			context.loadApplicationDescriptor( new URI( requestString ) );
-
 			appListener = context.getApplicationListener();
 
 			// Allow interceptors to modify the request before we do anything with it.
-			// This allows for modules with front controllers to execute inbound requests
-			// We perform this prior to any validation or processing is performed on the request, so interceptors have full control
+			// This allows for modules with front controllers to execute inbound requests.
+			// We perform this prior to any validation or processing, giving interceptors full control.
 			if ( interceptorService.hasState( KeyDictionary.onWebExecutorRequest ) ) {
 				IStruct interceptData = Struct.of(
 				    KeyDictionary.updatedRequest, Struct.of( KeyDictionary.requestString, null ),
 				    Key.context, context,
-				    Key.appListener, appListener,
+				    Key.of( "appListener" ), appListener,
 				    KeyDictionary.requestString, requestString,
 				    KeyDictionary.exchange, exchange
 				);
@@ -111,15 +108,18 @@ public class WebRequestExecutor {
 				    interceptData
 				);
 
-				if ( interceptData.getAsStruct( KeyDictionary.updatedRequest ).getAsString( KeyDictionary.requestString ) != null ) {
-					String updatedRequestString = interceptData.getAsStruct( KeyDictionary.updatedRequest ).getAsString( KeyDictionary.requestString );
-					if ( !updatedRequestString.equals( requestString ) ) {
-						requestString	= updatedRequestString;
-						requestPath		= Path.of( requestString );
-					}
+				// Check if an interceptor provided a new request string
+				String updatedRequestString = interceptData.getAsStruct( KeyDictionary.updatedRequest ).getAsString( KeyDictionary.requestString );
+				if ( updatedRequestString != null && !updatedRequestString.equals( requestString ) ) {
+					requestString	= updatedRequestString;
+					requestPath		= Path.of( requestString );
 				}
 			}
 
+			// Start the transaction after any potential URI rewriting
+			trans = frTransService.startTransaction( "Web Request", requestString );
+
+			// Final target detection based on potentially updated requestString
 			String fileName = requestPath.getFileName().toString().toLowerCase();
 			if ( fileName.contains( "." ) ) {
 				ext = fileName.substring( fileName.lastIndexOf( "." ) + 1 );
