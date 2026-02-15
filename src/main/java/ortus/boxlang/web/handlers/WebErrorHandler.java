@@ -107,7 +107,7 @@ public class WebErrorHandler {
 		if (template != null) {
 
 			String message = (e.getMessage() != null) ? e.getMessage() : "";
-			String out = template.replace( "{{ERROR_MESSAGE}}", message );
+			String out = template.replace( "{{ERROR_MESSAGE}}", message);
 
 			return out;
 		}
