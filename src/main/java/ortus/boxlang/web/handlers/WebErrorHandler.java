@@ -46,6 +46,7 @@ import ortus.boxlang.web.exchange.IBoxHTTPExchange;
  * TODO: allow custom error template to be configured
  */
 public class WebErrorHandler {
+	// System.out.println("WebErrorHandler loaded");
 
 	/**
 	 * Handle an error
@@ -98,8 +99,21 @@ public class WebErrorHandler {
 	 * @return the error page string
 	 */
 	private static String buildErrorPage( Throwable e ) {
-		StringBuilder	errorOutput	= new StringBuilder();
-		BoxRuntime		runtime		= BoxRuntime.getInstance();
+		BoxRuntime	runtime		= BoxRuntime.getInstance();
+
+		// If an HTML template is present in resources, inject the simple error message into the {{ERROR_MESSAGE}} placeholder.
+		// This avoids building the entire page string manually
+		String		template	= loadTemplate();
+
+		if ( template != null ) {
+
+			String	message	= ( e.getMessage() != null ) ? e.getMessage() : "";
+			String	out		= template.replace( "{{ERROR_MESSAGE}}", message );
+
+			return out;
+		}
+
+		StringBuilder errorOutput = new StringBuilder();
 		// styles
 		errorOutput.append(
 		    "<style>.bx-err {--bx-blue-gray-10: #030304;--bx-blue-gray-50: #1B1E2C;--bx-blue-gray-60: #494B56;--bx-blue-gray-70: #999EAF;--bx-blue-gray-95: #EDEEF4;--bx-blue-gray-98: #F2F2F3;--bx-neon-blue-50: #00DBFF;--bx-neon-blue-80: #bff6ff;--bx-red-50:#DF2121;--bx-red-50-rgb: 223, 33, 33;--bx-icon-chevron: url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='rgb(136, 145, 164)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E\");--bx-color-danger-rgb: var(--bx-red-50-rgb);--bx-text-danger: var(--bx-red-50);--bx-spacing: 16px;--bx-spacing-sm: 8px;--bx-border-color: var(--bx-blue-gray-70);--bx-body-bg: white;--bx-color-text: #000;--bx-surface-low: var(--bx-blue-gray-95);--bx-surface-lowest: var(--bx-blue-gray-98);--bx-border-width: .0625rem;--bx-font-family-sans-serif: system-ui, \"Segoe UI\", Roboto, Oxygen, Ubuntu, Cantarell, Helvetica, Arial, \"Helvetica Neue\", sans-serif;font-family: var(--bx-font-family-sans-serif);}.bx-err header {--bx-color-text: #fff;color: var(--bx-color-text);padding: calc(var(--bx-spacing) / 2) var(--bx-spacing)}.bx-err .bx-err-body{background-color: var( --bx-body-bg );padding:var(--bx-spacing);color: var(--bx-color-text);}.bx-err .bx-err-msg {background-color: rgba( var(--bx-color-danger-rgb), .1 );padding:var(--bx-spacing-sm);font-size:1rem;border:1px dashed var(--bx-text-danger);border-left-style:solid;border-left-width:3px;display:flex;gap:8px;line-height:1.3em;}.bx-err .bx-err-cos{background-color: var(--bx-body-bg);}.bx-err .bx-err-cos-even{background-color: var(--bx-surface-lowest);}.bx-err h1 {font-size: 1.4rem;margin:0px;display:flex;align-items:center;gap:8px;justify-content: space-between;}.bx-err h2 {color:var(--bx-text-danger);margin-top: 0px;}.bx-err .bx-err-cos-title {color: var(--bx-text-danger);padding: var(--bx-spacing-sm);}.bx-err-cos-title strong {font-weight:600;}.bx-err summary[role=button] {--bx-background-color: var(--bx-surface-low);--bx-form-element-spacing-vertical: calc(var(--bx-spacing)/2);--bx-form-element-spacing-horizontal: var(--bx-spacing-sm);--bx-color-text: #000;--bx-font-weight: 600;--bx-line-height: 1.2em;--bx-border-width:0px; padding: var(--bx-form-element-spacing-vertical) var(--bx-form-element-spacing-horizontal);border: var(--bx-border-width) solid var(--bx-border-color);border-radius: var(--bx-border-radius);display:flex;outline: 0;background-color: var(--bx-background-color);color: var(--bx-color);font-weight: var(--bx-font-weight);font-size: 1.2rem;line-height: var(--bx-line-height);text-align: left;text-decoration: none;cursor: pointer;-webkit-user-select: none;-moz-user-select: none;user-select: none;list-style-type: none;}.bx-err summary[role=button] h2{margin:0;}.bx-err .bx-err-cos summary[role=button],.bx-err .bx-err-cos-even summary[role=button] {--bx-background-color: tranparent;color: var(--bx-text-danger);font-size: 1rem;}.bx-err summary+div{padding:var(--bx-spacing);}.bx-err .bx-err-cos summary+div,.bx-err .bx-err-cos-even summary+div {padding: 0px 0px 0px var(--bx-spacing-sm);}.bx-err details[open]>summary:before, .bx-err .btn-tgl[open]:before {transform: rotate(0);}.bx-err .btn-tgl {padding: 0px;cursor: pointer;border: 1px solid var(--bx-border-color);border-radius: 4px;}.bx-err details summary:before,.bx-err .btn-tgl:before {display: block;width: 1.2rem;height: 1.2rem;margin-inline-end: calc(var(--bx-spacing, 1rem)* .5);float: left;transform: rotate(-90deg);background-image: var(--bx-icon-chevron);background-position: right center;background-size: 1.2em auto;background-repeat: no-repeat;content: \"\";transition: transform .2s ease-in-out;}.bx-err .btn-tgl:before {margin-inline-end: 2px;}.bx-err summary::marker{display:none;}.bx-err summary::-webkit-details-marker{display:none;}.bx-err details {box-shadow: 1px 1px 2px 0px rgba(0, 0, 0, 0.15);margin: calc( var(--bx-spacing-sm)*1.5) 0px;border:1px solid var(--bx-surface-low)}.bx-err details.bx-err-cos,.bx-err details.bx-err-cos-even {box-shadow: none;}.bx-err details.bx-err-cos:first-child {margin-top: 0px;}.bx-err :where(table) {--bx-table-border-color:var(--bx-border-color);width: 100%;border-collapse: collapse;border-spacing: 0;text-indent: 0;}.bx-err pre {background-color: var(--bx-surface-lowest);color: var(--bx-color-text);padding:16px;}.bx-err th {--bx-font-weight: 600;--bx-border-width: .12rem;--bx-th-background-color: var(--bx-neon-blue-80);padding: calc(var(--bx-spacing) / 2) var(--bx-spacing);border-bottom: var(--bx-border-width) solid var(--bx-table-border-color);background-color: var(--bx-th-background-color);color: var(--bx-color-text);font-weight: var(--bx-font-weight);text-align: left;text-align: start;}.bx-err td {color: var(--bx-color-text);padding: calc(var(--bx-spacing) / 2) var(--bx-spacing);border-bottom:var(--bx-border-width) solid var(--bx-table-border-color);}.bx-err .d-none {display: none;}@media (prefers-color-scheme: dark) {.bx-err {--bx-color-text: #fff;--bx-body-bg: var(--bx-blue-gray-10);--bx-surface-low: var(--bx-blue-gray-60);--bx-surface-lowest: var(--bx-blue-gray-50);}.bx-err summary[role=button] {--bx-color-text: #fff;}.bx-err th {--bx-color-text: #000;--bx-th-background-color: var(--bx-neon-blue-50);}}</style>" );
@@ -422,5 +436,21 @@ public class WebErrorHandler {
 			return "";
 		}
 		return s.replace( "\n", "<br>" ).replace( " ", "&nbsp;" );
+	}
+
+	public static void main( String[] args ) {
+<<<<<<< HEAD
+		System.out.println( "Testing template loading." );
+
+		// Test 1: Can we load the template?
+		System.out.println( "Template content: " + loadTemplate() );
+
+		// Test 2: Can we replace placeholders?
+		String result = loadTemplate().replace( "{{ERROR_MESSAGE}}", "This is a test error message." );
+		System.out.println( "After replacing place holders: " + result );
+
+=======
+		System.out.println( "IT WORKS!" );
+>>>>>>> 49d2188 (commit)
 	}
 }
