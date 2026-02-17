@@ -446,8 +446,10 @@ public class WebErrorHandler {
 		System.out.println( "Template content: " + loadTemplate() );
 
 		// Test 2: Can we replace placeholders?
-		String result = loadTemplate().replace( "{{ERROR_MESSAGE}}", "This is a test error message." );
-		System.out.println( "After replacing place holders: " + result );
+		// String result = loadTemplate().replace( "{{ERROR_MESSAGE}}", "This is a test error message." );
+		// System.out.println( "After replacing place holders: " + result );
+
+		System.out.println( "" );
 
 =======
 		System.out.println( "IT WORKS!" );
