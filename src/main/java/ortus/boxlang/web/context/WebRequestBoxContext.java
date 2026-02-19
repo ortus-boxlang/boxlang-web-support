@@ -26,6 +26,7 @@ import java.util.UUID;
 
 import ortus.boxlang.runtime.BoxRuntime;
 import ortus.boxlang.runtime.context.IBoxContext;
+import ortus.boxlang.runtime.context.IBoxContext.ScopeSearchResult;
 import ortus.boxlang.runtime.context.RequestBoxContext;
 import ortus.boxlang.runtime.dynamic.casters.BooleanCaster;
 import ortus.boxlang.runtime.dynamic.casters.StringCaster;
@@ -227,7 +228,7 @@ public class WebRequestBoxContext extends RequestBoxContext {
 
 		BoxCookie sessionCookie = new BoxCookie( sessionCookieDefaults.getAsString( Key._NAME ),
 		    newId.getName() )
-		    .setPath( "/" );
+		        .setPath( "/" );
 
 		Optional.ofNullable( sessionCookieSettings.get( KeyDictionary.httpOnly ) ).map( BooleanCaster::cast ).map( sessionCookie::setHttpOnly );
 
@@ -343,9 +344,11 @@ public class WebRequestBoxContext extends RequestBoxContext {
 	public ScopeSearchResult scopeFindNearby( Key key, IScope defaultScope, boolean shallow, boolean forAssign ) {
 
 		// In query loop?
-		var querySearch = queryFindNearby( key );
-		if ( querySearch != null ) {
-			return querySearch;
+		if ( !forAssign ) {
+			var querySearch = queryFindNearby( key );
+			if ( querySearch != null ) {
+				return querySearch;
+			}
 		}
 
 		// In Variables scope? (thread-safe lookup and get)
