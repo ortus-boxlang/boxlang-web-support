@@ -17,6 +17,12 @@
  */
 package ortus.boxlang.web.handlers;
 
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+import java.util.stream.Collectors;
+
 import ortus.boxlang.runtime.BoxRuntime;
 import ortus.boxlang.runtime.dynamic.casters.CastAttempt;
 import ortus.boxlang.runtime.dynamic.casters.StringCaster;
@@ -40,7 +46,6 @@ import ortus.boxlang.web.exchange.IBoxHTTPExchange;
  * TODO: allow custom error template to be configured
  */
 public class WebErrorHandler {
-	// System.out.println("WebErrorHandler loaded");
 
 	/**
 	 * Handle an error
@@ -360,6 +365,40 @@ public class WebErrorHandler {
 	}
 
 	/**
+	 * Load the HTML template from resources
+	 * 
+	 * @return the template string
+	 */
+	private static String loadTemplate() {
+		try {
+			// Get a pipe to the file
+			InputStream inputStream = WebErrorHandler.class.getResourceAsStream( "/templates/error.html" );
+
+			// Check if file exists or not
+			if ( inputStream == null ) {
+				System.err.println( "Error template not found in file." );
+				return null;
+			}
+
+			// convert byes to characters
+			InputStreamReader	reader			= new InputStreamReader( inputStream, StandardCharsets.UTF_8 );
+
+			// Read efficiently with buffer
+			BufferedReader		bufferedReader	= new BufferedReader( reader );
+
+			// Read all lines and join them
+			String				template		= bufferedReader.lines().collect( Collectors.joining( "\n" ) );
+			System.out.println( "Template loaded successfully." );
+			return template;
+
+		} catch ( Exception e ) {
+			System.err.println( "Error loading template: " + e.getMessage() );
+			return null;
+
+		}
+	}
+
+	/**
 	 * Escape HTML
 	 *
 	 * @param s the string to escape
@@ -383,9 +422,5 @@ public class WebErrorHandler {
 			return "";
 		}
 		return s.replace( "\n", "<br>" ).replace( " ", "&nbsp;" );
-	}
-
-	public static void main( String[] args ) {
-		System.out.println( "IT WORKS!" );
 	}
 }
