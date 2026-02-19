@@ -423,16 +423,4 @@ public class WebErrorHandler {
 		}
 		return s.replace( "\n", "<br>" ).replace( " ", "&nbsp;" );
 	}
-
-	public static void main( String[] args ) {
-		System.out.println( "Testing template loading." );
-
-		// Test 1: Can we load the template?
-		System.out.println( "Template content: " + loadTemplate() );
-
-		// Test 2: Can we replace placeholders?
-		String result = loadTemplate().replace( "{{ERROR_MESSAGE}}", "This is a test error message." );
-		System.out.println( "After replacing place holders: " + result );
-
-	}
 }
