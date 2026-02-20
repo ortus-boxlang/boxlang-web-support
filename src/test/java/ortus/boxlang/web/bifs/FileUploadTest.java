@@ -382,13 +382,14 @@ public class FileUploadTest extends ortus.boxlang.web.util.BaseWebTest {
 		assertFalse( fileInfo.getAsBoolean( KeyDictionary.fileWasSaved ) );
 
 		// Test with strict mode on
+		// We are mocking the servlet behavior here by appending `.tmp` to uploaded file to ensure our security checks are looking at the original file name
 		assertThrows( BoxRuntimeException.class, () -> runtime.executeSource(
 		    """
 		            result = FileUpload(
 		            	filefield = filefield,
 		            	destination = directory,
 		          nameconflict = "makeunique",
-		       allowedExtensions = "png",
+		       allowedExtensions = "png,tmp",
 		    strict=true
 		            );
 		            """,
@@ -397,14 +398,14 @@ public class FileUploadTest extends ortus.boxlang.web.util.BaseWebTest {
 		mockUploads.clear();
 		// Now test with a server defined disallow
 		Stream.of( testFields ).forEach( field -> {
-			Path fieldFile = Path.of( tmpDirectory, field + ".exe" );
+			Path fieldFile = Path.of( tmpDirectory, field + ".exe" + ".tmp" );
 			try {
 				Files.copy( Path.of( testUpload ), fieldFile, StandardCopyOption.REPLACE_EXISTING );
 			} catch ( IOException e ) {
 				throw new BoxIOException( e );
 			}
 			mockUploads.add( new ortus.boxlang.web.exchange.IBoxHTTPExchange.FileUpload( Key.of( field ), fieldFile,
-			    fieldFile.getFileName().toString() ) );
+			    fieldFile.getFileName().toString().replace( ".tmp", "" ) ) );
 		} );
 
 		ortus.boxlang.web.exchange.IBoxHTTPExchange.FileUpload[] uploadsArray = mockUploads

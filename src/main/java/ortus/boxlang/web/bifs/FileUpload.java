@@ -373,8 +373,8 @@ public class FileUpload extends BIF {
 	public boolean processUploadSecurity( IBoxHTTPExchange.FileUpload upload, IStruct arguments, IBoxContext context ) {
 		// System and request level whitelist and blacklist settings
 		IStruct	requestSettings				= context.getParentOfType( RequestBoxContext.class ).getSettings();
-		String	uploadMimeType				= FileSystemUtil.getMimeType( upload.tmpPath().toString() );
-		String	uploadExtension				= Parser.getFileExtension( upload.tmpPath().getFileName().toString() ).get().toLowerCase();
+		String	uploadMimeType				= FileSystemUtil.getMimeType( upload.originalFileName() );
+		String	uploadExtension				= Parser.getFileExtension( upload.originalFileName() ).get().toLowerCase();
 		String	allowedExtensions			= arguments.getAsString( KeyDictionary.allowedExtensions );
 		String	blockedExtensions			= arguments.getAsString( KeyDictionary.blockedExtensions );
 		String	allowedMimeTypes			= arguments.getAsString( Key.accept );
