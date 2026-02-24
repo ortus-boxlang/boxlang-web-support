@@ -125,6 +125,12 @@ public class WebRequestBoxContext extends RequestBoxContext {
 	protected boolean			isSessionReset			= false;
 
 	/**
+	 * Since getting config for the request happens a lot and rarley changes, cache it to improve performance
+	 * If config is changed at any context "above" us in the chain, we'll need to clear the cache via clearConfigCache()
+	 */
+	private IStruct				configCache				= null;
+
+	/**
 	 * --------------------------------------------------------------------------
 	 * Constructors
 	 * --------------------------------------------------------------------------
@@ -581,6 +587,10 @@ public class WebRequestBoxContext extends RequestBoxContext {
 	}
 
 	public IStruct getConfig() {
+		if ( configCache != null ) {
+			return configCache;
+		}
+
 		var		config		= super.getConfig();
 
 		IStruct	appMappings	= getApplicationListener().getSettings().getAsStruct( Key.mappings );
@@ -588,7 +598,17 @@ public class WebRequestBoxContext extends RequestBoxContext {
 		if ( appMappings == null || appMappings.get( Key._slash ) == null ) {
 			config.getAsStruct( Key.mappings ).put( Key._slash, Mapping.ofInternal( "/", webRoot ) );
 		}
+		configCache = config;
 		return config;
+	}
+
+	/**
+	 * Contexts can optionally cache their config. If so, they must override this method
+	 * to clear the cache when requested, and propagate the request to their parent context
+	 */
+	public void clearConfigCache() {
+		configCache = null;
+		super.clearConfigCache();
 	}
 
 	/**
