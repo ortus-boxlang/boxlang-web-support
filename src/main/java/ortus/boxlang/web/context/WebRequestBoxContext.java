@@ -26,7 +26,6 @@ import java.util.UUID;
 
 import ortus.boxlang.runtime.BoxRuntime;
 import ortus.boxlang.runtime.context.IBoxContext;
-import ortus.boxlang.runtime.context.IBoxContext.ScopeSearchResult;
 import ortus.boxlang.runtime.context.RequestBoxContext;
 import ortus.boxlang.runtime.dynamic.casters.BooleanCaster;
 import ortus.boxlang.runtime.dynamic.casters.StringCaster;
@@ -234,7 +233,7 @@ public class WebRequestBoxContext extends RequestBoxContext {
 
 		BoxCookie sessionCookie = new BoxCookie( sessionCookieDefaults.getAsString( Key._NAME ),
 		    newId.getName() )
-		    .setPath( "/" );
+		        .setPath( "/" );
 
 		Optional.ofNullable( sessionCookieSettings.get( KeyDictionary.httpOnly ) ).map( BooleanCaster::cast ).map( sessionCookie::setHttpOnly );
 
@@ -401,25 +400,28 @@ public class WebRequestBoxContext extends RequestBoxContext {
 		if ( key.equals( cookieScope.getName() ) ) {
 			return new ScopeSearchResult( cookieScope, cookieScope, key, true );
 		}
-		Object result = CGIScope.getRaw( key );
-		// Null means not found
-		if ( isDefined( result, forAssign ) ) {
-			// Unwrap the value now in case it was really actually null for real
-			return new ScopeSearchResult( CGIScope, Struct.unWrapNull( result ), key );
-		}
 
-		result = URLScope.getRaw( key );
-		// Null means not found
-		if ( isDefined( result, forAssign ) ) {
-			// Unwrap the value now in case it was really actually null for real
-			return new ScopeSearchResult( URLScope, Struct.unWrapNull( result ), key );
-		}
+		if ( !forAssign ) {
+			Object result = CGIScope.getRaw( key );
+			// Null means not found
+			if ( isDefined( result, forAssign ) ) {
+				// Unwrap the value now in case it was really actually null for real
+				return new ScopeSearchResult( CGIScope, Struct.unWrapNull( result ), key );
+			}
 
-		result = formScope.getRaw( key );
-		// Null means not found
-		if ( isDefined( result, forAssign ) ) {
-			// Unwrap the value now in case it was really actually null for real
-			return new ScopeSearchResult( formScope, Struct.unWrapNull( result ), key );
+			result = URLScope.getRaw( key );
+			// Null means not found
+			if ( isDefined( result, forAssign ) ) {
+				// Unwrap the value now in case it was really actually null for real
+				return new ScopeSearchResult( URLScope, Struct.unWrapNull( result ), key );
+			}
+
+			result = formScope.getRaw( key );
+			// Null means not found
+			if ( isDefined( result, forAssign ) ) {
+				// Unwrap the value now in case it was really actually null for real
+				return new ScopeSearchResult( formScope, Struct.unWrapNull( result ), key );
+			}
 		}
 
 		return super.scopeFind( key, defaultScope, forAssign );
