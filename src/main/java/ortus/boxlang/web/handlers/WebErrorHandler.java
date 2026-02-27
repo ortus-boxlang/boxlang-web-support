@@ -45,8 +45,29 @@ import ortus.boxlang.web.exchange.IBoxHTTPExchange;
  * I handle default errors for a web request
  * TODO: allow custom error template to be configured
  */
+
+/**
+ * I handle default errors for a web request using template-based rendering.
+ * ARCHITECTURE NOTE:
+ * This class separates HTML generation from the main error handling logic by using external template file, allowing for cleaner code and easier
+ * maintenance.
+ * The template (error.html) contains placeholders ({{VERSION_INFO}} and {{ERROR_CONTENT}}) that are dynamically replaced with actual error details at
+ * runtime,
+ * enabling a consistent and customizable error page design.
+ * BENEFITS:
+ * - Designers can modify error page styling without touching Java code
+ * - No recompilation needed for design changes
+ * - Clean separation of concerns
+ * - Template is cached for performance
+ * 
+ * @see #loadTemplate() for how the template is loaded and cached
+ * @see #buildErrorPage(Throwable) for how the template is populated with error details
+ */
 public class WebErrorHandler {
 	// System.out.println("WebErrorHandler loaded");
+
+	// Cache the template in memory after first load to avoid repeated file I/O on subsequent errors
+	private static String templateCache = null;
 
 	/**
 	 * Handle an error
@@ -392,6 +413,11 @@ public class WebErrorHandler {
 	 * @return the template string
 	 */
 	private static String loadTemplate() {
+
+		// Check cache first
+		if ( templateCache != null ) {
+			return templateCache;
+		}
 		try {
 			// Get a pipe to the file
 			InputStream inputStream = WebErrorHandler.class.getResourceAsStream( "/templates/error.html" );
@@ -410,13 +436,42 @@ public class WebErrorHandler {
 
 			// Read all lines and join them
 			String				template		= bufferedReader.lines().collect( Collectors.joining( "\n" ) );
+
+			templateCache = template; // Cache the loaded template for future use
 			return template;
 
 		} catch ( Exception e ) {
 			System.err.println( "Error loading template: " + e.getMessage() );
-			return null;
+			return getfallbackTemplate();
 
 		}
+	}
+
+	/**
+	 * Fallback template in case of error loading from file.
+	 * This ensures that we can still display error information even if the template file is missing or unreadable.
+	 * 
+	 * @return a minimal HTML template string with placeholders for version info and error content.
+	 */
+
+	private static String getfallbackTemplate() {
+		return "<DOCTYPE html>" +
+		    "<html lang=\"en\">" +
+		    "<head><meta charset=\"UTF-8\"><title>Error</title><style>" +
+		    "body { font-family: Arial, sans-serif; padding: 20px; background-color: #f8f8f8; }" +
+		    "h1 { color: #d32f2f; }" +
+		    ".error-box { background: white; padding: 20px; border-left: 4px solid #d32f2f; }" +
+		    "</style>" +
+		    "</head>" +
+		    "<body>" +
+		    "<div class=\"error-box\">" +
+		    "<h1>An Error Occurred</h1>" +
+		    "{{VERSION_INFO}}" +
+		    "{{ERROR_CONTENT}}" +
+		    "</div>" +
+		    "</body>" +
+		    "</html>";
+
 	}
 
 	/**
@@ -447,22 +502,22 @@ public class WebErrorHandler {
 
 	public static void main( String[] args ) {
 		System.out.println();
-		System.out.println("Testing template loading and placeholder replacement.");
+		System.out.println( "Testing template loading and placeholder replacement." );
 
 		// Test 1: Can we load the template?
 		String template = loadTemplate();
 
 		if ( template != null ) {
-			System.out.println("Template loaded successfully.");
+			System.out.println( "Template loaded successfully." );
 		} else {
-			System.out.println("Template not found.");
+			System.out.println( "Template not found." );
 			return;
 		}
 
 		// Test 2: Can we build version info?
 		BoxRuntime	runtime		= BoxRuntime.getInstance();
-		String		versionInfo	= buildVersionInfoHTML(runtime);
-		System.out.println( "Version Info HTML: " + ( versionInfo.isEmpty() ? "(empty - not in debug mode)" : versionInfo));
+		String		versionInfo	= buildVersionInfoHTML( runtime );
+		System.out.println( "Version Info HTML: " + ( versionInfo.isEmpty() ? "(empty - not in debug mode)" : versionInfo ) );
 
 		// Test 3: Can we build error content and replace placeholders?
 		try {
@@ -479,11 +534,26 @@ public class WebErrorHandler {
 				System.out.println( "{{VERSION_INFO}} placeholder replaced successfully." );
 			}
 
-			if ( result.contains("{{ERROR_CONTENT}}")) {
-				System.out.println("{{ERROR_CONTENT}} placeholder not replaced.");
+			if ( result.contains( "{{ERROR_CONTENT}}" ) ) {
+				System.out.println( "{{ERROR_CONTENT}} placeholder not replaced." );
 			} else {
-				System.out.println("{{ERROR_CONTENT}} placeholder replaced successfully.");
+				System.out.println( "{{ERROR_CONTENT}} placeholder replaced successfully." );
 			}
 		}
+
+		// Test 4: Load templates and Check if they're the same
+		String t1 = loadTemplate();
+		System.out.println( "First load: " + ( t1 != null ? "Success" : "Failed" ) );
+
+		String t2 = loadTemplate();
+		System.out.println( "Second load (cached): " + ( t2 != null ? "Success" : "Failed" ) );
+
+		System.out.println( "Both templates identical: " + t1.equals( t2 ) );
+
+		// Test 5: Fallback template
+		System.out.println( "Testing fallback template:" );
+		System.out.println( "Fallback contains placeholders: " +
+		    ( getfallbackTemplate().contains( "{{VERSION_INFO}}" ) &&
+		        getfallbackTemplate().contains( "{{ERROR_CONTENT}}" ) ) );
 	}
 }
