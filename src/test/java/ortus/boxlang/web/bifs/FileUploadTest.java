@@ -193,6 +193,52 @@ public class FileUploadTest extends ortus.boxlang.web.util.BaseWebTest {
 
 	}
 
+	@DisplayName( "It tests the BIF FileUpload will accept a full path as the destination and will allow the FORM. prefix in compat" )
+	@Test
+	public void testBifFileUploadWithFileDestinationCompat() {
+		try {
+			FileUpload.allowPrefixedFileFields = true;
+			variables.put( Key.of( "filefield" ), "FORM." + testFields[ 1 ] );
+			variables.put( Key.directory, Path.of( tmpDirectory, "myfile-foo.jpg" ).toAbsolutePath().toString() );
+			runtime.executeSource(
+			    """
+			      result = FileUpload(
+			      	filefield = filefield,
+			      	destination = directory,
+			    nameconflict = "overwrite"
+			      );
+			      """,
+			    context );
+
+			assertThat( variables.get( result ) ).isInstanceOf( IStruct.class );
+
+			IStruct fileInfo = variables.getAsStruct( result );
+
+			assertThat( fileInfo.getAsString( KeyDictionary.serverFile ) ).isInstanceOf( String.class );
+			assertThat( fileInfo.getAsString( KeyDictionary.serverFile ) ).isNotEmpty();
+			assertThat( fileInfo.getAsString( KeyDictionary.serverFile ) ).doesNotContain( "/" );
+			assertThat( fileInfo.getAsString( KeyDictionary.serverFile ) ).doesNotContain( "\\" );
+			assertThat( fileInfo.getAsString( KeyDictionary.serverFile ) ).isEqualTo( "myfile-foo.jpg" );
+			assertThat( fileInfo.getAsString( KeyDictionary.clientFile ) )
+			    .isEqualTo( testFields[ 1 ] + ".jpg" );
+			assertThat( fileInfo.getAsString( KeyDictionary.clientFile ) )
+			    .isNotEqualTo( fileInfo.getAsString( KeyDictionary.serverFile ) );
+			assertThat( fileInfo.get( KeyDictionary.clientFileExt ) ).isEqualTo( "jpg" );
+			assertThat( fileInfo.get( KeyDictionary.clientFileName ) ).isEqualTo( "file2" );
+			assertThat( fileInfo.get( KeyDictionary.serverFileExt ) ).isEqualTo( "jpg" );
+			assertThat( fileInfo.getAsString( KeyDictionary.serverFileName ) ).doesNotContain( "." );
+			assertThat( fileInfo.getAsString( KeyDictionary.serverFileName ) ).doesNotContain( "/" );
+			assertThat( fileInfo.getAsString( KeyDictionary.serverFileName ) ).doesNotContain( "\\" );
+			assertThat( fileInfo.getAsString( KeyDictionary.mimeType ) ).isEqualTo( "image/jpeg" );
+			assertThat( fileInfo.get( KeyDictionary.contentType ) ).isEqualTo( "image" );
+			assertThat( fileInfo.get( KeyDictionary.contentSubType ) ).isEqualTo( "jpeg" );
+			assertThat( fileInfo.get( KeyDictionary.oldFileSize ) ).isNull();
+		} finally {
+			FileUpload.allowPrefixedFileFields = false;
+		}
+
+	}
+
 	@DisplayName( "It tests the BIF FileUpload will create paths in the temp directory if it is part of an absolute path" )
 	@Test
 	public void testsAbsoluteTempDirectory() {
