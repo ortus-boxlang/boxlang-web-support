@@ -124,6 +124,12 @@ public class WebRequestBoxContext extends RequestBoxContext {
 	protected boolean			isSessionReset			= false;
 
 	/**
+	 * Since getting config for the request happens a lot and rarley changes, cache it to improve performance
+	 * If config is changed at any context "above" us in the chain, we'll need to clear the cache via clearConfigCache()
+	 */
+	private IStruct				configCache				= null;
+
+	/**
 	 * --------------------------------------------------------------------------
 	 * Constructors
 	 * --------------------------------------------------------------------------
@@ -343,9 +349,11 @@ public class WebRequestBoxContext extends RequestBoxContext {
 	public ScopeSearchResult scopeFindNearby( Key key, IScope defaultScope, boolean shallow, boolean forAssign ) {
 
 		// In query loop?
-		var querySearch = queryFindNearby( key );
-		if ( querySearch != null ) {
-			return querySearch;
+		if ( !forAssign ) {
+			var querySearch = queryFindNearby( key );
+			if ( querySearch != null ) {
+				return querySearch;
+			}
 		}
 
 		// In Variables scope? (thread-safe lookup and get)
@@ -392,25 +400,29 @@ public class WebRequestBoxContext extends RequestBoxContext {
 		if ( key.equals( cookieScope.getName() ) ) {
 			return new ScopeSearchResult( cookieScope, cookieScope, key, true );
 		}
-		Object result = CGIScope.getRaw( key );
-		// Null means not found
-		if ( isDefined( result, forAssign ) ) {
-			// Unwrap the value now in case it was really actually null for real
-			return new ScopeSearchResult( CGIScope, Struct.unWrapNull( result ), key );
-		}
 
-		result = URLScope.getRaw( key );
-		// Null means not found
-		if ( isDefined( result, forAssign ) ) {
-			// Unwrap the value now in case it was really actually null for real
-			return new ScopeSearchResult( URLScope, Struct.unWrapNull( result ), key );
-		}
+		// We don't look here if just setting a variable
+		if ( !forAssign ) {
+			Object result = CGIScope.getRaw( key );
+			// Null means not found
+			if ( isDefined( result, forAssign ) ) {
+				// Unwrap the value now in case it was really actually null for real
+				return new ScopeSearchResult( CGIScope, Struct.unWrapNull( result ), key );
+			}
 
-		result = formScope.getRaw( key );
-		// Null means not found
-		if ( isDefined( result, forAssign ) ) {
-			// Unwrap the value now in case it was really actually null for real
-			return new ScopeSearchResult( formScope, Struct.unWrapNull( result ), key );
+			result = URLScope.getRaw( key );
+			// Null means not found
+			if ( isDefined( result, forAssign ) ) {
+				// Unwrap the value now in case it was really actually null for real
+				return new ScopeSearchResult( URLScope, Struct.unWrapNull( result ), key );
+			}
+
+			result = formScope.getRaw( key );
+			// Null means not found
+			if ( isDefined( result, forAssign ) ) {
+				// Unwrap the value now in case it was really actually null for real
+				return new ScopeSearchResult( formScope, Struct.unWrapNull( result ), key );
+			}
 		}
 
 		return super.scopeFind( key, defaultScope, forAssign );
@@ -578,6 +590,10 @@ public class WebRequestBoxContext extends RequestBoxContext {
 	}
 
 	public IStruct getConfig() {
+		if ( configCache != null ) {
+			return configCache;
+		}
+
 		var		config		= super.getConfig();
 
 		IStruct	appMappings	= getApplicationListener().getSettings().getAsStruct( Key.mappings );
@@ -585,7 +601,17 @@ public class WebRequestBoxContext extends RequestBoxContext {
 		if ( appMappings == null || appMappings.get( Key._slash ) == null ) {
 			config.getAsStruct( Key.mappings ).put( Key._slash, Mapping.ofInternal( "/", webRoot ) );
 		}
+		configCache = config;
 		return config;
+	}
+
+	/**
+	 * Contexts can optionally cache their config. If so, they must override this method
+	 * to clear the cache when requested, and propagate the request to their parent context
+	 */
+	public void clearConfigCache() {
+		configCache = null;
+		super.clearConfigCache();
 	}
 
 	/**

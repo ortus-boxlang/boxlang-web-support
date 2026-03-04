@@ -54,6 +54,9 @@ import ortus.boxlang.web.util.KeyDictionary;
 @BoxBIF( alias = "FileUploadAll", description = "Processes all file uploads from the request into the specified destination directory." )
 public class FileUpload extends BIF {
 
+	public static boolean		allowPrefixedFileFields		= false;
+	private static final String	PREFIXED_FIELD_DELIMITER	= ".";
+
 	/**
 	 * Constructor
 	 */
@@ -163,6 +166,9 @@ public class FileUpload extends BIF {
 			// If no field is specified, use the first upload's form field name
 			if ( field == null ) {
 				field = uploads[ 0 ].formFieldName().getName();
+			}
+			if ( allowPrefixedFileFields && field.contains( PREFIXED_FIELD_DELIMITER ) ) {
+				field = field.substring( field.lastIndexOf( PREFIXED_FIELD_DELIMITER ) + 1 );
 			}
 			Key							fieldKey	= Key.of( field );
 			IBoxHTTPExchange.FileUpload	upload		= null;
@@ -373,8 +379,8 @@ public class FileUpload extends BIF {
 	public boolean processUploadSecurity( IBoxHTTPExchange.FileUpload upload, IStruct arguments, IBoxContext context ) {
 		// System and request level whitelist and blacklist settings
 		IStruct	requestSettings				= context.getParentOfType( RequestBoxContext.class ).getSettings();
-		String	uploadMimeType				= FileSystemUtil.getMimeType( upload.tmpPath().toString() );
-		String	uploadExtension				= Parser.getFileExtension( upload.tmpPath().getFileName().toString() ).get().toLowerCase();
+		String	uploadMimeType				= FileSystemUtil.getMimeType( upload.originalFileName() );
+		String	uploadExtension				= Parser.getFileExtension( upload.originalFileName() ).get().toLowerCase();
 		String	allowedExtensions			= arguments.getAsString( KeyDictionary.allowedExtensions );
 		String	blockedExtensions			= arguments.getAsString( KeyDictionary.blockedExtensions );
 		String	allowedMimeTypes			= arguments.getAsString( Key.accept );
