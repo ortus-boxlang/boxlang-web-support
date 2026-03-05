@@ -119,7 +119,7 @@ public class WebErrorHandler {
 	 *
 	 * @return the error page string
 	 */
-	private static String buildErrorPage( Throwable e ) {
+	static String buildErrorPage( Throwable e ) {
 		BoxRuntime	runtime		= BoxRuntime.getInstance();
 
 		// If an HTML template is present in resources, inject dynamic content into placeholders.
@@ -147,7 +147,7 @@ public class WebErrorHandler {
 	 *
 	 * @return the version HTML string (e.g., "<small>v1.0.0</small>") or empty string if not in debug mode
 	 */
-	private static String buildVersionInfoHTML( BoxRuntime runtime ) {
+	static String buildVersionInfoHTML( BoxRuntime runtime ) {
 		if ( runtime.inDebugMode() ) {
 			Object version = BoxRuntime.getInstance().getVersionInfo().get( Key.version );
 			return "<small>v" + ( version != null ? version.toString() : "unknown" ) + "</small>";
@@ -163,7 +163,7 @@ public class WebErrorHandler {
 	 *
 	 * @return the error content HTML string
 	 */
-	private static String buildErrorContentHTML( Throwable e, BoxRuntime runtime ) {
+	static String buildErrorContentHTML( Throwable e, BoxRuntime runtime ) {
 		StringBuilder	errorOutput		= new StringBuilder();
 
 		Throwable		thisException	= e;
@@ -481,7 +481,7 @@ public class WebErrorHandler {
 	 *
 	 * @return the escaped string
 	 */
-	private static String escapeHTML( String s ) {
+	static String escapeHTML( String s ) {
 		if ( s == null ) {
 			return "";
 		}
@@ -493,67 +493,10 @@ public class WebErrorHandler {
 	 * and spaces to &nbsp;
 	 * Only call this after escaping HTML
 	 */
-	private static String preserveWhitespace( String s ) {
+	static String preserveWhitespace( String s ) {
 		if ( s == null ) {
 			return "";
 		}
 		return s.replace( "\n", "<br>" ).replace( " ", "&nbsp;" );
-	}
-
-	public static void main( String[] args ) {
-		System.out.println();
-		System.out.println( "Testing template loading and placeholder replacement." );
-
-		// Test 1: Can we load the template?
-		String template = loadTemplate();
-
-		if ( template != null ) {
-			System.out.println( "Template loaded successfully." );
-		} else {
-			System.out.println( "Template not found." );
-			return;
-		}
-
-		// Test 2: Can we build version info?
-		BoxRuntime	runtime		= BoxRuntime.getInstance();
-		String		versionInfo	= buildVersionInfoHTML( runtime );
-		System.out.println( "Version Info HTML: " + ( versionInfo.isEmpty() ? "(empty - not in debug mode)" : versionInfo ) );
-
-		// Test 3: Can we build error content and replace placeholders?
-		try {
-			throw new Exception( "This is a test error message." );
-		} catch ( Exception e ) {
-			String	errorContent	= buildErrorContentHTML( e, runtime );
-			String	result			= template
-			    .replace( "{{VERSION_INFO}}", versionInfo )
-			    .replace( "{{ERROR_CONTENT}}", errorContent );
-
-			if ( result.contains( "{{VERSION_INFO}}" ) ) {
-				System.out.println( "{{VERSION_INFO}} placeholder not replaced." );
-			} else {
-				System.out.println( "{{VERSION_INFO}} placeholder replaced successfully." );
-			}
-
-			if ( result.contains( "{{ERROR_CONTENT}}" ) ) {
-				System.out.println( "{{ERROR_CONTENT}} placeholder not replaced." );
-			} else {
-				System.out.println( "{{ERROR_CONTENT}} placeholder replaced successfully." );
-			}
-		}
-
-		// Test 4: Load templates and Check if they're the same
-		String t1 = loadTemplate();
-		System.out.println( "First load: " + ( t1 != null ? "Success" : "Failed" ) );
-
-		String t2 = loadTemplate();
-		System.out.println( "Second load (cached): " + ( t2 != null ? "Success" : "Failed" ) );
-
-		System.out.println( "Both templates identical: " + t1.equals( t2 ) );
-
-		// Test 5: Fallback template
-		System.out.println( "Testing fallback template:" );
-		System.out.println( "Fallback contains placeholders: " +
-		    ( getfallbackTemplate().contains( "{{VERSION_INFO}}" ) &&
-		        getfallbackTemplate().contains( "{{ERROR_CONTENT}}" ) ) );
 	}
 }
