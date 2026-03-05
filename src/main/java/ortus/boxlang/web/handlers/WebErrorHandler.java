@@ -45,8 +45,29 @@ import ortus.boxlang.web.exchange.IBoxHTTPExchange;
  * I handle default errors for a web request
  * TODO: allow custom error template to be configured
  */
+
+/**
+ * I handle default errors for a web request using template-based rendering.
+ * ARCHITECTURE NOTE:
+ * This class separates HTML generation from the main error handling logic by using external template file, allowing for cleaner code and easier
+ * maintenance.
+ * The template (error.html) contains placeholders ({{VERSION_INFO}} and {{ERROR_CONTENT}}) that are dynamically replaced with actual error details at
+ * runtime,
+ * enabling a consistent and customizable error page design.
+ * BENEFITS:
+ * - Designers can modify error page styling without touching Java code
+ * - No recompilation needed for design changes
+ * - Clean separation of concerns
+ * - Template is cached for performance
+ * 
+ * @see #loadTemplate() for how the template is loaded and cached
+ * @see #buildErrorPage(Throwable) for how the template is populated with error details
+ */
 public class WebErrorHandler {
 	// System.out.println("WebErrorHandler loaded");
+
+	// Cache the template in memory after first load to avoid repeated file I/O on subsequent errors
+	private static String templateCache = null;
 
 	/**
 	 * Handle an error
@@ -392,6 +413,11 @@ public class WebErrorHandler {
 	 * @return the template string
 	 */
 	private static String loadTemplate() {
+
+		// Check cache first
+		if ( templateCache != null ) {
+			return templateCache;
+		}
 		try {
 			// Get a pipe to the file
 			InputStream inputStream = WebErrorHandler.class.getResourceAsStream( "/templates/error.html" );
@@ -410,13 +436,42 @@ public class WebErrorHandler {
 
 			// Read all lines and join them
 			String				template		= bufferedReader.lines().collect( Collectors.joining( "\n" ) );
+
+			templateCache = template; // Cache the loaded template for future use
 			return template;
 
 		} catch ( Exception e ) {
 			System.err.println( "Error loading template: " + e.getMessage() );
-			return null;
+			return getfallbackTemplate();
 
 		}
+	}
+
+	/**
+	 * Fallback template in case of error loading from file.
+	 * This ensures that we can still display error information even if the template file is missing or unreadable.
+	 * 
+	 * @return a minimal HTML template string with placeholders for version info and error content.
+	 */
+
+	private static String getfallbackTemplate() {
+		return "<DOCTYPE html>" +
+		    "<html lang=\"en\">" +
+		    "<head><meta charset=\"UTF-8\"><title>Error</title><style>" +
+		    "body { font-family: Arial, sans-serif; padding: 20px; background-color: #f8f8f8; }" +
+		    "h1 { color: #d32f2f; }" +
+		    ".error-box { background: white; padding: 20px; border-left: 4px solid #d32f2f; }" +
+		    "</style>" +
+		    "</head>" +
+		    "<body>" +
+		    "<div class=\"error-box\">" +
+		    "<h1>An Error Occurred</h1>" +
+		    "{{VERSION_INFO}}" +
+		    "{{ERROR_CONTENT}}" +
+		    "</div>" +
+		    "</body>" +
+		    "</html>";
+
 	}
 
 	/**
