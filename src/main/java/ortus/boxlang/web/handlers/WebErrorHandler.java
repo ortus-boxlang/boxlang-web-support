@@ -87,6 +87,10 @@ public class WebErrorHandler {
 						usedCustomTemplate = true;
 					} catch ( Throwable t ) {
 						t.printStackTrace();
+						// Clear any partial output from the failed custom template before falling back
+						if ( context != null ) {
+							context.clearBuffer();
+						}
 						// Fall back on buildErrorPage
 					}
 				}
