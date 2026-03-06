@@ -17,7 +17,12 @@
  */
 package ortus.boxlang.web.handlers;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
 import ortus.boxlang.runtime.BoxRuntime;
+import ortus.boxlang.runtime.config.Configuration;
 import ortus.boxlang.runtime.dynamic.casters.CastAttempt;
 import ortus.boxlang.runtime.dynamic.casters.StringCaster;
 import ortus.boxlang.runtime.interop.DynamicObject;
@@ -50,7 +55,8 @@ public class WebErrorHandler {
 	 * @param frTransService the FRTrans, if any
 	 * @param trans          the transaction, if any
 	 */
-	public static void handleError( Throwable e, IBoxHTTPExchange exchange, WebRequestBoxContext context, FRTransService frTransService,
+	public static void handleError( Throwable e, IBoxHTTPExchange exchange, WebRequestBoxContext context,
+	    FRTransService frTransService,
 	    DynamicObject trans ) {
 		try {
 			e.printStackTrace();
@@ -69,19 +75,69 @@ public class WebErrorHandler {
 				context.flushBuffer( true );
 			}
 
-			String errorOutput = buildErrorPage( e );
+			Configuration	config				= BoxRuntime.getInstance().getConfiguration();
+			String			customTemplate		= config.globalErrorTemplate;
+			boolean			usedCustomTemplate	= false;
 
-			if ( context != null ) {
-				context.writeToBuffer( errorOutput, true );
-			} else {
-				// fail safe in case we errored out before creating the context
-				exchange.getResponseWriter().append( errorOutput );
+			if ( customTemplate != null && !customTemplate.isEmpty() && context != null ) {
+				Path templatePath = Paths.get( customTemplate );
+				if ( Files.exists( templatePath ) ) {
+					try {
+						// Get error for the template using the request scope
+						context.getScope( ortus.boxlang.web.scopes.RequestScope.name ).put( Key.error,
+						    buildErrorStruct( e ) );
+						BoxRuntime.getInstance().executeTemplate( customTemplate, context );
+						usedCustomTemplate = true;
+					} catch ( Throwable t ) {
+						t.printStackTrace();
+						// Fall back on buildErrorPage
+					}
+				}
 			}
 
+			if ( !usedCustomTemplate ) {
+				String errorOutput = buildErrorPage( e );
+				if ( context != null ) {
+					context.writeToBuffer( errorOutput, true );
+				} else {
+					exchange.getResponseWriter().append( errorOutput );
+				}
+			}
+			// To delete
+			// String errorOutput = buildErrorPage(e);
+
+			// if ( context != null ) {
+			// context.writeToBuffer( errorOutput, true );
+			// } else {
+			// // fail safe in case we errored out before creating the context
+			// exchange.getResponseWriter().append( errorOutput );
+			// }
+
 		} catch ( Throwable t ) {
-			// Something terrible happened and a blank page will probably be what the user sees.
+			// Something terrible happened and a blank page will probably be what the user
+			// sees.
 			t.printStackTrace();
 		}
+	}
+
+	/**
+	 * Build struct with error data for the custom templates
+	 * 
+	 * @param e the error
+	 * 
+	 * @return a struct with error data
+	 */
+	private static IStruct buildErrorStruct( Throwable e ) {
+		ortus.boxlang.runtime.types.Struct errorStruct = new ortus.boxlang.runtime.types.Struct();
+		errorStruct.put( Key.message, e.getMessage() != null ? e.getMessage() : "" );
+		errorStruct.put( Key.type, e.getClass().getName() );
+		if ( e instanceof BoxLangException blexception ) {
+			errorStruct.put( Key.detail, blexception.getDetail() != null ? blexception.getDetail() : "" );
+		} else {
+			errorStruct.put( Key.detail, "" );
+		}
+		errorStruct.put( Key.stackTrace, ExceptionUtil.getStackTraceAsString( e ) );
+		return errorStruct;
 	}
 
 	/**
@@ -346,7 +402,8 @@ public class WebErrorHandler {
 		    .append( "<summary role=\"button\">Stack Trace</summary>" )
 		    .append( "<div><pre style=\"text-wrap: pretty;\">" );
 
-		errorOutput.append( ExceptionUtil.getStackTraceAsString( e ).replaceAll( "\\((.*)\\)", "<strong class=\"highlight\">($1)</strong>" ) );
+		errorOutput.append( ExceptionUtil.getStackTraceAsString( e ).replaceAll( "\\((.*)\\)",
+		    "<strong class=\"highlight\">($1)</strong>" ) );
 
 		errorOutput.append( "</pre></div>" )
 		    .append( "</details>" );
