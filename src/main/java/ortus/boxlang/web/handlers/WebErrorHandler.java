@@ -55,9 +55,7 @@ public class WebErrorHandler {
 	 * @param frTransService the FRTrans, if any
 	 * @param trans          the transaction, if any
 	 */
-	public static void handleError( Throwable e, IBoxHTTPExchange exchange, WebRequestBoxContext context,
-	    FRTransService frTransService,
-	    DynamicObject trans ) {
+	public static void handleError( Throwable e, IBoxHTTPExchange exchange, WebRequestBoxContext context, FRTransService frTransService, DynamicObject trans ) {
 		try {
 			e.printStackTrace();
 			// Return 500 status code
@@ -103,15 +101,6 @@ public class WebErrorHandler {
 					exchange.getResponseWriter().append( errorOutput );
 				}
 			}
-			// To delete
-			// String errorOutput = buildErrorPage(e);
-
-			// if ( context != null ) {
-			// context.writeToBuffer( errorOutput, true );
-			// } else {
-			// // fail safe in case we errored out before creating the context
-			// exchange.getResponseWriter().append( errorOutput );
-			// }
 
 		} catch ( Throwable t ) {
 			// Something terrible happened and a blank page will probably be what the user
