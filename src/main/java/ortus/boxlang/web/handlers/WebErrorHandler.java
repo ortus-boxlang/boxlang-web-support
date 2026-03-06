@@ -19,7 +19,6 @@ package ortus.boxlang.web.handlers;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 
 import ortus.boxlang.runtime.BoxRuntime;
 import ortus.boxlang.runtime.config.Configuration;
@@ -78,7 +77,7 @@ public class WebErrorHandler {
 			boolean			usedCustomTemplate	= false;
 
 			if ( customTemplate != null && !customTemplate.isEmpty() && context != null ) {
-				Path templatePath = Paths.get( customTemplate );
+				Path templatePath = Path.of( customTemplate );
 				if ( Files.exists( templatePath ) ) {
 					try {
 						// Get error for the template using the request scope
