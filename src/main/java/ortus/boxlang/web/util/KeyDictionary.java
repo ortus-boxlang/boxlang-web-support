@@ -68,6 +68,7 @@ public class KeyDictionary {
 	public static final Key	serverFileName			= Key.of( "serverFileName" );
 	public static final Key	sessionCookie			= Key.of( "sessionCookie" );
 	public static final Key	success					= Key.of( "success" );
+	public static final Key	templatePath			= Key.of( "templatePath" );
 	public static final Key	timeCreated				= Key.of( "timeCreated" );
 	public static final Key	timeout					= Key.of( "timeout" );
 	public static final Key	timeLastModified		= Key.of( "timeLastModified" );

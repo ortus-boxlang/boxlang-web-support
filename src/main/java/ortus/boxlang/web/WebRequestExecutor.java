@@ -28,6 +28,7 @@ import ortus.boxlang.runtime.context.RequestBoxContext;
 import ortus.boxlang.runtime.dynamic.casters.StringCaster;
 import ortus.boxlang.runtime.dynamic.casters.StructCaster;
 import ortus.boxlang.runtime.interop.DynamicObject;
+import ortus.boxlang.runtime.logging.BoxLangLogger;
 import ortus.boxlang.runtime.scopes.Key;
 import ortus.boxlang.runtime.services.InterceptorService;
 import ortus.boxlang.runtime.types.IStruct;
@@ -58,6 +59,8 @@ public class WebRequestExecutor {
 	public static final String			CONTENT_TYPE_HEADER				= "Content-Type";
 
 	public static final String			DEFAULT_BINARY_CONTENT_TYPE		= "application/octet-stream";
+
+	public static final BoxLangLogger	logger							= BoxRuntime.getInstance().getLoggingService().getLogger( WebRequestExecutor.class );
 
 	/**
 	 * Execute a web request
@@ -90,10 +93,6 @@ public class WebRequestExecutor {
 
 			trans = frTransService.startTransaction( "Web Request", requestString );
 
-			context.loadApplicationDescriptor( new URI( requestString ) );
-
-			appListener = context.getApplicationListener();
-
 			// Allow interceptors to modify the request before we do anything with it.
 			// This allows for modules with front controllers to execute inbound requests
 			// We perform this prior to any validation or processing is performed on the request, so interceptors have full control
@@ -111,13 +110,32 @@ public class WebRequestExecutor {
 				    interceptData
 				);
 
-				if ( interceptData.getAsStruct( KeyDictionary.updatedRequest ).getAsString( KeyDictionary.requestString ) != null ) {
-					String updatedRequestString = interceptData.getAsStruct( KeyDictionary.updatedRequest ).getAsString( KeyDictionary.requestString );
+				IStruct updatedRequest = interceptData.getAsStruct( KeyDictionary.updatedRequest );
+
+				if ( updatedRequest.getAsString( KeyDictionary.requestString ) != null ) {
+					if ( logger.isTraceEnabled() )
+						logger.trace( "Request string was updated by an interceptor from [" + requestString + "] to ["
+						    + updatedRequest.getAsString( KeyDictionary.requestString ) + "]" );
+					String updatedRequestString = updatedRequest.getAsString( KeyDictionary.requestString );
 					if ( !updatedRequestString.equals( requestString ) ) {
 						requestString	= updatedRequestString;
 						requestPath		= Path.of( requestString );
 					}
+
+					String templatePath = updatedRequest.getAsString( KeyDictionary.templatePath );
+					if ( templatePath != null && !templatePath.isEmpty() && !templatePath.equals( requestString ) ) {
+						if ( logger.isTraceEnabled() )
+							logger.trace( "Template path was updated by an interceptor to [" + templatePath + "]" );
+						// We need to reload the application descriptor and re-assign the listener for this request
+						appListener = initializeApplicationListener( context, templatePath );
+					} else {
+						appListener = initializeApplicationListener( context, requestString );
+					}
+				} else {
+					appListener = initializeApplicationListener( context, requestString );
 				}
+			} else {
+				appListener = initializeApplicationListener( context, requestString );
 			}
 
 			String fileName = requestPath.getFileName().toString().toLowerCase();
@@ -270,6 +288,16 @@ public class WebRequestExecutor {
 			context.shutdown();
 			RequestBoxContext.removeCurrent();
 			Thread.currentThread().setContextClassLoader( oldClassLoader );
+		}
+	}
+
+	private static BaseApplicationListener initializeApplicationListener( WebRequestBoxContext context, String requestString ) {
+		try {
+			context.loadApplicationDescriptor( new URI( requestString ) );
+			BaseApplicationListener appListener = context.getApplicationListener();
+			return appListener;
+		} catch ( Exception e ) {
+			throw new BoxRuntimeException( "Failed to load application descriptor for request: [" + requestString + "]. " + e.getMessage(), e );
 		}
 	}
 
