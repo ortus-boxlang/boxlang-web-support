@@ -60,7 +60,7 @@ public class WebRequestExecutor {
 
 	public static final String			DEFAULT_BINARY_CONTENT_TYPE		= "application/octet-stream";
 
-	public static final BoxLangLogger	logger							= BoxRuntime.getInstance().getLoggingService().getLogger( WebRequestExecutor.class );
+	private static final BoxLangLogger	logger							= BoxRuntime.getInstance().getLoggingService().getLogger( WebRequestExecutor.class );
 
 	/**
 	 * Execute a web request
