@@ -291,6 +291,16 @@ public class WebRequestExecutor {
 		}
 	}
 
+	/**
+	 * Initializes the application listener by loading the application descriptor from the specified request string.
+	 *
+	 * @param context       The web request context to use for loading the application descriptor
+	 * @param requestString The request string that may contain the path to the application descriptor
+	 *
+	 * @return The initialized BaseApplicationListener
+	 *
+	 * @throws BoxRuntimeException if there is an error loading the application descriptor
+	 */
 	private static BaseApplicationListener initializeApplicationListener( WebRequestBoxContext context, String requestString ) {
 		try {
 			context.loadApplicationDescriptor( new URI( requestString ) );
