@@ -113,28 +113,27 @@ public class WebRequestExecutor {
 				IStruct updatedRequest = interceptData.getAsStruct( KeyDictionary.updatedRequest );
 
 				if ( updatedRequest.getAsString( KeyDictionary.requestString ) != null ) {
-					if ( logger.isTraceEnabled() )
-						logger.trace( "Request string was updated by an interceptor from [" + requestString + "] to ["
-						    + updatedRequest.getAsString( KeyDictionary.requestString ) + "]" );
 					String updatedRequestString = updatedRequest.getAsString( KeyDictionary.requestString );
 					if ( !updatedRequestString.equals( requestString ) ) {
+						if ( logger.isTraceEnabled() )
+							logger.trace( "Request string was updated by an interceptor from [" + requestString + "] to ["
+							    + updatedRequestString + "]" );
 						requestString	= updatedRequestString;
 						requestPath		= Path.of( requestString );
 					}
-
 					String templatePath = updatedRequest.getAsString( KeyDictionary.templatePath );
 					if ( templatePath != null && !templatePath.isEmpty() && !templatePath.equals( requestString ) ) {
 						if ( logger.isTraceEnabled() )
 							logger.trace( "Template path was updated by an interceptor to [" + templatePath + "]" );
+						// Validate the template path for security issues
+						validateRequestURI( templatePath, Path.of( templatePath ).getFileName().toString().toLowerCase() );
 						// We need to reload the application descriptor and re-assign the listener for this request
 						appListener = initializeApplicationListener( context, templatePath );
-					} else {
-						appListener = initializeApplicationListener( context, requestString );
 					}
-				} else {
-					appListener = initializeApplicationListener( context, requestString );
 				}
-			} else {
+			}
+
+			if ( appListener == null ) {
 				appListener = initializeApplicationListener( context, requestString );
 			}
 
