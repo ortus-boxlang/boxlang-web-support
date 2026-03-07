@@ -28,7 +28,6 @@ import ortus.boxlang.runtime.interop.DynamicObject;
 import ortus.boxlang.runtime.scopes.Key;
 import ortus.boxlang.runtime.types.Array;
 import ortus.boxlang.runtime.types.IStruct;
-import ortus.boxlang.runtime.types.Struct;
 import ortus.boxlang.runtime.types.exceptions.BoxLangException;
 import ortus.boxlang.runtime.types.exceptions.BoxRuntimeException;
 import ortus.boxlang.runtime.types.exceptions.CustomException;
@@ -83,7 +82,7 @@ public class WebErrorHandler {
 					try {
 						// Get error for the template using the request scope
 						context.getScope( ortus.boxlang.web.scopes.RequestScope.name ).put( Key.error,
-						    buildErrorStruct( e ) );
+						    ExceptionUtil.throwableToStruct( e ) );
 						BoxRuntime.getInstance().executeTemplate( customTemplate, context );
 						usedCustomTemplate = true;
 					} catch ( Throwable t ) {
@@ -111,26 +110,6 @@ public class WebErrorHandler {
 			// sees.
 			t.printStackTrace();
 		}
-	}
-
-	/**
-	 * Build struct with error data for the custom templates
-	 * 
-	 * @param e the error
-	 * 
-	 * @return a struct with error data
-	 */
-	private static IStruct buildErrorStruct( Throwable e ) {
-		Struct errorStruct = new Struct();
-		errorStruct.put( Key.message, e.getMessage() != null ? e.getMessage() : "" );
-		errorStruct.put( Key.type, e.getClass().getName() );
-		if ( e instanceof BoxLangException blexception ) {
-			errorStruct.put( Key.detail, blexception.getDetail() != null ? blexception.getDetail() : "" );
-		} else {
-			errorStruct.put( Key.detail, "" );
-		}
-		errorStruct.put( Key.stackTrace, ExceptionUtil.getStackTraceAsString( e ) );
-		return errorStruct;
 	}
 
 	/**
