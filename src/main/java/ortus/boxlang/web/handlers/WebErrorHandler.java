@@ -28,6 +28,7 @@ import ortus.boxlang.runtime.interop.DynamicObject;
 import ortus.boxlang.runtime.scopes.Key;
 import ortus.boxlang.runtime.types.Array;
 import ortus.boxlang.runtime.types.IStruct;
+import ortus.boxlang.runtime.types.Struct;
 import ortus.boxlang.runtime.types.exceptions.BoxLangException;
 import ortus.boxlang.runtime.types.exceptions.BoxRuntimeException;
 import ortus.boxlang.runtime.types.exceptions.CustomException;
@@ -120,7 +121,7 @@ public class WebErrorHandler {
 	 * @return a struct with error data
 	 */
 	private static IStruct buildErrorStruct( Throwable e ) {
-		ortus.boxlang.runtime.types.Struct errorStruct = new ortus.boxlang.runtime.types.Struct();
+		Struct errorStruct = new Struct();
 		errorStruct.put( Key.message, e.getMessage() != null ? e.getMessage() : "" );
 		errorStruct.put( Key.type, e.getClass().getName() );
 		if ( e instanceof BoxLangException blexception ) {
