@@ -127,7 +127,7 @@ public class WebRequestExecutor {
 							logger.trace( "Template path was updated by an interceptor to [" + templatePath + "]" );
 						// Validate the template path for security issues
 						validateRequestURI( templatePath, Path.of( templatePath ).getFileName().toString().toLowerCase() );
-						// We need to reload the application descriptor and re-assign the listener for this request
+						// Load the application descriptor from our changed template path instead of the request path
 						appListener = initializeApplicationListener( context, templatePath );
 					}
 				}
