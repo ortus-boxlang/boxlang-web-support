@@ -52,6 +52,8 @@ public class KeyDictionary {
 	public static final Key	fileWasRenamed			= Key.of( "fileWasRenamed" );
 	public static final Key	fileWasSaved			= Key.of( "fileWasSaved" );
 	public static final Key	keepAliveInterval		= Key.of( "keepAliveInterval" );
+	public static final Key	htmlBody				= Key.of( "htmlBody" );
+	public static final Key	htmlBodyIdMap			= Key.of( "htmlBodyIdMap" );
 	public static final Key	htmlFooter				= Key.of( "htmlFooter" );
 	public static final Key	htmlHead				= Key.of( "htmlHead" );
 	public static final Key	httpOnly				= Key.of( "httponly" );
@@ -67,6 +69,7 @@ public class KeyDictionary {
 	public static final Key	serverFileExt			= Key.of( "serverFileExt" );
 	public static final Key	serverFileName			= Key.of( "serverFileName" );
 	public static final Key	sessionCookie			= Key.of( "sessionCookie" );
+	public static final Key	silent					= Key.of( "silent" );
 	public static final Key	success					= Key.of( "success" );
 	public static final Key	timeCreated				= Key.of( "timeCreated" );
 	public static final Key	timeout					= Key.of( "timeout" );
