@@ -60,7 +60,7 @@ public class WebRequestExecutor {
 
 	public static final String			DEFAULT_BINARY_CONTENT_TYPE		= "application/octet-stream";
 
-	private static final BoxLangLogger	logger							= BoxRuntime.getInstance().getLoggingService().getLogger( WebRequestExecutor.class );
+	private static final BoxLangLogger	logger							= BoxRuntime.getInstance().getLoggingService().RUNTIME_LOGGER;
 
 	/**
 	 * Execute a web request
@@ -116,7 +116,7 @@ public class WebRequestExecutor {
 					String updatedRequestString = updatedRequest.getAsString( KeyDictionary.requestString );
 					if ( !updatedRequestString.equals( requestString ) ) {
 						if ( logger.isTraceEnabled() )
-							logger.trace( "Request string was updated by an interceptor from [" + requestString + "] to ["
+							logger.trace( "WebRequestExecutor: Request string was updated by an interceptor from [" + requestString + "] to ["
 							    + updatedRequestString + "]" );
 						requestString	= updatedRequestString;
 						requestPath		= Path.of( requestString );
@@ -124,7 +124,7 @@ public class WebRequestExecutor {
 					String templatePath = updatedRequest.getAsString( KeyDictionary.templatePath );
 					if ( templatePath != null && !templatePath.isEmpty() && !templatePath.equals( requestString ) ) {
 						if ( logger.isTraceEnabled() )
-							logger.trace( "Template path was updated by an interceptor to [" + templatePath + "]" );
+							logger.trace( "WebRequestExecutor: Template path was updated by an interceptor to [" + templatePath + "]" );
 						// Validate the template path for security issues
 						validateRequestURI( templatePath, Path.of( templatePath ).getFileName().toString().toLowerCase() );
 						// Load the application descriptor from our changed template path instead of the request path
@@ -302,8 +302,11 @@ public class WebRequestExecutor {
 	 */
 	private static BaseApplicationListener initializeApplicationListener( WebRequestBoxContext context, String requestString ) {
 		try {
+			System.out.println( "Loading application descriptor for request: [" + requestString + "]" );
 			context.loadApplicationDescriptor( new URI( requestString ) );
 			BaseApplicationListener appListener = context.getApplicationListener();
+			System.out.println( "Application descriptor loaded successfully. Descriptor set to: [" + appListener.getBaseTemplatePath() + "] for application: "
+			    + appListener.getAppName() + "]" );
 			return appListener;
 		} catch ( Exception e ) {
 			throw new BoxRuntimeException( "Failed to load application descriptor for request: [" + requestString + "]. " + e.getMessage(), e );
