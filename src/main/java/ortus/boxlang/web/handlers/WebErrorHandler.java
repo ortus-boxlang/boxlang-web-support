@@ -208,7 +208,7 @@ public class WebErrorHandler {
 			if ( templateError != null ) {
 				errorOutput.append( "<div class=\"bx-err-msg\">" )
 				    .append( "<strong>Custom template failed to render: </strong>" )
-				    .append( escapeHTML( templateError.getMessage() ) )
+				    .append( preserveWhitespace( escapeHTML( ExceptionUtil.getStackTraceAsString( templateError ) ) ) )
 				    .append( "</div>" );
 			}
 
