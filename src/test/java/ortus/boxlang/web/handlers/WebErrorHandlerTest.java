@@ -15,15 +15,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 
-import ortus.boxlang.runtime.scopes.Key;
-import ortus.boxlang.runtime.types.IStruct;
-
 @Execution( ExecutionMode.SAME_THREAD )
 public class WebErrorHandlerTest extends ortus.boxlang.web.util.BaseWebTest {
 
 	static final String	WEBROOT_PATH	= Path.of( "src/test/resources/webroot" ).toAbsolutePath().toString();
-	static final String	CUSTOM_TEMPLATE	= WEBROOT_PATH + "/customError.bxm";
-	static final String	BAD_TEMPLATE	= WEBROOT_PATH + "/badError.bxm";
+	static final String	CUSTOM_TEMPLATE	= "/customError.bxm";
+	static final String	BAD_TEMPLATE	= "/badError.bxm";
 	static final String	INVALID_PATH	= "/nonexistent/path/that/does/not/exist/error.bxm";
 
 	@BeforeAll
@@ -31,10 +28,11 @@ public class WebErrorHandlerTest extends ortus.boxlang.web.util.BaseWebTest {
 		Files.createDirectories( Path.of( WEBROOT_PATH ) );
 
 		// Working custom template
-		Files.writeString( Path.of( CUSTOM_TEMPLATE ), "<bx:output>CUSTOM_ERROR_PAGE:#request.error.message#</bx:output>" );
+		Files.writeString( Path.of( WEBROOT_PATH + CUSTOM_TEMPLATE ),
+		    "<bx:output>CUSTOM_ERROR_PAGE:#request.error.getMessage()#</bx:output>" );
 
 		// Broken Custom Template
-		Files.writeString( Path.of( BAD_TEMPLATE ), "<bx:output>#thisVarDoesNotExist.willCauseAnError#</bx:output>" );
+		Files.writeString( Path.of( WEBROOT_PATH + BAD_TEMPLATE ), "<bx:output>#thisVarDoesNotExist.willCauseAnError#</bx:output>" );
 	}
 
 	@BeforeEach
@@ -63,7 +61,7 @@ public class WebErrorHandlerTest extends ortus.boxlang.web.util.BaseWebTest {
 		assertDoesNotThrow( () -> WebErrorHandler.handleError( e, mockExchange, context, null, null ) );
 	}
 
-	@DisplayName( "Error struct passed to template" )
+	@DisplayName( "Error passed to template" )
 	@Test
 	public void testWorkingCustomTemplate() {
 		runtime.getConfiguration().globalErrorTemplate = CUSTOM_TEMPLATE;
@@ -72,13 +70,9 @@ public class WebErrorHandlerTest extends ortus.boxlang.web.util.BaseWebTest {
 
 		WebErrorHandler.handleError( e, mockExchange, context, null, null );
 
-		IStruct errorStruct = ( IStruct ) context.getScope( ortus.boxlang.web.scopes.RequestScope.name ).get( Key.error );
-
-		assertThat( errorStruct ).isNotNull();
-		assertThat( errorStruct.getAsString( Key.message ) ).isEqualTo( "Data Check" );
-		assertThat( errorStruct.getAsString( Key.type ) ).isNotEmpty();
-		assertThat( errorStruct.getAsString( Key.detail ) ).isNotNull();
-		assertThat( errorStruct.getAsString( Key.stackTrace ) ).isNotEmpty();
+		String output = context.getBuffer().toString();
+		assertThat( output ).contains( "CUSTOM_ERROR_PAGE" );
+		assertThat( output ).contains( "Data Check" );
 	}
 
 	@DisplayName( "Falls back on default error page if custom template throws error" )
