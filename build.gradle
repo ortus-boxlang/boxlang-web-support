@@ -364,6 +364,8 @@ spotless {
         }
         eclipse().configFile( "./.ortus-java-style.xml" )
 		toggleOffOn()
+		removeUnusedImports()
+        formatAnnotations()
     }
 }
 
