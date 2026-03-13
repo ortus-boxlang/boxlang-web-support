@@ -50,7 +50,9 @@ dependencies {
 		testImplementation files( '../boxlang/build/libs/boxlang-' + boxlangVersion + '.jar' )
 	} else {
 		// Production Dependency
-   		compileOnly files( 'src/test/resources/libs/boxlang-' + boxlangVersion + '.jar' )
+	   	// Add the downloaded runtime jar to the compile classpath so IDEs (Language Server)
+	   	// can resolve imports during development. We still keep testImplementation.
+		implementation files( 'src/test/resources/libs/boxlang-' + boxlangVersion + '.jar' )
 		testImplementation files( 'src/test/resources/libs/boxlang-' + boxlangVersion + '.jar' )
 	}
 
