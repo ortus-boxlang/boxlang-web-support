@@ -1,0 +1,1 @@
+<bx:output>CUSTOM_ERROR_PAGE:#request.error.getMessage()#</bx:output>
