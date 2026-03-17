@@ -32,6 +32,7 @@ import ortus.boxlang.runtime.types.IStruct;
 import ortus.boxlang.runtime.types.exceptions.AbortException;
 import ortus.boxlang.runtime.types.exceptions.BoxIOException;
 import ortus.boxlang.runtime.util.FileSystemUtil;
+import ortus.boxlang.runtime.util.IBoxBinaryRepresentable;
 import ortus.boxlang.runtime.validation.Validator;
 import ortus.boxlang.web.WebRequestExecutor;
 import ortus.boxlang.web.context.WebRequestBoxContext;
@@ -158,18 +159,25 @@ public class Content extends Component {
 			} else {
 				context.flushBuffer( false );
 			}
-			byte[] bytesToWrite;
+			byte[]	bytesToWrite;
+			boolean	isBinary	= false;
 			if ( variable instanceof byte[] barr ) {
-				bytesToWrite = barr;
-				// If a type is not given but we know this is binary data, we set the content type to application/octet-stream
-				if ( type == null
-				    &&
-				    ( assignedContentType == null
-				        || assignedContentType.equals( WebRequestExecutor.DEFAULT_CONTENT_TYPE ) ) ) {
-					exchange.setResponseHeader( WebRequestExecutor.CONTENT_TYPE_HEADER, WebRequestExecutor.DEFAULT_BINARY_CONTENT_TYPE );
-				}
+				bytesToWrite	= barr;
+				isBinary		= true;
+			} else if ( variable instanceof IBoxBinaryRepresentable representable ) {
+				bytesToWrite	= representable.toByteArray();
+				isBinary		= true;
+
 			} else {
+				// If not a byte array or binary representable, we treat it as a string
 				bytesToWrite = StringCaster.cast( variable ).getBytes();
+			}
+			// If a type is not given but we know this is binary data, we set the content type to application/octet-stream
+			if ( isBinary && type == null
+			    &&
+			    ( assignedContentType == null
+			        || assignedContentType.equals( WebRequestExecutor.DEFAULT_CONTENT_TYPE ) ) ) {
+				exchange.setResponseHeader( WebRequestExecutor.CONTENT_TYPE_HEADER, WebRequestExecutor.DEFAULT_BINARY_CONTENT_TYPE );
 			}
 			exchange.sendResponseBinary( bytesToWrite );
 			// I'm not sure CF actually aborts here if. If not, we need a flag in the
