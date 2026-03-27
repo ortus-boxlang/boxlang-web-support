@@ -302,11 +302,8 @@ public class WebRequestExecutor {
 	 */
 	private static BaseApplicationListener initializeApplicationListener( WebRequestBoxContext context, String requestString ) {
 		try {
-			System.out.println( "Loading application descriptor for request: [" + requestString + "]" );
 			context.loadApplicationDescriptor( new URI( requestString ) );
 			BaseApplicationListener appListener = context.getApplicationListener();
-			System.out.println( "Application descriptor loaded successfully. Descriptor set to: [" + appListener.getBaseTemplatePath() + "] for application: "
-			    + appListener.getAppName() + "]" );
 			return appListener;
 		} catch ( Exception e ) {
 			throw new BoxRuntimeException( "Failed to load application descriptor for request: [" + requestString + "]. " + e.getMessage(), e );
