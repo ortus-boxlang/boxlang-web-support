@@ -305,6 +305,10 @@ public class WebRequestExecutor {
 			context.loadApplicationDescriptor( new URI( requestString ) );
 			BaseApplicationListener appListener = context.getApplicationListener();
 			return appListener;
+
+		} catch ( AbortException ae ) {
+			// re-throw this
+			throw ae;
 		} catch ( Exception e ) {
 			throw new BoxRuntimeException( "Failed to load application descriptor for request: [" + requestString + "]. " + e.getMessage(), e );
 		}
@@ -377,6 +381,9 @@ public class WebRequestExecutor {
 				IStruct argCollection = StructCaster.cast( JSONUtil.fromJSON( StringCaster.cast( args.get( Key.argumentCollection ) ), true ) );
 				args.addAll( argCollection );
 				args.remove( Key.argumentCollection );
+			} catch ( AbortException ae ) {
+				// re-throw this
+				throw ae;
 			} catch ( Exception e ) {
 				throw new BoxRuntimeException( "Remote method invocation failed. Unable to parse argumentCollection JSON: " + e.getMessage(), e );
 			}

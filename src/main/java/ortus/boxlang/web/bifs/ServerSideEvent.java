@@ -196,6 +196,9 @@ public class ServerSideEvent extends BIF {
 			    () -> {
 				    try {
 					    context.invokeFunction( callback, new Object[] { emitter } );
+				    } catch ( AbortException ae ) {
+					    // re-throw this
+					    throw ae;
 				    } catch ( Exception e ) {
 					    emitter.handleError( e );
 				    } finally {
@@ -232,6 +235,9 @@ public class ServerSideEvent extends BIF {
 			// Execute synchronously (blocking)
 			try {
 				context.invokeFunction( callback, new Object[] { emitter } );
+			} catch ( AbortException ae ) {
+				// re-throw this
+				throw ae;
 			} catch ( Exception e ) {
 				emitter.handleError( e );
 			} finally {
