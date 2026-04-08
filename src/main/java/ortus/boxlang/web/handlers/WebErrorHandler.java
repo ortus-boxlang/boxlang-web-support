@@ -18,9 +18,11 @@
 package ortus.boxlang.web.handlers;
 
 import ortus.boxlang.runtime.BoxRuntime;
+import ortus.boxlang.runtime.config.Configuration;
 import ortus.boxlang.runtime.dynamic.casters.CastAttempt;
 import ortus.boxlang.runtime.dynamic.casters.StringCaster;
 import ortus.boxlang.runtime.interop.DynamicObject;
+import ortus.boxlang.runtime.logging.BoxLangLogger;
 import ortus.boxlang.runtime.scopes.Key;
 import ortus.boxlang.runtime.types.Array;
 import ortus.boxlang.runtime.types.IStruct;
@@ -42,6 +44,11 @@ import ortus.boxlang.web.exchange.IBoxHTTPExchange;
 public class WebErrorHandler {
 
 	/**
+	 * Logger for handling errors
+	 */
+	private static final BoxLangLogger logger = BoxRuntime.getInstance().getLoggingService().EXCEPTION_LOGGER;
+
+	/**
 	 * Handle an error
 	 *
 	 * @param e              the error
@@ -50,10 +57,9 @@ public class WebErrorHandler {
 	 * @param frTransService the FRTrans, if any
 	 * @param trans          the transaction, if any
 	 */
-	public static void handleError( Throwable e, IBoxHTTPExchange exchange, WebRequestBoxContext context, FRTransService frTransService,
-	    DynamicObject trans ) {
+	public static void handleError( Throwable e, IBoxHTTPExchange exchange, WebRequestBoxContext context, FRTransService frTransService, DynamicObject trans ) {
 		try {
-			e.printStackTrace();
+			logger.error( e.getMessage(), e );
 			// Return 500 status code
 			exchange.setResponseStatus( 500 );
 
@@ -69,18 +75,39 @@ public class WebErrorHandler {
 				context.flushBuffer( true );
 			}
 
-			String errorOutput = buildErrorPage( e );
+			Configuration	config				= BoxRuntime.getInstance().getConfiguration();
+			String			customTemplate		= config.globalErrorTemplate;
+			boolean			usedCustomTemplate	= false;
+			Throwable		templateError		= null;
 
-			if ( context != null ) {
-				context.writeToBuffer( errorOutput, true );
-			} else {
-				// fail safe in case we errored out before creating the context
-				exchange.getResponseWriter().append( errorOutput );
+			if ( customTemplate != null && !customTemplate.isEmpty() && context != null ) {
+				try {
+					// Get error for the template using the request scope
+					context.getScope( ortus.boxlang.web.scopes.RequestScope.name ).put( Key.error, e );
+					context.includeTemplate( customTemplate );
+					usedCustomTemplate = true;
+				} catch ( Throwable t ) {
+					logger.error( "Custom error template " + customTemplate + " failed to render: " + t.getMessage(), t );
+					context.clearBuffer();
+					templateError = t;
+					// Fall back on buildErrorPages
+				}
+
+			}
+
+			if ( !usedCustomTemplate ) {
+				String errorOutput = buildErrorPage( e, templateError );
+				if ( context != null ) {
+					context.writeToBuffer( errorOutput, true );
+				} else {
+					exchange.getResponseWriter().append( errorOutput );
+				}
 			}
 
 		} catch ( Throwable t ) {
-			// Something terrible happened and a blank page will probably be what the user sees.
-			t.printStackTrace();
+			// Something terrible happened and a blank page will probably be what the user
+			// sees.
+			logger.error( "Error occured while handling an error" + t.getMessage(), t );
 		}
 	}
 
@@ -91,7 +118,7 @@ public class WebErrorHandler {
 	 *
 	 * @return the error page string
 	 */
-	private static String buildErrorPage( Throwable e ) {
+	private static String buildErrorPage( Throwable e, Throwable templateError ) {
 		StringBuilder	errorOutput	= new StringBuilder();
 		BoxRuntime		runtime		= BoxRuntime.getInstance();
 		// styles
@@ -177,6 +204,12 @@ public class WebErrorHandler {
 				    // text
 				    .append( preserveWhitespace( escapeHTML( thisException.getMessage() ) ) )
 				    .append( "</div></div>" );
+			}
+			if ( templateError != null ) {
+				errorOutput.append( "<div class=\"bx-err-msg\">" )
+				    .append( "<strong>Custom template failed to render: </strong>" )
+				    .append( preserveWhitespace( escapeHTML( ExceptionUtil.getStackTraceAsString( templateError ) ) ) )
+				    .append( "</div>" );
 			}
 
 			// If not in debug mode, just show the error message
@@ -346,7 +379,8 @@ public class WebErrorHandler {
 		    .append( "<summary role=\"button\">Stack Trace</summary>" )
 		    .append( "<div><pre style=\"text-wrap: pretty;\">" );
 
-		errorOutput.append( ExceptionUtil.getStackTraceAsString( e ).replaceAll( "\\((.*)\\)", "<strong class=\"highlight\">($1)</strong>" ) );
+		errorOutput.append( ExceptionUtil.getStackTraceAsString( e ).replaceAll( "\\((.*)\\)",
+		    "<strong class=\"highlight\">($1)</strong>" ) );
 
 		errorOutput.append( "</pre></div>" )
 		    .append( "</details>" );
