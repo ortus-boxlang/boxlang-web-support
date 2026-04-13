@@ -58,6 +58,8 @@ public class WebRequestExecutor {
 
 	public static final String			CONTENT_TYPE_HEADER				= "Content-Type";
 
+	public static final String			CONTENT_DISPOSITION_HEADER		= "Content-Disposition";
+
 	public static final String			DEFAULT_BINARY_CONTENT_TYPE		= "application/octet-stream";
 
 	private static final BoxLangLogger	logger							= BoxRuntime.getInstance().getLoggingService().RUNTIME_LOGGER;

@@ -35,6 +35,7 @@ import ortus.boxlang.runtime.types.IStruct;
 import ortus.boxlang.runtime.types.Struct;
 import ortus.boxlang.runtime.types.exceptions.AbortException;
 import ortus.boxlang.runtime.types.exceptions.BoxRuntimeException;
+import ortus.boxlang.web.WebRequestExecutor;
 import ortus.boxlang.web.context.WebRequestBoxContext;
 import ortus.boxlang.web.exchange.IBoxHTTPExchange;
 import ortus.boxlang.web.util.KeyDictionary;
@@ -103,10 +104,16 @@ public class WebRequest extends BaseInterceptor {
 			contentBytes = StringCaster.cast( content ).getBytes();
 		}
 
-		exchange.setResponseHeader( "content-type", mimeType );
-		if ( disposition == "attachment" ) {
-			exchange.setResponseHeader( "content-disposition", disposition + "; filename=" + fileName );
+		String	contentTypeHeader	= exchange.getResponseHeader( WebRequestExecutor.CONTENT_TYPE_HEADER );
+		String	dispositionHeader	= exchange.getResponseHeader( WebRequestExecutor.CONTENT_DISPOSITION_HEADER );
+
+		if ( contentTypeHeader == null ) {
+			exchange.setResponseHeader( WebRequestExecutor.CONTENT_TYPE_HEADER, mimeType );
 		}
+		if ( dispositionHeader == null ) {
+			exchange.setResponseHeader( WebRequestExecutor.CONTENT_DISPOSITION_HEADER, disposition + "; filename=" + fileName );
+		}
+
 		exchange.sendResponseBinary( contentBytes );
 
 		if ( abort ) {
