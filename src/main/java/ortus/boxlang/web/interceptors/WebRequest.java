@@ -85,13 +85,17 @@ public class WebRequest extends BaseInterceptor {
 		}
 		WebRequestBoxContext	requestContext	= context.getParentOfType( WebRequestBoxContext.class );
 		IBoxHTTPExchange		exchange		= requestContext.getHTTPExchange();
+		String					mimeType		= StringCaster.cast( data.getOrDefault( Key.mimetype, "text/html" ) );
+		Boolean					reset			= BooleanCaster.cast( data.getOrDefault( Key.reset, false ) );
+		Boolean					abort			= BooleanCaster.cast( data.getOrDefault( Key.abort, false ) );
 		String					fileName		= data.getAsString( KeyDictionary.fileName );
+
 		if ( fileName != null ) {
 			disposition = "attachment";
+		} else {
+			// TODO: We are going to need to develop a list of well-known MIME to extensions to support some of the crazy MS office mime types
+			fileName = "document." + mimeType.substring( mimeType.indexOf( "/" ) + 1 );
 		}
-		String	mimeType	= StringCaster.cast( data.getOrDefault( Key.mimetype, "text/html" ) );
-		Boolean	reset		= BooleanCaster.cast( data.getOrDefault( Key.reset, false ) );
-		Boolean	abort		= BooleanCaster.cast( data.getOrDefault( Key.abort, false ) );
 
 		if ( reset ) {
 			context.clearBuffer();
@@ -104,15 +108,8 @@ public class WebRequest extends BaseInterceptor {
 			contentBytes = StringCaster.cast( content ).getBytes();
 		}
 
-		String	contentTypeHeader	= exchange.getResponseHeader( WebRequestExecutor.CONTENT_TYPE_HEADER );
-		String	dispositionHeader	= exchange.getResponseHeader( WebRequestExecutor.CONTENT_DISPOSITION_HEADER );
-
-		if ( contentTypeHeader == null ) {
-			exchange.setResponseHeader( WebRequestExecutor.CONTENT_TYPE_HEADER, mimeType );
-		}
-		if ( dispositionHeader == null ) {
-			exchange.setResponseHeader( WebRequestExecutor.CONTENT_DISPOSITION_HEADER, disposition + "; filename=" + fileName );
-		}
+		exchange.setResponseHeader( WebRequestExecutor.CONTENT_TYPE_HEADER, mimeType );
+		exchange.setResponseHeader( WebRequestExecutor.CONTENT_DISPOSITION_HEADER, disposition + "; filename=" + fileName );
 
 		exchange.sendResponseBinary( contentBytes );
 
