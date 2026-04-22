@@ -51,8 +51,8 @@ public class MockHTTPExchange implements IBoxHTTPExchange {
 	String					requestQueryString;
 	String					requestRemoteUser;
 	Principal				requestUserPrincipal;
-	String					requestURI;
-	StringBuffer			requestURL;
+	String					requestURI				= "/";
+	StringBuffer			requestURL				= new StringBuffer( "http://localhost/" );
 	String					requestCharacterEncoding;
 	long					requestContentLength	= -1;
 	String					requestContentType;
