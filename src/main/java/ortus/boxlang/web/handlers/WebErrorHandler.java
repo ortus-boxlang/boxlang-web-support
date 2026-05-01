@@ -26,6 +26,7 @@ import ortus.boxlang.runtime.logging.BoxLangLogger;
 import ortus.boxlang.runtime.scopes.Key;
 import ortus.boxlang.runtime.types.Array;
 import ortus.boxlang.runtime.types.IStruct;
+import ortus.boxlang.runtime.types.exceptions.AbortException;
 import ortus.boxlang.runtime.types.exceptions.BoxLangException;
 import ortus.boxlang.runtime.types.exceptions.BoxRuntimeException;
 import ortus.boxlang.runtime.types.exceptions.CustomException;
@@ -86,6 +87,9 @@ public class WebErrorHandler {
 					context.getScope( ortus.boxlang.web.scopes.RequestScope.name ).put( Key.error, e );
 					context.includeTemplate( customTemplate );
 					usedCustomTemplate = true;
+				} catch ( AbortException ae ) {
+					// re-throw this
+					throw ae;
 				} catch ( Throwable t ) {
 					logger.error( "Custom error template " + customTemplate + " failed to render: " + t.getMessage(), t );
 					context.clearBuffer();
@@ -104,6 +108,9 @@ public class WebErrorHandler {
 				}
 			}
 
+		} catch ( AbortException ae ) {
+			// re-throw this
+			throw ae;
 		} catch ( Throwable t ) {
 			// Something terrible happened and a blank page will probably be what the user
 			// sees.

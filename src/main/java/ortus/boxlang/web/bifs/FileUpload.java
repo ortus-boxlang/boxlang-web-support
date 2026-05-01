@@ -156,7 +156,7 @@ public class FileUpload extends BIF {
 		IBoxHTTPExchange.FileUpload[]	uploads			= exchange.getUploadData();
 
 		// Validate the arguments
-		if ( uploads == null ) {
+		if ( uploads == null || uploads.length == 0 ) {
 			throw new BoxRuntimeException( "No file uploads were found in the request" );
 		}
 

@@ -28,7 +28,8 @@ public class WhitespaceManagingPrintWriter extends PrintWriter {
 	private boolean			inTag						= false;  // Flag to indicate whether we are inside a tag
 	private boolean			closeTag					= false;  // Flag to track if it's a closing tag (starts with '/')
 	private boolean			firstTagChar				= true;  // Flag to track if we are processing the first tag character
-	private boolean			previousCharWasWhitespace	= false;  // Flag to track if the previous character was whitespace
+	private boolean			previousCharWasWhitespace	= true;  // Flag to track if the previous character was whitespace (start true to strip leading
+	                                                             // whitespace)
 
 	// Constructor with an additional parameter to toggle whitespace compression
 	public WhitespaceManagingPrintWriter( Writer out, boolean enable ) {

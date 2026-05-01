@@ -58,6 +58,8 @@ public class WebRequestExecutor {
 
 	public static final String			CONTENT_TYPE_HEADER				= "Content-Type";
 
+	public static final String			CONTENT_DISPOSITION_HEADER		= "Content-Disposition";
+
 	public static final String			DEFAULT_BINARY_CONTENT_TYPE		= "application/octet-stream";
 
 	private static final BoxLangLogger	logger							= BoxRuntime.getInstance().getLoggingService().RUNTIME_LOGGER;
@@ -305,6 +307,10 @@ public class WebRequestExecutor {
 			context.loadApplicationDescriptor( new URI( requestString ) );
 			BaseApplicationListener appListener = context.getApplicationListener();
 			return appListener;
+
+		} catch ( AbortException ae ) {
+			// re-throw this
+			throw ae;
 		} catch ( Exception e ) {
 			throw new BoxRuntimeException( "Failed to load application descriptor for request: [" + requestString + "]. " + e.getMessage(), e );
 		}
@@ -317,9 +323,9 @@ public class WebRequestExecutor {
 	 * @param defaultContentType The default content type to use if none is set
 	 */
 	private static void ensureContentType( IBoxHTTPExchange exchange, String defaultContentType ) {
-		var contentType = exchange.getResponseHeader( "Content-Type" );
+		var contentType = exchange.getResponseHeader( WebRequestExecutor.CONTENT_TYPE_HEADER );
 		if ( contentType == null || contentType.isEmpty() ) {
-			exchange.setResponseHeader( "Content-Type", defaultContentType );
+			exchange.setResponseHeader( WebRequestExecutor.CONTENT_TYPE_HEADER, defaultContentType );
 		}
 	}
 
@@ -377,6 +383,9 @@ public class WebRequestExecutor {
 				IStruct argCollection = StructCaster.cast( JSONUtil.fromJSON( StringCaster.cast( args.get( Key.argumentCollection ) ), true ) );
 				args.addAll( argCollection );
 				args.remove( Key.argumentCollection );
+			} catch ( AbortException ae ) {
+				// re-throw this
+				throw ae;
 			} catch ( Exception e ) {
 				throw new BoxRuntimeException( "Remote method invocation failed. Unable to parse argumentCollection JSON: " + e.getMessage(), e );
 			}

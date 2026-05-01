@@ -35,6 +35,7 @@ import ortus.boxlang.runtime.types.IStruct;
 import ortus.boxlang.runtime.types.Struct;
 import ortus.boxlang.runtime.types.exceptions.AbortException;
 import ortus.boxlang.runtime.types.exceptions.BoxRuntimeException;
+import ortus.boxlang.web.WebRequestExecutor;
 import ortus.boxlang.web.context.WebRequestBoxContext;
 import ortus.boxlang.web.exchange.IBoxHTTPExchange;
 import ortus.boxlang.web.util.KeyDictionary;
@@ -84,13 +85,17 @@ public class WebRequest extends BaseInterceptor {
 		}
 		WebRequestBoxContext	requestContext	= context.getParentOfType( WebRequestBoxContext.class );
 		IBoxHTTPExchange		exchange		= requestContext.getHTTPExchange();
+		String					mimeType		= StringCaster.cast( data.getOrDefault( Key.mimetype, "text/html" ) );
+		Boolean					reset			= BooleanCaster.cast( data.getOrDefault( Key.reset, false ) );
+		Boolean					abort			= BooleanCaster.cast( data.getOrDefault( Key.abort, false ) );
 		String					fileName		= data.getAsString( KeyDictionary.fileName );
+
 		if ( fileName != null ) {
 			disposition = "attachment";
+		} else {
+			// TODO: We are going to need to develop a list of well-known MIME to extensions to support some of the crazy MS office mime types
+			fileName = "document." + mimeType.substring( mimeType.indexOf( "/" ) + 1 );
 		}
-		String	mimeType	= StringCaster.cast( data.getOrDefault( Key.mimetype, "text/html" ) );
-		Boolean	reset		= BooleanCaster.cast( data.getOrDefault( Key.reset, false ) );
-		Boolean	abort		= BooleanCaster.cast( data.getOrDefault( Key.abort, false ) );
 
 		if ( reset ) {
 			context.clearBuffer();
@@ -103,10 +108,9 @@ public class WebRequest extends BaseInterceptor {
 			contentBytes = StringCaster.cast( content ).getBytes();
 		}
 
-		exchange.setResponseHeader( "content-type", mimeType );
-		if ( disposition == "attachment" ) {
-			exchange.setResponseHeader( "content-disposition", disposition + "; filename=" + fileName );
-		}
+		exchange.setResponseHeader( WebRequestExecutor.CONTENT_TYPE_HEADER, mimeType );
+		exchange.setResponseHeader( WebRequestExecutor.CONTENT_DISPOSITION_HEADER, disposition + "; filename=" + fileName );
+
 		exchange.sendResponseBinary( contentBytes );
 
 		if ( abort ) {
