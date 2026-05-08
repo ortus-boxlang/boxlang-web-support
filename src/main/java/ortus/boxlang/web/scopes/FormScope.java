@@ -52,9 +52,11 @@ public class FormScope extends BaseScope {
 		context.getHTTPExchange().getRequestFormMap().forEach( ( key, value ) -> {
 			// Convention for foo[]=brad foo[]=luis which creates array instead of comma delimited string.
 			if ( key.endsWith( "[]" ) ) {
+				// leave empty elements when making an array. (CF compat)
 				this.put( Key.of( key.substring( 0, key.length() - 2 ) ), new Array( value ) );
 			} else {
-				this.put( Key.of( key ), Arrays.stream( value ).collect( Collectors.joining( "," ) ) );
+				// Remove empty elements when making a list (CF compat)
+				this.put( Key.of( key ), Arrays.stream( value ).filter( s -> s != null && !s.isEmpty() ).collect( Collectors.joining( "," ) ) );
 			}
 		} );
 

@@ -50,6 +50,8 @@ public class URLScope extends BaseScope {
 			if ( key.endsWith( "[]" ) ) {
 				this.put( Key.of( key.substring( 0, key.length() - 2 ) ), new Array( value ) );
 			} else {
+				// TODO: Lucee removes empty elements here, but ACF does not. If a client hits this, add a flag to compat to control this.
+				// We're currently matching Adobe's behavior, but not Lucee's
 				this.put( Key.of( key ), Arrays.stream( value ).collect( Collectors.joining( "," ) ) );
 			}
 		} );
