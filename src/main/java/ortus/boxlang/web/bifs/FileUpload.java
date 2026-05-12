@@ -162,7 +162,12 @@ public class FileUpload extends BIF {
 
 		// Single File Upload
 		if ( bifMethodKey.equals( KeyDictionary.fileUpload ) ) {
-			String field = arguments.getAsString( Key.filefield );
+			String	field			= arguments.getAsString( Key.filefield );
+			// Accept `mimeType` as an alias for `accept` for CFML compat
+			Object	mimeArgument	= arguments.get( KeyDictionary.mimeType );
+			if ( !arguments.containsKey( Key.accept ) && mimeArgument != null ) {
+				arguments.put( Key.accept, mimeArgument );
+			}
 			// If no field is specified, use the first upload's form field name
 			if ( field == null ) {
 				field = uploads[ 0 ].formFieldName().getName();
