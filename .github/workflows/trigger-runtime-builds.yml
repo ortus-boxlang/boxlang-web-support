@@ -40,8 +40,8 @@ jobs:
           SLACK_CHANNEL: boxlang
           SLACK_COLOR: ${{ job.status }} # or a specific color like 'green' or '#ff00ff'
           SLACK_ICON_EMOJI: ":bell:"
-          SLACK_MESSAGE: "${{ github.repository }} Trigger for runtime builds failed! :("
-          SLACK_TITLE: "${{ github.repository }} Build Failure"
+          SLACK_MESSAGE: "${{ github.repository }} trigger for runtime builds failed for ${{ matrix.repo }}. Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          SLACK_TITLE: "${{ github.repository }} Build Failure - ${{ matrix.repo }}"
           SLACK_USERNAME: CI
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
           MSG_MINIMAL: true
