@@ -26,6 +26,7 @@ import java.util.UUID;
 
 import ortus.boxlang.runtime.BoxRuntime;
 import ortus.boxlang.runtime.context.IBoxContext;
+import ortus.boxlang.runtime.context.IBoxContext.ScopeSearchResult;
 import ortus.boxlang.runtime.context.RequestBoxContext;
 import ortus.boxlang.runtime.dynamic.casters.BooleanCaster;
 import ortus.boxlang.runtime.dynamic.casters.StringCaster;
@@ -643,7 +644,9 @@ public class WebRequestBoxContext extends RequestBoxContext {
 		}
 		// If the response is HTML, return true
 		String contentTypeHeader = httpExchange.getResponseHeader( "Content-Type" );
-		if ( contentTypeHeader != null && contentTypeHeader.startsWith( "text/html" ) ) {
+		// Note, Lucee will NOT trim whitespace on text/plain, but will for text/html. Adobe seems much more liberal and will trim for both.
+		// If this becomes a compat issue, then introduce a setting for the content type prefixes to trim whitespace for.
+		if ( contentTypeHeader != null && contentTypeHeader.startsWith( "text/" ) ) {
 			return true;
 		}
 		// It's another content type like binary or JSON, etc
