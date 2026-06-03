@@ -109,7 +109,10 @@ public class WebRequest extends BaseInterceptor {
 		}
 
 		exchange.setResponseHeader( WebRequestExecutor.CONTENT_TYPE_HEADER, mimeType );
-		exchange.setResponseHeader( WebRequestExecutor.CONTENT_DISPOSITION_HEADER, disposition + "; filename=" + fileName );
+		// only add disposition header if one hasn't already been set.
+		if ( exchange.getResponseHeader( WebRequestExecutor.CONTENT_DISPOSITION_HEADER ) == null ) {
+			exchange.setResponseHeader( WebRequestExecutor.CONTENT_DISPOSITION_HEADER, disposition + "; filename=" + fileName );
+		}
 
 		exchange.sendResponseBinary( contentBytes );
 
