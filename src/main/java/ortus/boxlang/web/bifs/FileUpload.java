@@ -316,7 +316,7 @@ public class FileUpload extends BIF {
 		}
 
 		try {
-			Files.move( upload.tmpPath(), filePath );
+			Files.copy( upload.tmpPath(), filePath );
 			String mimeType = Files.probeContentType( filePath );
 			if ( mimeType == null ) {
 				mimeType = "application/octet-stream";
