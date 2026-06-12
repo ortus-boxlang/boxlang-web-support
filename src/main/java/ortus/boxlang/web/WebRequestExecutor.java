@@ -24,9 +24,9 @@ import java.util.Set;
 
 import ortus.boxlang.runtime.BoxRuntime;
 import ortus.boxlang.runtime.application.BaseApplicationListener;
+import ortus.boxlang.runtime.bifs.global.decision.IsJSON;
 import ortus.boxlang.runtime.context.RequestBoxContext;
 import ortus.boxlang.runtime.dynamic.casters.StringCaster;
-import ortus.boxlang.runtime.dynamic.casters.StructCaster;
 import ortus.boxlang.runtime.interop.DynamicObject;
 import ortus.boxlang.runtime.logging.BoxLangLogger;
 import ortus.boxlang.runtime.scopes.Key;
@@ -378,17 +378,8 @@ public class WebRequestExecutor {
 		args.addAll( context.getScope( FormScope.name ) );
 		args.addAll( context.getScope( URLScope.name ) );
 
-		if ( args.containsKey( Key.argumentCollection ) ) {
-			try {
-				IStruct argCollection = StructCaster.cast( JSONUtil.fromJSON( StringCaster.cast( args.get( Key.argumentCollection ) ), true ) );
-				args.addAll( argCollection );
-				args.remove( Key.argumentCollection );
-			} catch ( AbortException ae ) {
-				// re-throw this
-				throw ae;
-			} catch ( Exception e ) {
-				throw new BoxRuntimeException( "Remote method invocation failed. Unable to parse argumentCollection JSON: " + e.getMessage(), e );
-			}
+		if ( args.containsKey( Key.argumentCollection ) && IsJSON.isJSON( StringCaster.cast( args.get( Key.argumentCollection ) ) ) ) {
+			args.put( Key.argumentCollection, JSONUtil.fromJSON( StringCaster.cast( args.get( Key.argumentCollection ) ), true ) );
 		}
 
 		// Remove framework-specific parameters
