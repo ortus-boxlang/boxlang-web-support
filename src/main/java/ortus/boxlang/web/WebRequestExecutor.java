@@ -86,7 +86,6 @@ public class WebRequestExecutor {
 
 			// Target Detection
 			String				ext					= "";
-			Path				requestPath			= Path.of( requestString );
 			InterceptorService	interceptorService	= BoxRuntime.getInstance().getInterceptorService();
 
 			// Load up the runtime, context and app listener
@@ -94,6 +93,17 @@ public class WebRequestExecutor {
 			RequestBoxContext.setCurrent( context );
 
 			trans = frTransService.startTransaction( "Web Request", requestString );
+
+			// set file name to lower case last segment, but avoid using a Path instance in case it's invalid at this point
+			String fileName = requestString.contains( "/" ) ? requestString.substring( requestString.lastIndexOf( "/" ) + 1 ) : requestString;
+			fileName = fileName.toLowerCase();
+			if ( fileName.contains( "." ) ) {
+				ext = fileName.substring( fileName.lastIndexOf( "." ) + 1 );
+			}
+
+			// Validate request URI for security issues
+			validateRequestURI( requestString, fileName );
+			Path requestPath = Path.of( requestString );
 
 			// Allow interceptors to modify the request before we do anything with it.
 			// This allows for modules with front controllers to execute inbound requests
@@ -138,14 +148,6 @@ public class WebRequestExecutor {
 			if ( appListener == null ) {
 				appListener = initializeApplicationListener( context, requestString );
 			}
-
-			String fileName = requestPath.getFileName().toString().toLowerCase();
-			if ( fileName.contains( "." ) ) {
-				ext = fileName.substring( fileName.lastIndexOf( "." ) + 1 );
-			}
-
-			// Validate request URI for security issues
-			validateRequestURI( requestString, fileName );
 
 			// Pass through to the Application.bx onRequestStart method
 			boolean result = appListener.onRequestStart( context, new Object[] { requestString } );
@@ -286,7 +288,9 @@ public class WebRequestExecutor {
 			if ( frTransService != null ) {
 				frTransService.endTransaction( trans );
 			}
-			context.shutdown();
+			if ( context != null ) {
+				context.shutdown();
+			}
 			RequestBoxContext.removeCurrent();
 			Thread.currentThread().setContextClassLoader( oldClassLoader );
 		}
@@ -304,7 +308,8 @@ public class WebRequestExecutor {
 	 */
 	private static BaseApplicationListener initializeApplicationListener( WebRequestBoxContext context, String requestString ) {
 		try {
-			context.loadApplicationDescriptor( new URI( requestString ) );
+			// Use multi-arg URI constructor to ensure special chars get encoded properly in the request string
+			context.loadApplicationDescriptor( new URI( null, null, requestString, null, null ) );
 			BaseApplicationListener appListener = context.getApplicationListener();
 			return appListener;
 
@@ -345,6 +350,11 @@ public class WebRequestExecutor {
 		    requestURI.contains( ";.." ) ||
 		    requestURI.contains( "..;" ) ) {
 			throw new BoxRuntimeException( "Invalid request URI: [" + requestURI + "]. Path traversal detected." );
+		}
+
+		// Check for null chars
+		if ( requestURI.contains( "\0" ) ) {
+			throw new BoxRuntimeException( "Invalid request URI: [" + requestURI + "]. Null character detected." );
 		}
 
 		// Block access to Application files
