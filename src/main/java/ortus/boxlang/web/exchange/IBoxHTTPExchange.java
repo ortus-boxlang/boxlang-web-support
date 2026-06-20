@@ -358,6 +358,13 @@ public interface IBoxHTTPExchange {
 	public boolean isResponseStarted();
 
 	/**
+	 * Returns the cookies that have been added to the response, or an empty array if none.
+	 */
+	default BoxCookie[] getResponseCookies() {
+		return new BoxCookie[ 0 ];
+	}
+
+	/**
 	 * Adds the specified cookie to the response. This method can be called multiple times to set more than one cookie.
 	 *
 	 */
