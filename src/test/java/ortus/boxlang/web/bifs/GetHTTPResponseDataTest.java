@@ -73,8 +73,8 @@ public class GetHTTPResponseDataTest extends BaseWebTest {
 
 		runtime.executeSource( "result = getHTTPResponseData();", context );
 
-		IStruct data	= ( IStruct ) variables.get( result );
-		IStruct headers	= ( IStruct ) data.get( Key.of( "headers" ) );
+		IStruct	data	= ( IStruct ) variables.get( result );
+		IStruct	headers	= ( IStruct ) data.get( Key.of( "headers" ) );
 
 		assertThat( headers ).isNotNull();
 		assertThat( headers.getAsString( Key.of( "X-Custom-Header" ) ) ).isEqualTo( "myValue" );
@@ -92,8 +92,8 @@ public class GetHTTPResponseDataTest extends BaseWebTest {
 
 		runtime.executeSource( "result = getHTTPResponseData();", context );
 
-		IStruct data	= ( IStruct ) variables.get( result );
-		IStruct cookies	= ( IStruct ) data.get( Key.of( "cookies" ) );
+		IStruct	data	= ( IStruct ) variables.get( result );
+		IStruct	cookies	= ( IStruct ) data.get( Key.of( "cookies" ) );
 
 		assertThat( cookies ).isNotNull();
 		assertThat( cookies.containsKey( Key.of( "sessionId" ) ) ).isTrue();
@@ -114,8 +114,8 @@ public class GetHTTPResponseDataTest extends BaseWebTest {
 
 		runtime.executeSource( "result = getHTTPResponseData();", context );
 
-		IStruct data	= ( IStruct ) variables.get( result );
-		IStruct cookies	= ( IStruct ) data.get( Key.of( "cookies" ) );
+		IStruct	data	= ( IStruct ) variables.get( result );
+		IStruct	cookies	= ( IStruct ) data.get( Key.of( "cookies" ) );
 
 		assertThat( cookies.size() ).isEqualTo( 2 );
 		assertThat( cookies.containsKey( Key.of( "cookieA" ) ) ).isTrue();
@@ -127,10 +127,10 @@ public class GetHTTPResponseDataTest extends BaseWebTest {
 	public void testHeadersAndCookiesDefaultToEmptyStructs() {
 		runtime.executeSource( "result = getHTTPResponseData();", context );
 
-		IStruct data = ( IStruct ) variables.get( result );
+		IStruct	data	= ( IStruct ) variables.get( result );
 
-		IStruct headers	= ( IStruct ) data.get( Key.of( "headers" ) );
-		IStruct cookies	= ( IStruct ) data.get( Key.of( "cookies" ) );
+		IStruct	headers	= ( IStruct ) data.get( Key.of( "headers" ) );
+		IStruct	cookies	= ( IStruct ) data.get( Key.of( "cookies" ) );
 
 		assertThat( headers ).isNotNull();
 		assertThat( cookies ).isNotNull();

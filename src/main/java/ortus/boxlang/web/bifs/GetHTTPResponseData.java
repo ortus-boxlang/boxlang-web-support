@@ -28,7 +28,7 @@ import ortus.boxlang.web.exchange.IBoxHTTPExchange;
 @BoxBIF( description = "Retrieves HTTP response data such as status, headers, content type, and cookies." )
 public class GetHTTPResponseData extends BIF {
 
-	private static final String	DEFAULT_CONTENT_TYPE	= "text/html";
+	private static final String DEFAULT_CONTENT_TYPE = "text/html";
 
 	/**
 	 * Constructor
