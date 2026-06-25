@@ -96,10 +96,8 @@ public class WebRequestExecutor {
 
 			// set file name to lower case last segment, but avoid using a Path instance in case it's invalid at this point
 			String fileName = requestString.contains( "/" ) ? requestString.substring( requestString.lastIndexOf( "/" ) + 1 ) : requestString;
-			fileName = fileName.toLowerCase();
-			if ( fileName.contains( "." ) ) {
-				ext = fileName.substring( fileName.lastIndexOf( "." ) + 1 );
-			}
+			fileName	= fileName.toLowerCase();
+			ext			= extractExtension( fileName );
 
 			// Validate request URI for security issues
 			validateRequestURI( requestString, fileName );
@@ -116,22 +114,22 @@ public class WebRequestExecutor {
 				    KeyDictionary.requestString, requestString,
 				    KeyDictionary.exchange, exchange
 				);
-
 				interceptorService.announce(
 				    KeyDictionary.onWebExecutorRequest,
 				    interceptData
 				);
 
 				IStruct updatedRequest = interceptData.getAsStruct( KeyDictionary.updatedRequest );
-
 				if ( updatedRequest.getAsString( KeyDictionary.requestString ) != null ) {
 					String updatedRequestString = updatedRequest.getAsString( KeyDictionary.requestString );
+
 					if ( !updatedRequestString.equals( requestString ) ) {
 						if ( logger.isTraceEnabled() )
 							logger.trace( "WebRequestExecutor: Request string was updated by an interceptor from [" + requestString + "] to ["
 							    + updatedRequestString + "]" );
 						requestString	= updatedRequestString;
 						requestPath		= Path.of( requestString );
+						ext				= extractExtension( requestString );
 					}
 					String templatePath = updatedRequest.getAsString( KeyDictionary.templatePath );
 					if ( templatePath != null && !templatePath.isEmpty() && !templatePath.equals( requestString ) ) {
@@ -294,6 +292,19 @@ public class WebRequestExecutor {
 			RequestBoxContext.removeCurrent();
 			Thread.currentThread().setContextClassLoader( oldClassLoader );
 		}
+	}
+
+	/**
+	 * Extracts the file extension from a request string (lowercased).
+	 *
+	 * @param requestString The request string or file name to extract the extension from
+	 *
+	 * @return The file extension, or empty string if none
+	 */
+	private static String extractExtension( String requestString ) {
+		String fileName = requestString.contains( "/" ) ? requestString.substring( requestString.lastIndexOf( "/" ) + 1 ) : requestString;
+		fileName = fileName.toLowerCase();
+		return fileName.contains( "." ) ? fileName.substring( fileName.lastIndexOf( "." ) + 1 ) : "";
 	}
 
 	/**
