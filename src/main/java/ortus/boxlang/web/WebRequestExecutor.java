@@ -52,17 +52,24 @@ import ortus.boxlang.web.util.KeyDictionary;
 public class WebRequestExecutor {
 
 	// TODO: make this configurable and move cf extensions to compat
-	private static final Set<String>	VALID_REMOTE_REQUEST_EXTENSIONS	= Set.of( "cfc", "bx" );
+	private static final Set<String>	VALID_REMOTE_REQUEST_EXTENSIONS		= Set.of( "cfc", "bx" );
 
-	public static final String			DEFAULT_CONTENT_TYPE			= "text/html;charset=UTF-8";
+	public static final String			DEFAULT_CONTENT_TYPE				= "text/html;charset=UTF-8";
 
-	public static final String			CONTENT_TYPE_HEADER				= "Content-Type";
+	/**
+	 * null will decide based on the return format. Non-null will be used exactly.
+	 * This is not final so it can be overridden in compat. Since this is just to match CF's really dumb behavior,
+	 * it doesn't seem worth having any real setting to control it.
+	 */
+	public static String				DEFAULT_CLASS_REQUEST_CONTENT_TYPE	= null;
 
-	public static final String			CONTENT_DISPOSITION_HEADER		= "Content-Disposition";
+	public static final String			CONTENT_TYPE_HEADER					= "Content-Type";
 
-	public static final String			DEFAULT_BINARY_CONTENT_TYPE		= "application/octet-stream";
+	public static final String			CONTENT_DISPOSITION_HEADER			= "Content-Disposition";
 
-	private static final BoxLangLogger	logger							= BoxRuntime.getInstance().getLoggingService().RUNTIME_LOGGER;
+	public static final String			DEFAULT_BINARY_CONTENT_TYPE			= "application/octet-stream";
+
+	private static final BoxLangLogger	logger								= BoxRuntime.getInstance().getLoggingService().RUNTIME_LOGGER;
 
 	/**
 	 * Execute a web request
@@ -420,14 +427,20 @@ public class WebRequestExecutor {
 		    .map( Object::toString )
 		    .orElse( "plain" );
 
-		// Set appropriate content type based on return format
-		// If the content type is already set, the user has control and we don't override it
-		ensureContentType( exchange, switch ( returnFormat.toLowerCase() ) {
-			case "json" -> "application/json;charset=UTF-8";
-			case "xml", "wddx" -> "application/xml;charset=UTF-8";
-			case "plain" -> "text/html;charset=UTF-8";
-			case null, default -> "text/html;charset=UTF-8";
-		} );
+		// If null, set based on return format
+		if ( DEFAULT_CLASS_REQUEST_CONTENT_TYPE == null ) {
+			// Set appropriate content type based on return format
+			// If the content type is already set, the user has control and we don't override it
+			ensureContentType( exchange, switch ( returnFormat.toLowerCase() ) {
+				case "json" -> "application/json;charset=UTF-8";
+				case "xml", "wddx" -> "application/xml;charset=UTF-8";
+				case "plain" -> "text/html;charset=UTF-8";
+				case null, default -> "text/html;charset=UTF-8";
+			} );
+		} else {
+			// Use the default class request content type, most likely set by the compat module
+			ensureContentType( exchange, DEFAULT_CLASS_REQUEST_CONTENT_TYPE );
+		}
 	}
 
 }
