@@ -26,7 +26,6 @@ import java.util.UUID;
 
 import ortus.boxlang.runtime.BoxRuntime;
 import ortus.boxlang.runtime.context.IBoxContext;
-import ortus.boxlang.runtime.context.IBoxContext.ScopeSearchResult;
 import ortus.boxlang.runtime.context.RequestBoxContext;
 import ortus.boxlang.runtime.dynamic.casters.BooleanCaster;
 import ortus.boxlang.runtime.dynamic.casters.StringCaster;
@@ -520,12 +519,15 @@ public class WebRequestBoxContext extends RequestBoxContext {
 		}
 
 		// Send our session cookie, if not already done, in order to keep alive the session and forward the expiration
-		synchronized ( this ) {
-			if ( !sessionCookieProvided ) {
-				// Ensure session cookie is sent if not already
-				BoxCookie sessionCookie = generateSessionCookie( getSessionID(), null );
-				httpExchange.addResponseCookie( sessionCookie );
-				sessionCookieProvided = true;
+		if ( BooleanCaster.attempt( getApplicationListener().getSettings().getOrDefault( Key.sessionManagement, false ) ).getOrDefault( false )
+		    && BooleanCaster.attempt( getConfig().getOrDefault( Key.setClientCookies, true ) ).getOrDefault( false ) ) {
+			synchronized ( this ) {
+				if ( !sessionCookieProvided ) {
+					// Ensure session cookie is sent if not already
+					BoxCookie sessionCookie = generateSessionCookie( getSessionID(), null );
+					httpExchange.addResponseCookie( sessionCookie );
+					sessionCookieProvided = true;
+				}
 			}
 		}
 
@@ -646,7 +648,8 @@ public class WebRequestBoxContext extends RequestBoxContext {
 		String contentTypeHeader = httpExchange.getResponseHeader( "Content-Type" );
 		// Note, Lucee will NOT trim whitespace on text/plain, but will for text/html. Adobe seems much more liberal and will trim for both.
 		// If this becomes a compat issue, then introduce a setting for the content type prefixes to trim whitespace for.
-		if ( contentTypeHeader != null && contentTypeHeader.startsWith( "text/" ) ) {
+		if ( contentTypeHeader != null && ( contentTypeHeader.startsWith( "text/" )
+		    || contentTypeHeader.startsWith( "application/json" ) ) ) {
 			return true;
 		}
 		// It's another content type like binary or JSON, etc

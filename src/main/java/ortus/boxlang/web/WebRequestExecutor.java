@@ -24,9 +24,9 @@ import java.util.Set;
 
 import ortus.boxlang.runtime.BoxRuntime;
 import ortus.boxlang.runtime.application.BaseApplicationListener;
+import ortus.boxlang.runtime.bifs.global.decision.IsJSON;
 import ortus.boxlang.runtime.context.RequestBoxContext;
 import ortus.boxlang.runtime.dynamic.casters.StringCaster;
-import ortus.boxlang.runtime.dynamic.casters.StructCaster;
 import ortus.boxlang.runtime.interop.DynamicObject;
 import ortus.boxlang.runtime.logging.BoxLangLogger;
 import ortus.boxlang.runtime.scopes.Key;
@@ -52,17 +52,24 @@ import ortus.boxlang.web.util.KeyDictionary;
 public class WebRequestExecutor {
 
 	// TODO: make this configurable and move cf extensions to compat
-	private static final Set<String>	VALID_REMOTE_REQUEST_EXTENSIONS	= Set.of( "cfc", "bx" );
+	private static final Set<String>	VALID_REMOTE_REQUEST_EXTENSIONS		= Set.of( "cfc", "bx" );
 
-	public static final String			DEFAULT_CONTENT_TYPE			= "text/html;charset=UTF-8";
+	public static final String			DEFAULT_CONTENT_TYPE				= "text/html;charset=UTF-8";
 
-	public static final String			CONTENT_TYPE_HEADER				= "Content-Type";
+	/**
+	 * null will decide based on the return format. Non-null will be used exactly.
+	 * This is not final so it can be overridden in compat. Since this is just to match CF's really dumb behavior,
+	 * it doesn't seem worth having any real setting to control it.
+	 */
+	public static String				DEFAULT_CLASS_REQUEST_CONTENT_TYPE	= null;
 
-	public static final String			CONTENT_DISPOSITION_HEADER		= "Content-Disposition";
+	public static final String			CONTENT_TYPE_HEADER					= "Content-Type";
 
-	public static final String			DEFAULT_BINARY_CONTENT_TYPE		= "application/octet-stream";
+	public static final String			CONTENT_DISPOSITION_HEADER			= "Content-Disposition";
 
-	private static final BoxLangLogger	logger							= BoxRuntime.getInstance().getLoggingService().RUNTIME_LOGGER;
+	public static final String			DEFAULT_BINARY_CONTENT_TYPE			= "application/octet-stream";
+
+	private static final BoxLangLogger	logger								= BoxRuntime.getInstance().getLoggingService().RUNTIME_LOGGER;
 
 	/**
 	 * Execute a web request
@@ -86,7 +93,6 @@ public class WebRequestExecutor {
 
 			// Target Detection
 			String				ext					= "";
-			Path				requestPath			= Path.of( requestString );
 			InterceptorService	interceptorService	= BoxRuntime.getInstance().getInterceptorService();
 
 			// Load up the runtime, context and app listener
@@ -94,6 +100,15 @@ public class WebRequestExecutor {
 			RequestBoxContext.setCurrent( context );
 
 			trans = frTransService.startTransaction( "Web Request", requestString );
+
+			// set file name to lower case last segment, but avoid using a Path instance in case it's invalid at this point
+			String fileName = requestString.contains( "/" ) ? requestString.substring( requestString.lastIndexOf( "/" ) + 1 ) : requestString;
+			fileName	= fileName.toLowerCase();
+			ext			= extractExtension( fileName );
+
+			// Validate request URI for security issues
+			validateRequestURI( requestString, fileName );
+			Path requestPath = Path.of( requestString );
 
 			// Allow interceptors to modify the request before we do anything with it.
 			// This allows for modules with front controllers to execute inbound requests
@@ -106,22 +121,22 @@ public class WebRequestExecutor {
 				    KeyDictionary.requestString, requestString,
 				    KeyDictionary.exchange, exchange
 				);
-
 				interceptorService.announce(
 				    KeyDictionary.onWebExecutorRequest,
 				    interceptData
 				);
 
 				IStruct updatedRequest = interceptData.getAsStruct( KeyDictionary.updatedRequest );
-
 				if ( updatedRequest.getAsString( KeyDictionary.requestString ) != null ) {
 					String updatedRequestString = updatedRequest.getAsString( KeyDictionary.requestString );
+
 					if ( !updatedRequestString.equals( requestString ) ) {
 						if ( logger.isTraceEnabled() )
 							logger.trace( "WebRequestExecutor: Request string was updated by an interceptor from [" + requestString + "] to ["
 							    + updatedRequestString + "]" );
 						requestString	= updatedRequestString;
 						requestPath		= Path.of( requestString );
+						ext				= extractExtension( requestString );
 					}
 					String templatePath = updatedRequest.getAsString( KeyDictionary.templatePath );
 					if ( templatePath != null && !templatePath.isEmpty() && !templatePath.equals( requestString ) ) {
@@ -138,14 +153,6 @@ public class WebRequestExecutor {
 			if ( appListener == null ) {
 				appListener = initializeApplicationListener( context, requestString );
 			}
-
-			String fileName = requestPath.getFileName().toString().toLowerCase();
-			if ( fileName.contains( "." ) ) {
-				ext = fileName.substring( fileName.lastIndexOf( "." ) + 1 );
-			}
-
-			// Validate request URI for security issues
-			validateRequestURI( requestString, fileName );
 
 			// Pass through to the Application.bx onRequestStart method
 			boolean result = appListener.onRequestStart( context, new Object[] { requestString } );
@@ -286,10 +293,25 @@ public class WebRequestExecutor {
 			if ( frTransService != null ) {
 				frTransService.endTransaction( trans );
 			}
-			context.shutdown();
+			if ( context != null ) {
+				context.shutdown();
+			}
 			RequestBoxContext.removeCurrent();
 			Thread.currentThread().setContextClassLoader( oldClassLoader );
 		}
+	}
+
+	/**
+	 * Extracts the file extension from a request string (lowercased).
+	 *
+	 * @param requestString The request string or file name to extract the extension from
+	 *
+	 * @return The file extension, or empty string if none
+	 */
+	private static String extractExtension( String requestString ) {
+		String fileName = requestString.contains( "/" ) ? requestString.substring( requestString.lastIndexOf( "/" ) + 1 ) : requestString;
+		fileName = fileName.toLowerCase();
+		return fileName.contains( "." ) ? fileName.substring( fileName.lastIndexOf( "." ) + 1 ) : "";
 	}
 
 	/**
@@ -304,7 +326,8 @@ public class WebRequestExecutor {
 	 */
 	private static BaseApplicationListener initializeApplicationListener( WebRequestBoxContext context, String requestString ) {
 		try {
-			context.loadApplicationDescriptor( new URI( requestString ) );
+			// Use multi-arg URI constructor to ensure special chars get encoded properly in the request string
+			context.loadApplicationDescriptor( new URI( null, null, requestString, null, null ) );
 			BaseApplicationListener appListener = context.getApplicationListener();
 			return appListener;
 
@@ -347,6 +370,11 @@ public class WebRequestExecutor {
 			throw new BoxRuntimeException( "Invalid request URI: [" + requestURI + "]. Path traversal detected." );
 		}
 
+		// Check for null chars
+		if ( requestURI.contains( "\0" ) ) {
+			throw new BoxRuntimeException( "Invalid request URI: [" + requestURI + "]. Null character detected." );
+		}
+
 		// Block access to Application files
 		if ( fileName.equals( "application.bx" ) ||
 		    fileName.equals( "application.bxm" ) ||
@@ -378,17 +406,8 @@ public class WebRequestExecutor {
 		args.addAll( context.getScope( FormScope.name ) );
 		args.addAll( context.getScope( URLScope.name ) );
 
-		if ( args.containsKey( Key.argumentCollection ) ) {
-			try {
-				IStruct argCollection = StructCaster.cast( JSONUtil.fromJSON( StringCaster.cast( args.get( Key.argumentCollection ) ), true ) );
-				args.addAll( argCollection );
-				args.remove( Key.argumentCollection );
-			} catch ( AbortException ae ) {
-				// re-throw this
-				throw ae;
-			} catch ( Exception e ) {
-				throw new BoxRuntimeException( "Remote method invocation failed. Unable to parse argumentCollection JSON: " + e.getMessage(), e );
-			}
+		if ( args.containsKey( Key.argumentCollection ) && IsJSON.isJSON( StringCaster.cast( args.get( Key.argumentCollection ) ) ) ) {
+			args.put( Key.argumentCollection, JSONUtil.fromJSON( StringCaster.cast( args.get( Key.argumentCollection ) ), true ) );
 		}
 
 		// Remove framework-specific parameters
@@ -408,14 +427,20 @@ public class WebRequestExecutor {
 		    .map( Object::toString )
 		    .orElse( "plain" );
 
-		// Set appropriate content type based on return format
-		// If the content type is already set, the user has control and we don't override it
-		ensureContentType( exchange, switch ( returnFormat.toLowerCase() ) {
-			case "json" -> "application/json;charset=UTF-8";
-			case "xml", "wddx" -> "application/xml;charset=UTF-8";
-			case "plain" -> "text/html;charset=UTF-8";
-			case null, default -> "text/html;charset=UTF-8";
-		} );
+		// If null, set based on return format
+		if ( DEFAULT_CLASS_REQUEST_CONTENT_TYPE == null ) {
+			// Set appropriate content type based on return format
+			// If the content type is already set, the user has control and we don't override it
+			ensureContentType( exchange, switch ( returnFormat.toLowerCase() ) {
+				case "json" -> "application/json;charset=UTF-8";
+				case "xml", "wddx" -> "application/xml;charset=UTF-8";
+				case "plain" -> "text/html;charset=UTF-8";
+				case null, default -> "text/html;charset=UTF-8";
+			} );
+		} else {
+			// Use the default class request content type, most likely set by the compat module
+			ensureContentType( exchange, DEFAULT_CLASS_REQUEST_CONTENT_TYPE );
+		}
 	}
 
 }

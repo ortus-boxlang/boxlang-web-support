@@ -69,16 +69,12 @@ public interface IBoxHTTPExchange {
 		contentType = contentType.trim().toLowerCase( Locale.ROOT );
 
 		return contentType.startsWith( "text/" )
-		    || contentType.equals( "application/json" )
-		    || contentType.equals( "application/ld+json" )
-		    || contentType.equals( "application/vnd.api+json" )
-		    || contentType.equals( "application/hal+json" )
-		    || contentType.equals( "application/problem+json" )
-		    || contentType.equals( "application/problem+xml" )
-		    || contentType.equals( "application/xml" )
-		    || contentType.equals( "application/xhtml+xml" )
-		    || contentType.equals( "application/rss+xml" )
-		    || contentType.equals( "application/atom+xml" )
+		    // application/json, application/ld+json,
+		    // application/vnd.api+json, application/hal+json, application/problem+json,
+		    // application/problem+xml, application/xml, application/soap+xml,
+		    // application/xhtml+xml, application/rss+xml, and application/atom+xml.
+		    || ( contentType.startsWith( "application/" )
+		        && ( contentType.endsWith( "json" ) || contentType.endsWith( "xml" ) ) )
 		    || contentType.equals( "application/x-www-form-urlencoded" )
 		    || contentType.equals( "application/javascript" )
 		    || contentType.equals( "application/graphql" )
@@ -360,6 +356,13 @@ public interface IBoxHTTPExchange {
 	 * @return true if the response has been started, false otherwise
 	 */
 	public boolean isResponseStarted();
+
+	/**
+	 * Returns the cookies that have been added to the response, or an empty array if none.
+	 */
+	default BoxCookie[] getResponseCookies() {
+		return new BoxCookie[ 0 ];
+	}
 
 	/**
 	 * Adds the specified cookie to the response. This method can be called multiple times to set more than one cookie.
