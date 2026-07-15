@@ -22,20 +22,22 @@ import java.io.Writer;
 
 public class WhitespaceManagingPrintWriter extends PrintWriter {
 
-	private boolean			enable						= true;  // Flag to toggle behavior on/off
-	private boolean			preserveWhitespace			= false;  // Flag to control whitespace compression
-	private StringBuilder	tagBuffer					= new StringBuilder();
-	private boolean			inTag						= false;  // Flag to indicate whether we are inside a tag
-	private boolean			closeTag					= false;  // Flag to track if it's a closing tag (starts with '/')
-	private boolean			firstTagChar				= true;  // Flag to track if we are processing the first tag character
-	private boolean			previousCharWasWhitespace	= true;  // Flag to track if the previous character was whitespace (start true to strip leading
-	                                                             // whitespace)
+	private boolean			enable					= true; // Flag to toggle behavior on/off
+	private boolean			preserveWhitespace		= false; // Flag to control whitespace compression
+	private StringBuilder	tagBuffer				= new StringBuilder();
+	private boolean			inTag					= false; // Flag to indicate whether we are inside a tag
+	private boolean			closeTag				= false; // Flag to track if it's a closing tag (starts with '/')
+	private boolean			firstTagChar			= true; // Flag to track if we are processing the first tag character
+	private boolean			lineHasContent			= false;
+	private boolean			lastOutputWasLineBreak	= false;
+	private StringBuilder	pendingWhitespace		= new StringBuilder();
 
 	// Constructor with an additional parameter to toggle whitespace compression
 	public WhitespaceManagingPrintWriter( Writer out, boolean enable ) {
 		super( out );
 		this.enable = enable;
-		// System.out.println( "Whitespace compression is " + ( enable ? "enabled" : "disabled" ) );
+		// System.out.println( "Whitespace compression is " + ( enable ? "enabled" :
+		// "disabled" ) );
 	}
 
 	@Override
@@ -58,12 +60,14 @@ public class WhitespaceManagingPrintWriter extends PrintWriter {
 	}
 
 	private void processChar( char ch ) {
-		// System.out.println( "Processing character: " + ( ch + "" ) + "(" + ( int ) ch + ") enable is: " + enable + " inTag is: " + inTag
+		// System.out.println( "Processing character: " + ( ch + "" ) + "(" + ( int ) ch
+		// + ") enable is: " + enable + " inTag is: " + inTag
 		// + " preserveWhitespace is: " + preserveWhitespace
-		// + " closeTag is: " + closeTag + " firstTagChar is: " + firstTagChar + " previousCharWasWhitespace is: " + previousCharWasWhitespace );
+		// + " closeTag is: " + closeTag + " firstTagChar is: " + firstTagChar + "
+		// previousCharWasWhitespace is: " + previousCharWasWhitespace );
 		// If whitespace compression is off, just write the character as-is
 		if ( !enable ) {
-			super.write( ch );  // Directly write the character to the underlying writer
+			super.write( ch ); // Directly write the character to the underlying writer
 			return;
 		}
 
@@ -74,8 +78,7 @@ public class WhitespaceManagingPrintWriter extends PrintWriter {
 			// If it's a closing tag, handle it
 			if ( firstTagChar && ch == '/' ) {
 				closeTag = true;
-				super.write( ch );  // Write the '/' for the closing tag
-				previousCharWasWhitespace = isWS;
+				writeManaged( ch ); // Write the '/' for the closing tag
 				return;
 			}
 
@@ -83,15 +86,14 @@ public class WhitespaceManagingPrintWriter extends PrintWriter {
 			if ( firstTagChar && !isWS && ch != '>' ) {
 				// If the first character isn't 'p', 'c', 't', or 's', abort the tag
 				if ( ! ( ch == 'p' || ch == 'c' || ch == 't' || ch == 's' ) ) {
-					inTag = false;  // Stop tracking the tag
-					super.write( ch );
-					previousCharWasWhitespace = isWS;
+					inTag = false; // Stop tracking the tag
+					writeManaged( ch );
 					return;
 				}
 			}
 
 			if ( !isWS && ch != '>' ) {
-				tagBuffer.append( Character.toLowerCase( ch ) );  // Lowercase the tag name immediately
+				tagBuffer.append( Character.toLowerCase( ch ) ); // Lowercase the tag name immediately
 			}
 			firstTagChar = false;
 
@@ -102,14 +104,15 @@ public class WhitespaceManagingPrintWriter extends PrintWriter {
 				// System.out.println( "Tag name: " + tagName );
 
 				// Handle opening <pre>, <code>, <textarea>, or <script> tags
-				if ( "pre".equals( tagName ) || "code".equals( tagName ) || "textarea".equals( tagName ) || "script".equals( tagName ) ) {
+				if ( "pre".equals( tagName ) || "code".equals( tagName ) || "textarea".equals( tagName )
+				    || "script".equals( tagName ) ) {
 					preserveWhitespace = !closeTag;
 				}
 
-				inTag = false;  // Stop processing this tag
+				inTag = false; // Stop processing this tag
 			}
 
-			super.write( ch );  // Write the regular character to the underlying writer
+			writeManaged( ch ); // Write the regular character to the underlying writer
 		} else {
 
 			// We're starting a tag
@@ -117,34 +120,95 @@ public class WhitespaceManagingPrintWriter extends PrintWriter {
 				inTag			= true;
 				closeTag		= false;
 				firstTagChar	= true;
-				tagBuffer.setLength( 0 );  // Clear the tag buffer for new tag
-				super.write( ch );  // Write the '<' character directly
-				previousCharWasWhitespace = isWS;
+				tagBuffer.setLength( 0 ); // Clear the tag buffer for new tag
+				flushPendingWhitespace();
+				writeDirect( ch ); // Write the '<' character directly
 				return;
 			}
 
 			// Handle characters outside of tags (regular content)
-			if ( !preserveWhitespace ) {
-				// Collapse extra whitespace into one space
-				if ( isWS && previousCharWasWhitespace ) {
-					previousCharWasWhitespace = isWS;
-					return;  // Skip extra whitespace
-				}
+			if ( preserveWhitespace ) {
+				flushPendingWhitespace( true );
+				writeDirect( ch );
+				return;
 			}
 
-			super.write( ch );  // Write the regular character to the underlying writer
+			if ( isWS ) {
+				if ( ch == '\r' || ch == '\n' ) {
+					if ( lineHasContent ) {
+						flushPendingWhitespace();
+						writeDirect( ch );
+					} else {
+						pendingWhitespace.setLength( 0 );
+						if ( !lastOutputWasLineBreak ) {
+							writeDirect( ch );
+						}
+					}
+				} else {
+					pendingWhitespace.append( ch );
+				}
+				return;
+			}
+
+			flushPendingWhitespace();
+			writeDirect( ch ); // Write the regular character to the underlying writer
 		}
-		previousCharWasWhitespace = isWS;
+		// previousCharWasWhitespace = isWS; // This line is no longer needed
+	}
+
+	private void flushPendingWhitespace() {
+		flushPendingWhitespace( false );
+	}
+
+	private void flushPendingWhitespace( boolean preserveLeadingWhitespace ) {
+		if ( pendingWhitespace.length() > 0 ) {
+			if ( preserveLeadingWhitespace || lineHasContent ) {
+				for ( int i = 0; i < pendingWhitespace.length(); i++ ) {
+					writeDirect( pendingWhitespace.charAt( i ) );
+				}
+			}
+			pendingWhitespace.setLength( 0 );
+		}
+	}
+
+	private void writeManaged( char ch ) {
+		if ( ch == '\r' || ch == '\n' ) {
+			if ( lineHasContent ) {
+				flushPendingWhitespace();
+				writeDirect( ch );
+			} else {
+				pendingWhitespace.setLength( 0 );
+				if ( !lastOutputWasLineBreak ) {
+					writeDirect( ch );
+				}
+			}
+		} else if ( Character.isWhitespace( ch ) ) {
+			pendingWhitespace.append( ch );
+		} else {
+			flushPendingWhitespace();
+			writeDirect( ch );
+		}
+	}
+
+	private void writeDirect( char ch ) {
+		super.write( ch );
+		if ( ch == '\r' || ch == '\n' ) {
+			lineHasContent			= false;
+			lastOutputWasLineBreak	= true;
+		} else {
+			lineHasContent			= true;
+			lastOutputWasLineBreak	= false;
+		}
 	}
 
 	@Override
 	public void flush() {
-		super.flush();  // Only flush the underlying buffer when explicitly called
+		super.flush(); // Only flush the underlying buffer when explicitly called
 	}
 
 	@Override
 	public void close() {
-		flush();  // Ensure flushing before closing
+		flush(); // Ensure flushing before closing
 		super.close();
 	}
 
