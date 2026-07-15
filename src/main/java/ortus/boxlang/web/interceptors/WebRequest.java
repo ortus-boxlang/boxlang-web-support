@@ -66,22 +66,26 @@ public class WebRequest extends BaseInterceptor {
 	 *
 	 * @data.mimetype The MIME type of the content, defaults to text/html
 	 *
-	 * @data.fileName An optional filename of the file to be written. When provided the content is written as an attachment
+	 * @data.fileName An optional filename of the file to be written. When provided
+	 *                the content is written as an attachment
 	 *
-	 * @data.reset A flag to determine if the buffer should be reset before writing the content
+	 * @data.reset A flag to determine if the buffer should be reset before writing
+	 *             the content
 	 *
-	 * @data.abort A flag to determine if the request should be aborted after writing the content
+	 * @data.abort A flag to determine if the request should be aborted after
+	 *             writing the content
 	 */
 	@InterceptionPoint
 	public void writeToBrowser( IStruct data ) {
-		String		disposition	= "inline";
-		IBoxContext	context		= ( IBoxContext ) data.get( Key.context );
+		IBoxContext context = ( IBoxContext ) data.get( Key.context );
 		if ( context == null ) {
-			throw new BoxRuntimeException( "A context is required in the intercept data in order to announce this interception" );
+			throw new BoxRuntimeException(
+			    "A context is required in the intercept data in order to announce this interception" );
 		}
 		Object content = data.get( Key.content );
 		if ( content == null ) {
-			throw new BoxRuntimeException( "A request to write to the browser was announced, but no content to write was provided." );
+			throw new BoxRuntimeException(
+			    "A request to write to the browser was announced, but no content to write was provided." );
 		}
 		WebRequestBoxContext	requestContext	= context.getParentOfType( WebRequestBoxContext.class );
 		IBoxHTTPExchange		exchange		= requestContext.getHTTPExchange();
@@ -89,11 +93,16 @@ public class WebRequest extends BaseInterceptor {
 		Boolean					reset			= BooleanCaster.cast( data.getOrDefault( Key.reset, false ) );
 		Boolean					abort			= BooleanCaster.cast( data.getOrDefault( Key.abort, false ) );
 		String					fileName		= data.getAsString( KeyDictionary.fileName );
+		String					disposition		= StringCaster.cast( data.getOrDefault( KeyDictionary.disposition, "" ) );
 
-		if ( fileName != null ) {
-			disposition = "attachment";
-		} else {
-			// TODO: We are going to need to develop a list of well-known MIME to extensions to support some of the crazy MS office mime types
+		if ( disposition == null || disposition.isBlank() ) {
+			disposition = fileName != null ? "attachment" : "inline";
+		}
+		disposition = disposition.toLowerCase();
+
+		if ( fileName == null ) {
+			// TODO: We are going to need to develop a list of well-known MIME to extensions
+			// to support some of the crazy MS office mime types
 			fileName = "document." + mimeType.substring( mimeType.indexOf( "/" ) + 1 );
 		}
 
@@ -111,7 +120,8 @@ public class WebRequest extends BaseInterceptor {
 		exchange.setResponseHeader( WebRequestExecutor.CONTENT_TYPE_HEADER, mimeType );
 		// only add disposition header if one hasn't already been set.
 		if ( exchange.getResponseHeader( WebRequestExecutor.CONTENT_DISPOSITION_HEADER ) == null ) {
-			exchange.setResponseHeader( WebRequestExecutor.CONTENT_DISPOSITION_HEADER, disposition + "; filename=" + fileName );
+			exchange.setResponseHeader( WebRequestExecutor.CONTENT_DISPOSITION_HEADER,
+			    disposition + "; filename=" + fileName );
 		}
 
 		exchange.sendResponseBinary( contentBytes );
@@ -150,8 +160,8 @@ public class WebRequest extends BaseInterceptor {
 
 		data.put(
 		    Key.response,
-		    runtime.getFunctionService().getGlobalFunction( BIFMethod ).invoke( context, attributes, false, BIFMethod )
-		);
+		    runtime.getFunctionService().getGlobalFunction( BIFMethod ).invoke( context, attributes, false,
+		        BIFMethod ) );
 
 	}
 
@@ -175,23 +185,24 @@ public class WebRequest extends BaseInterceptor {
 
 			if ( context.getParentOfType( WebRequestBoxContext.class ) == null ) {
 				throw new BoxRuntimeException(
-				    String.format( "The specified cache action [%s] is is not valid in a non-web runtime", cacheAction.toString().toLowerCase() ) );
+				    String.format( "The specified cache action [%s] is is not valid in a non-web runtime",
+				        cacheAction.toString().toLowerCase() ) );
 			} else {
 				String cacheDirective = null;
 				if ( cacheAction.equals( CacheAction.SERVERCACHE ) ) {
-					cacheDirective = timespan == null ? "server" : "s-max-age=" + DoubleCaster.cast( timespan * Cache.SECONDS_IN_DAY ).intValue();
+					cacheDirective = timespan == null ? "server"
+					    : "s-max-age=" + DoubleCaster.cast( timespan * Cache.SECONDS_IN_DAY ).intValue();
 				} else if ( cacheAction.equals( CacheAction.CLIENTCACHE ) ) {
-					cacheDirective = timespan == null ? "private" : "max-age=" + DoubleCaster.cast( timespan * Cache.SECONDS_IN_DAY ).intValue();
+					cacheDirective = timespan == null ? "private"
+					    : "max-age=" + DoubleCaster.cast( timespan * Cache.SECONDS_IN_DAY ).intValue();
 				}
 				if ( cacheDirective != null ) {
 					componentService.getComponent( Key.header ).invoke(
 					    context,
 					    Struct.of(
 					        Key._NAME, "Cache-Control",
-					        Key.value, cacheDirective
-					    ),
-					    body
-					);
+					        Key.value, cacheDirective ),
+					    body );
 					data.put( Key.result, cacheDirective );
 				}
 			}
