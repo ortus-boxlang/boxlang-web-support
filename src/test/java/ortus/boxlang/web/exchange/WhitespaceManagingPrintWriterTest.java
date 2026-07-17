@@ -18,7 +18,7 @@ public class WhitespaceManagingPrintWriterTest {
 		}
 
 		String result = output.toString();
-		assertThat( result ).isEqualTo( "<select\nname=\"test\"\nonchange=\"\nif (!this.disabled)\n{\nSetBaseRt();\n}\n\">\nbrad\n" );
+		assertThat( result ).isEqualTo( "<select\nname=\"test\"\nonchange=\"\nif (!this.disabled)\n{\nSetBaseRt();\n}\n\">\nbrad" );
 	}
 
 	@Test
@@ -29,7 +29,7 @@ public class WhitespaceManagingPrintWriterTest {
 			writer.flush();
 		}
 
-		assertThat( output.toString() ).isEqualTo( "<script>\n\n\tvar value = 1;\n\n\n</script>\n" );
+		assertThat( output.toString() ).isEqualTo( "<script>\n\n\tvar value = 1;\n\n\n</script>" );
 	}
 
 	@Test
@@ -41,6 +41,16 @@ public class WhitespaceManagingPrintWriterTest {
 		}
 
 		assertThat( output.toString() ).isEqualTo( input );
+	}
+
+	@Test
+	public void trimsLeadingAndTrailingWhitespaceFromSimpleResponse() {
+		StringWriter output = new StringWriter();
+		try ( WhitespaceManagingPrintWriter writer = new WhitespaceManagingPrintWriter( output, true ) ) {
+			writer.write( "\ntest\n" );
+		}
+
+		assertThat( output.toString() ).isEqualTo( "test" );
 	}
 
 	@Test

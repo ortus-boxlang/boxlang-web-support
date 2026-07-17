@@ -30,6 +30,8 @@ public class WhitespaceManagingPrintWriter extends PrintWriter {
 	private boolean			firstTagChar			= true; // Flag to track if we are processing the first tag character
 	private boolean			lineHasContent			= false;
 	private boolean			lastOutputWasLineBreak	= false;
+	private boolean			responseHasContent		= false;
+	private Character		deferredLineBreak		= null;
 	private StringBuilder	pendingWhitespace		= new StringBuilder();
 
 	// Constructor with an additional parameter to toggle whitespace compression
@@ -121,6 +123,7 @@ public class WhitespaceManagingPrintWriter extends PrintWriter {
 				closeTag		= false;
 				firstTagChar	= true;
 				tagBuffer.setLength( 0 ); // Clear the tag buffer for new tag
+				flushDeferredLineBreak();
 				flushPendingWhitespace();
 				writeDirect( ch ); // Write the '<' character directly
 				return;
@@ -128,6 +131,7 @@ public class WhitespaceManagingPrintWriter extends PrintWriter {
 
 			// Handle characters outside of tags (regular content)
 			if ( preserveWhitespace ) {
+				flushDeferredLineBreak();
 				flushPendingWhitespace( true );
 				writeDirect( ch );
 				return;
@@ -135,21 +139,14 @@ public class WhitespaceManagingPrintWriter extends PrintWriter {
 
 			if ( isWS ) {
 				if ( ch == '\r' || ch == '\n' ) {
-					if ( lineHasContent ) {
-						flushPendingWhitespace();
-						writeDirect( ch );
-					} else {
-						pendingWhitespace.setLength( 0 );
-						if ( !lastOutputWasLineBreak ) {
-							writeDirect( ch );
-						}
-					}
+					handleLineBreak( ch );
 				} else {
 					pendingWhitespace.append( ch );
 				}
 				return;
 			}
 
+			flushDeferredLineBreak();
 			flushPendingWhitespace();
 			writeDirect( ch ); // Write the regular character to the underlying writer
 		}
@@ -173,25 +170,49 @@ public class WhitespaceManagingPrintWriter extends PrintWriter {
 
 	private void writeManaged( char ch ) {
 		if ( ch == '\r' || ch == '\n' ) {
-			if ( lineHasContent ) {
-				flushPendingWhitespace();
-				writeDirect( ch );
-			} else {
-				pendingWhitespace.setLength( 0 );
-				if ( !lastOutputWasLineBreak ) {
-					writeDirect( ch );
-				}
-			}
+			handleLineBreak( ch );
 		} else if ( Character.isWhitespace( ch ) ) {
 			pendingWhitespace.append( ch );
 		} else {
+			flushDeferredLineBreak();
 			flushPendingWhitespace();
 			writeDirect( ch );
 		}
 	}
 
+	private void handleLineBreak( char ch ) {
+		if ( !responseHasContent ) {
+			pendingWhitespace.setLength( 0 );
+			return;
+		}
+
+		if ( lineHasContent ) {
+			flushPendingWhitespace();
+			deferredLineBreak		= ch;
+			lineHasContent			= false;
+			lastOutputWasLineBreak	= true;
+			return;
+		}
+
+		pendingWhitespace.setLength( 0 );
+		if ( deferredLineBreak == null && !lastOutputWasLineBreak ) {
+			deferredLineBreak		= ch;
+			lastOutputWasLineBreak	= true;
+		}
+	}
+
+	private void flushDeferredLineBreak() {
+		if ( deferredLineBreak != null ) {
+			writeDirect( deferredLineBreak.charValue() );
+			deferredLineBreak = null;
+		}
+	}
+
 	private void writeDirect( char ch ) {
 		super.write( ch );
+		if ( !Character.isWhitespace( ch ) ) {
+			responseHasContent = true;
+		}
 		if ( ch == '\r' || ch == '\n' ) {
 			lineHasContent			= false;
 			lastOutputWasLineBreak	= true;
