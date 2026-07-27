@@ -17,12 +17,9 @@
  */
 package ortus.boxlang.web.scopes;
 
-import java.util.Date;
-
 import ortus.boxlang.runtime.context.IBoxContext;
 import ortus.boxlang.runtime.dynamic.casters.BooleanCaster;
 import ortus.boxlang.runtime.dynamic.casters.CastAttempt;
-import ortus.boxlang.runtime.dynamic.casters.DateTimeCaster;
 import ortus.boxlang.runtime.dynamic.casters.IntegerCaster;
 import ortus.boxlang.runtime.dynamic.casters.StringCaster;
 import ortus.boxlang.runtime.dynamic.casters.StructCaster;
@@ -91,7 +88,7 @@ public class CookieScope extends BaseScope {
 		String					path			= "/";
 		String					domain			= null;
 		Integer					maxAge			= null;
-		Date					expires			= null;
+		Object					expires			= null;
 		boolean					secure			= false;
 		boolean					httpOnly		= false;
 		int						version			= 0;
@@ -113,7 +110,7 @@ public class CookieScope extends BaseScope {
 				maxAge = IntegerCaster.cast( cookieData.get( maxAgeKey ) );
 			}
 			if ( cookieData.containsKey( Key.expires ) ) {
-				expires = Date.from( DateTimeCaster.cast( cookieData.get( Key.expires ) ).toInstant() );
+				expires = cookieData.get( Key.expires );
 			}
 			if ( cookieData.containsKey( Key.secure ) ) {
 				secure = BooleanCaster.cast( cookieData.get( Key.secure ) );
@@ -136,17 +133,16 @@ public class CookieScope extends BaseScope {
 
 		this.put( key, cookieValue );
 		// If the incoming value was just a struct, most of these will just be defaults
-		getExchange().addResponseCookie(
-		    new BoxCookie( key.getName(), cookieValue )
-		        .setPath( path )
-		        .setDomain( domain )
-		        .setMaxAge( maxAge )
-		        .setSecure( secure )
-		        .setVersion( version )
-		        .setHttpOnly( httpOnly )
-		        .setExpires( expires )
-		        .setSameSiteMode( sameSiteMode )
-		);
+		BoxCookie cookie = new BoxCookie( key.getName(), cookieValue )
+		    .setPath( path )
+		    .setDomain( domain )
+		    .setMaxAge( maxAge )
+		    .setSecure( secure )
+		    .setVersion( version )
+		    .setHttpOnly( httpOnly )
+		    .setSameSiteMode( sameSiteMode );
+		BoxCookie.applyExpires( cookie, expires );
+		getExchange().addResponseCookie( cookie );
 		return value;
 	}
 }
