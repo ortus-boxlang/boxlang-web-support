@@ -17,21 +17,14 @@
  */
 package ortus.boxlang.web.components;
 
-import java.time.Duration;
 import java.util.Set;
 
 import ortus.boxlang.runtime.components.Attribute;
 import ortus.boxlang.runtime.components.BoxComponent;
 import ortus.boxlang.runtime.components.Component;
 import ortus.boxlang.runtime.context.IBoxContext;
-import ortus.boxlang.runtime.dynamic.casters.CastAttempt;
-import ortus.boxlang.runtime.dynamic.casters.DateTimeCaster;
-import ortus.boxlang.runtime.dynamic.casters.NumberCaster;
-import ortus.boxlang.runtime.dynamic.casters.StringCasterStrict;
 import ortus.boxlang.runtime.scopes.Key;
-import ortus.boxlang.runtime.types.DateTime;
 import ortus.boxlang.runtime.types.IStruct;
-import ortus.boxlang.runtime.types.exceptions.BoxValidationException;
 import ortus.boxlang.runtime.validation.Validator;
 import ortus.boxlang.web.context.WebRequestBoxContext;
 import ortus.boxlang.web.exchange.BoxCookie;
@@ -139,40 +132,7 @@ public class Cookie extends Component {
 			cookieInstance.setHttpOnly( httpOnly );
 		}
 
-		if ( expires != null ) {
-
-			// try number first
-			CastAttempt<Number> numberAttempt = NumberCaster.attempt( expires, false );
-			if ( numberAttempt.wasSuccessful() ) {
-				// convert days to seconds
-				cookieInstance.setMaxAge( ( int ) ( numberAttempt.get().doubleValue() * 24 * 60 * 60 ) );
-			} else if ( expires instanceof Duration expiresDuration ) {
-				cookieInstance.setMaxAge( ( int ) expiresDuration.getSeconds() );
-			} else {
-				// Now try string
-				Boolean				maxAgeSet		= false;
-				CastAttempt<String>	stringAttempt	= StringCasterStrict.attempt( expires );
-				if ( stringAttempt.wasSuccessful() ) {
-					String stringValue = stringAttempt.get();
-					if ( stringValue.equalsIgnoreCase( "now" ) ) {
-						cookieInstance.setMaxAge( 0 );
-						maxAgeSet = true;
-					} else if ( stringValue.equalsIgnoreCase( "never" ) ) {
-						cookieInstance.setMaxAge( 60 * 60 * 24 * 365 * 30 ); // 30 years
-						maxAgeSet = true;
-					}
-				}
-				if ( !maxAgeSet ) {
-					// finally try date
-					CastAttempt<DateTime> dateAttempt = DateTimeCaster.attempt( expires );
-					if ( dateAttempt.wasSuccessful() ) {
-						cookieInstance.setExpires( dateAttempt.get().toDate() );
-					} else {
-						throw new BoxValidationException( "Invalid cookie expiration type: " + expires.getClass().getName() );
-					}
-				}
-			}
-		}
+		BoxCookie.applyExpires( cookieInstance, expires );
 
 		if ( samesite != null ) {
 			cookieInstance.setSameSiteMode( samesite );

@@ -116,4 +116,83 @@ public class CookieScopeTest {
 		assertThat( variables.getAsString( Key.of( "checkResult" ) ) ).isEqualTo( "bar" );
 	}
 
+	@DisplayName( "It can set a cookie with expires=now via scope assignment" )
+	@Test
+	public void testScopeAssignExpiresNow() {
+		instance.executeSource(
+		    """
+		    cookie[ "test" ] = {
+		    	"value": "expiresNow",
+		    	"expires": "now"
+		    };
+		    result = cookie[ "test" ];
+		    """,
+		    context );
+		assertThat( variables.getAsString( Key.of( "result" ) ) ).isEqualTo( "expiresNow" );
+	}
+
+	@DisplayName( "It can set a cookie with expires=number via scope assignment" )
+	@Test
+	public void testScopeAssignExpiresNumber() {
+		instance.executeSource(
+		    """
+		    cookie[ "test" ] = {
+		    	"value": "expiresNum",
+		    	"expires": 7
+		    };
+		    result = cookie[ "test" ];
+		    """,
+		    context );
+		assertThat( variables.getAsString( Key.of( "result" ) ) ).isEqualTo( "expiresNum" );
+	}
+
+	@DisplayName( "It can set a cookie with expires=never via scope assignment" )
+	@Test
+	public void testScopeAssignExpiresNever() {
+		instance.executeSource(
+		    """
+		    cookie[ "test" ] = {
+		    	"value": "expiresNever",
+		    	"expires": "never"
+		    };
+		    result = cookie[ "test" ];
+		    """,
+		    context );
+		assertThat( variables.getAsString( Key.of( "result" ) ) ).isEqualTo( "expiresNever" );
+	}
+
+	@DisplayName( "It can set a cookie with expires date string via scope assignment" )
+	@Test
+	public void testScopeAssignExpiresDateString() {
+		instance.executeSource(
+		    """
+		    cookie[ "test" ] = {
+		    	"value": "expiresDate",
+		    	"expires": "2038-12-31T23:59:59Z"
+		    };
+		    result = cookie[ "test" ];
+		    """,
+		    context );
+		assertThat( variables.getAsString( Key.of( "result" ) ) ).isEqualTo( "expiresDate" );
+	}
+
+	@DisplayName( "It can set a cookie with all attributes via scope assignment" )
+	@Test
+	public void testScopeAssignAllAttributes() {
+		instance.executeSource(
+		    """
+		    cookie[ "fullCookie" ] = {
+		    	"value": "fullVal",
+		    	"path": "/app",
+		    	"domain": ".example.com",
+		    	"secure": true,
+		    	"httpOnly": true,
+		    	"samesite": "Strict",
+		    	"expires": "never"
+		    };
+		    result = cookie[ "fullCookie" ];
+		    """,
+		    context );
+		assertThat( variables.getAsString( Key.of( "result" ) ) ).isEqualTo( "fullVal" );
+	}
 }

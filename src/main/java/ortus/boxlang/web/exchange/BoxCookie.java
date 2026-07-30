@@ -20,10 +20,17 @@ package ortus.boxlang.web.exchange;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.text.SimpleDateFormat;
+import java.time.Duration;
 import java.util.Date;
 
 import ortus.boxlang.runtime.BoxRuntime;
+import ortus.boxlang.runtime.dynamic.casters.CastAttempt;
+import ortus.boxlang.runtime.dynamic.casters.DateTimeCaster;
+import ortus.boxlang.runtime.dynamic.casters.NumberCaster;
+import ortus.boxlang.runtime.dynamic.casters.StringCasterStrict;
 import ortus.boxlang.runtime.logging.BoxLangLogger;
+import ortus.boxlang.runtime.types.DateTime;
+import ortus.boxlang.runtime.types.exceptions.BoxValidationException;
 
 public class BoxCookie {
 
@@ -274,6 +281,63 @@ public class BoxCookie {
 			// This cookie may have been set without any encoding, but there's no way to know that.
 		}
 		return new BoxCookie( name, value );
+	}
+
+	/**
+	 * Apply an expires value to a BoxCookie, parsing the various supported formats.
+	 * <p>
+	 * Supported formats:
+	 * <ul>
+	 * <li>A number (Number) — treated as days, converted to seconds for max-age</li>
+	 * <li>A Duration — seconds from duration used for max-age</li>
+	 * <li>The string {@code "now"} — sets max-age to 0 (immediate expiry)</li>
+	 * <li>The string {@code "never"} — sets max-age to 30 years</li>
+	 * <li>A date/time string or object — parsed via {@link DateTimeCaster}</li>
+	 * </ul>
+	 *
+	 * @param cookie  The cookie to apply the expires value to
+	 * @param expires The expires value (Number, Duration, String, or DateTime-compatible)
+	 *
+	 * @return The same BoxCookie for chaining
+	 *
+	 * @throws BoxValidationException if the expires value cannot be parsed
+	 */
+	public static BoxCookie applyExpires( BoxCookie cookie, Object expires ) {
+		if ( expires == null ) {
+			return cookie;
+		}
+		// try number first
+		CastAttempt<Number> numberAttempt = NumberCaster.attempt( expires, false );
+		if ( numberAttempt.wasSuccessful() ) {
+			// convert days to seconds
+			cookie.setMaxAge( ( int ) ( numberAttempt.get().doubleValue() * 24 * 60 * 60 ) );
+		} else if ( expires instanceof Duration expiresDuration ) {
+			cookie.setMaxAge( ( int ) expiresDuration.getSeconds() );
+		} else {
+			// Now try string
+			boolean				maxAgeSet		= false;
+			CastAttempt<String>	stringAttempt	= StringCasterStrict.attempt( expires );
+			if ( stringAttempt.wasSuccessful() ) {
+				String stringValue = stringAttempt.get();
+				if ( stringValue.equalsIgnoreCase( "now" ) ) {
+					cookie.setMaxAge( 0 );
+					maxAgeSet = true;
+				} else if ( stringValue.equalsIgnoreCase( "never" ) ) {
+					cookie.setMaxAge( 60 * 60 * 24 * 365 * 30 ); // 30 years
+					maxAgeSet = true;
+				}
+			}
+			if ( !maxAgeSet ) {
+				// finally try date
+				CastAttempt<DateTime> dateAttempt = DateTimeCaster.attempt( expires );
+				if ( dateAttempt.wasSuccessful() ) {
+					cookie.setExpires( dateAttempt.get().toDate() );
+				} else {
+					throw new BoxValidationException( "Invalid cookie expiration type: " + expires.getClass().getName() );
+				}
+			}
+		}
+		return cookie;
 	}
 
 	/**
