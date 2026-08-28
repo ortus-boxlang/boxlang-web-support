@@ -21,8 +21,10 @@ import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Date;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 import ortus.boxlang.runtime.BoxRuntime;
 import ortus.boxlang.runtime.context.IBoxContext;
@@ -37,6 +39,7 @@ import ortus.boxlang.runtime.types.IStruct;
 import ortus.boxlang.runtime.types.Struct;
 import ortus.boxlang.runtime.types.UDF;
 import ortus.boxlang.runtime.types.exceptions.BoxRuntimeException;
+import ortus.boxlang.runtime.types.exceptions.ExceptionUtil;
 import ortus.boxlang.runtime.types.exceptions.ScopeNotFoundException;
 import ortus.boxlang.runtime.util.Mapping;
 import ortus.boxlang.web.exchange.BoxCookie;
@@ -93,6 +96,9 @@ public class WebRequestBoxContext extends RequestBoxContext {
 	 */
 	protected IScope			cookieScope;
 
+	/**
+	 * The HTTP exchange associated with this request
+	 */
 	protected IBoxHTTPExchange	httpExchange;
 
 	/**
@@ -110,7 +116,16 @@ public class WebRequestBoxContext extends RequestBoxContext {
 	 */
 	protected Key				sessionID				= null;
 
+	/**
+	 * The application settings for this request
+	 */
 	protected IStruct			appSettings;
+
+	/**
+	 * User-configured error templates that can override global settings for the request
+	 * The keys represent exception types and the value is the corresponding absolute error template.
+	 */
+	protected Map<Key, String>	errorTemplates			= null;
 
 	protected IStruct			sessionCookieDefaults	= Struct.of(
 	    Key._NAME, "jsessionid",
@@ -675,6 +690,52 @@ public class WebRequestBoxContext extends RequestBoxContext {
 		// It has a copy of all the original data, but all mutator methods are no-ops and it holds
 		// no actual references to the upstream servlet or server objects
 		setHTTPExchange( DetachedHTTPExchange.from( getHTTPExchange() ) );
+	}
+
+	/**
+	 * Get the error templates for this context.
+	 *
+	 * @return A map of error template names to their corresponding paths or identifiers.
+	 */
+	public Map<Key, String> getErrorTemplates() {
+		// Lazy initialization
+		if ( errorTemplates == null ) {
+			synchronized ( this ) {
+				if ( errorTemplates == null ) {
+					errorTemplates = new ConcurrentHashMap<>();
+				}
+			}
+		}
+		return errorTemplates;
+	}
+
+	/**
+	 * Get the error template to use for a specific error type. This will take into account any template registered by the
+	 * error component, and default to the global error template.
+	 *
+	 * @return The path or identifier of the error template for the specified error type.
+	 */
+	public String getErrorTemplate( Throwable e ) {
+		if ( this.errorTemplates != null ) {
+			// Loop over all keys except "any" and check with ExceptionUtil.exceptionIsOfType()
+			for ( Map.Entry<Key, String> entry : this.errorTemplates.entrySet() ) {
+				Key key = entry.getKey();
+				if ( !Key._ANY.equals( key ) && ExceptionUtil.exceptionIsOfType( this, e, key.toString() ) ) {
+					return entry.getValue();
+				}
+			}
+			// If nothing is found, return the value for the "any" key, if it exists
+			if ( this.errorTemplates.containsKey( Key._ANY ) ) {
+				return this.errorTemplates.get( Key._ANY );
+			}
+
+		}
+		// No specific error template found, fall back to the global error template if available.
+		String globalErrorTemplate = getConfig().getAsString( Key.globalErrorTemplate );
+		if ( globalErrorTemplate != null && !globalErrorTemplate.isEmpty() ) {
+			return globalErrorTemplate;
+		}
+		return null;
 	}
 
 }
