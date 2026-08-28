@@ -3,8 +3,11 @@ package ortus.boxlang.web.handlers;
 import static com.google.common.truth.Truth.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
@@ -66,11 +69,15 @@ public class WebErrorHandlerTest extends ortus.boxlang.web.util.BaseWebTest {
 	public void testWorkingCustomTemplate() {
 		runtime.getConfiguration().globalErrorTemplate = CUSTOM_TEMPLATE;
 
+		StringWriter	stringWriter	= new StringWriter();
+		PrintWriter		printWriter		= new PrintWriter( stringWriter );
+		when( mockExchange.getResponseWriter() ).thenReturn( printWriter );
+
 		RuntimeException e = new RuntimeException( "Data Check" );
 
 		WebErrorHandler.handleError( e, mockExchange, context, null, null );
 
-		String output = context.getBuffer().toString();
+		String output = stringWriter.toString();
 		assertThat( output ).contains( "CUSTOM_ERROR_PAGE" );
 		assertThat( output ).contains( "Data Check" );
 	}

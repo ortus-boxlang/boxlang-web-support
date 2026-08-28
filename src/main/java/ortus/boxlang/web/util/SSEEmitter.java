@@ -117,7 +117,6 @@ public class SSEEmitter implements AutoCloseable {
 	/**
 	 * Creates a new SSE emitter.
 	 *
-	 * @param exchange          The HTTP exchange for this request
 	 * @param retry             The retry interval in milliseconds (0 = not sent)
 	 * @param keepAliveInterval The interval for keep-alive comments in milliseconds (0 = disabled)
 	 * @param context           The BoxLang context for logging

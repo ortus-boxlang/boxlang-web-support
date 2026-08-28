@@ -71,7 +71,7 @@ public class ServerSideEvent extends BIF {
 	 * <pre>
 	 * // Simple counter
 	 * sse( emit => {
-	 *     for(var i = 1; i <= 10; i++) {
+	 *     for(var i = 1; i &lt;= 10; i++) {
 	 *         emit.send(i);
 	 *         sleep(1000);
 	 *     }
@@ -102,7 +102,7 @@ public class ServerSideEvent extends BIF {
 	 * // With timeout to prevent runaway connections
 	 * sse(
 	 *     callback = emit => {
-	 *         for(var i = 1; i <= 100; i++) {
+	 *         for(var i = 1; i &lt;= 100; i++) {
 	 *             emit.send({ count: i });
 	 *             sleep(1000);
 	 *         }

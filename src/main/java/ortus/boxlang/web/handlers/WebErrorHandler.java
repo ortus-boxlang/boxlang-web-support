@@ -18,7 +18,6 @@
 package ortus.boxlang.web.handlers;
 
 import ortus.boxlang.runtime.BoxRuntime;
-import ortus.boxlang.runtime.config.Configuration;
 import ortus.boxlang.runtime.dynamic.casters.CastAttempt;
 import ortus.boxlang.runtime.dynamic.casters.StringCaster;
 import ortus.boxlang.runtime.interop.DynamicObject;
@@ -72,31 +71,33 @@ public class WebErrorHandler {
 				}
 			}
 
+			boolean		usedCustomTemplate	= false;
+			Throwable	templateError		= null;
+
+			if ( context != null ) {
+				String customTemplate = context.getErrorTemplate( e );
+				if ( customTemplate != null && !customTemplate.isEmpty() ) {
+					try {
+						// Get error for the template using the request scope
+						context.getScope( ortus.boxlang.web.scopes.RequestScope.name ).put( Key.error, e );
+						// Allow either relative or absolute path
+						context.includeTemplate( customTemplate, false, false );
+						usedCustomTemplate = true;
+					} catch ( AbortException ae ) {
+						// re-throw this
+						throw ae;
+					} catch ( Throwable t ) {
+						logger.error( "Custom error template " + customTemplate + " failed to render: " + t.getMessage(), t );
+						context.clearBuffer();
+						templateError = t;
+						// Fall back on buildErrorPages
+					}
+
+				}
+			}
+			// Don't force the flush until after the custom error handler so the user can decide if they want to reset the buffer or let it show.
 			if ( context != null ) {
 				context.flushBuffer( true );
-			}
-
-			Configuration	config				= BoxRuntime.getInstance().getConfiguration();
-			String			customTemplate		= config.globalErrorTemplate;
-			boolean			usedCustomTemplate	= false;
-			Throwable		templateError		= null;
-
-			if ( customTemplate != null && !customTemplate.isEmpty() && context != null ) {
-				try {
-					// Get error for the template using the request scope
-					context.getScope( ortus.boxlang.web.scopes.RequestScope.name ).put( Key.error, e );
-					context.includeTemplate( customTemplate );
-					usedCustomTemplate = true;
-				} catch ( AbortException ae ) {
-					// re-throw this
-					throw ae;
-				} catch ( Throwable t ) {
-					logger.error( "Custom error template " + customTemplate + " failed to render: " + t.getMessage(), t );
-					context.clearBuffer();
-					templateError = t;
-					// Fall back on buildErrorPages
-				}
-
 			}
 
 			if ( !usedCustomTemplate ) {

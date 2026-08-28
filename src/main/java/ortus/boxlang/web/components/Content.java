@@ -47,7 +47,7 @@ public class Content extends Component {
 		    new Attribute( Key.type, "string", Set.of( Validator.NON_EMPTY ) ),
 		    new Attribute( Key.deleteFile, "boolean", false ),
 		    new Attribute( Key.file, "string", Set.of( Validator.NON_EMPTY ) ),
-		    new Attribute( Key.variable, "any", Set.of( Validator.NON_EMPTY ) ),
+		    new Attribute( Key.variable, "any" ),
 		    new Attribute( Key.reset, "boolean", true )
 		};
 	}
