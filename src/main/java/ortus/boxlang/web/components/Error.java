@@ -42,7 +42,7 @@ public class Error extends Component {
 			/*
 			 * Not implemented arguments
 			 * - mailto (doesn't make much sense and Lucee doesn't support)
-			 * - type (BoxLang doens't really have a demarcation between "exception", "validation", "request", and "monitor")
+			 * - type (BoxLang doesn't really have a demarcation between "exception", "validation", "request", and "monitor")
 			 * monitor is deprecated in ColdFusion. We don't support the server-side validation feature, and all exceptions are part of a request,
 			 * so I have no idea what the "request" type even means.
 			 */
