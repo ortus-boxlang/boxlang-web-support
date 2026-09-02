@@ -8,6 +8,20 @@ import org.junit.jupiter.api.Test;
 
 public class WhitespaceManagingPrintWriterTest {
 
+	/**
+	 * Verifies that whitespace management preserves a CRLF line ending as two
+	 * characters instead of reducing it to a single carriage return.
+	 */
+	@Test
+	public void preservesCarriageReturnLineFeedSequence() {
+		StringWriter output = new StringWriter();
+		try ( WhitespaceManagingPrintWriter writer = new WhitespaceManagingPrintWriter( output, true ) ) {
+			writer.write( "first\r\nsecond" );
+		}
+
+		assertThat( output.toString() ).isEqualTo( "first\r\nsecond" );
+	}
+
 	@Test
 	public void preservesContentWhitespaceAndRemovesOnlyEmptyRepeatedLines() {
 		StringWriter output = new StringWriter();
