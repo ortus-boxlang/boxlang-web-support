@@ -28,7 +28,9 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import ortus.boxlang.runtime.BoxRuntime;
 import ortus.boxlang.runtime.context.IBoxContext;
+import ortus.boxlang.runtime.context.IBoxContext.ScopeSearchResult;
 import ortus.boxlang.runtime.context.RequestBoxContext;
+import ortus.boxlang.runtime.context.SessionBoxContext;
 import ortus.boxlang.runtime.dynamic.casters.BooleanCaster;
 import ortus.boxlang.runtime.dynamic.casters.StringCaster;
 import ortus.boxlang.runtime.scopes.IScope;
@@ -533,24 +535,36 @@ public class WebRequestBoxContext extends RequestBoxContext {
 			return this;
 		}
 
-		// Send our session cookie, if not already done, in order to keep alive the session and forward the expiration
-		if ( BooleanCaster.attempt( getApplicationListener().getSettings().getOrDefault( Key.sessionManagement, false ) ).getOrDefault( false )
-		    && BooleanCaster.attempt( getConfig().getOrDefault( Key.setClientCookies, true ) ).getOrDefault( false ) ) {
-			synchronized ( this ) {
-				if ( !sessionCookieProvided ) {
-					// Ensure session cookie is sent if not already
-					BoxCookie sessionCookie = generateSessionCookie( getSessionID(), null );
-					httpExchange.addResponseCookie( sessionCookie );
-					sessionCookieProvided = true;
-				}
-			}
-		}
-
 		// This will commit the response so we don't want to do it unless we're forcing
 		// a flush, or it's the end of the request
 		// in which case, the web request executor will always issue a final forced
 		// flush. Otherwise, just let the buffer keep accumulating
 		if ( force ) {
+
+			// TODO: Cross-cutting concerns below. Look at moving to a listener or interceptor announcement mechanism
+
+			// Send our session cookie, if not already done, in order to keep alive the session and forward the expiration
+			if ( BooleanCaster.attempt( getApplicationListener().getSettings().getOrDefault( Key.sessionManagement, false ) ).getOrDefault( false )
+			    && BooleanCaster.attempt( getConfig().getOrDefault( Key.setClientCookies, true ) ).getOrDefault( false ) ) {
+				synchronized ( this ) {
+					if ( !sessionCookieProvided ) {
+						// Ensure session cookie is sent if not already
+						BoxCookie sessionCookie = generateSessionCookie( getSessionID(), null );
+						httpExchange.addResponseCookie( sessionCookie );
+						sessionCookieProvided = true;
+					}
+				}
+			}
+
+			// Persist the session at the end of the request if a session context exists
+			SessionBoxContext sessionContext = this.getParentOfType( SessionBoxContext.class );
+			if ( sessionContext != null ) {
+				BoxRuntime.getInstance().getLoggingService().APPLICATION_LOGGER
+				    .trace( "Persisting session at request end for identifier: ["
+				        + sessionContext.getSession().getID().getName() + "]" );
+				sessionContext.persistSession( this );
+			}
+
 			var		theBuffers	= super._getBuffers();
 			String	output		= "";
 			for ( StringBuffer buf : theBuffers ) {

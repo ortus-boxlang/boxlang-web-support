@@ -249,10 +249,6 @@ public class WebRequestExecutor {
 						}
 					}
 
-					if ( context != null ) {
-						context.flushBuffer( true );
-					}
-
 					if ( e.getCause() != null ) {
 						errorToHandle = e.getCause();
 					}
@@ -285,6 +281,8 @@ public class WebRequestExecutor {
 			}
 
 			if ( context != null ) {
+				// It's important that this is the only force=true flush. This flush is what triggers setting session cookies and persisting session scopes
+				// and we really only want that to happen once at the very end of the request.
 				context.flushBuffer( true );
 			} else {
 				exchange.flushResponseBuffer();
