@@ -95,10 +95,6 @@ public class WebErrorHandler {
 
 				}
 			}
-			// Don't force the flush until after the custom error handler so the user can decide if they want to reset the buffer or let it show.
-			if ( context != null ) {
-				context.flushBuffer( true );
-			}
 
 			if ( !usedCustomTemplate ) {
 				String errorOutput = buildErrorPage( e, templateError );
@@ -110,8 +106,8 @@ public class WebErrorHandler {
 			}
 
 		} catch ( AbortException ae ) {
-			// re-throw this
-			throw ae;
+			// We're at the end of the request. If a custom error template has an abort, then we do nothing.
+			// It's too late in the game for us to honor the abort exception anyway.
 		} catch ( Throwable t ) {
 			// Something terrible happened and a blank page will probably be what the user
 			// sees.
