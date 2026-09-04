@@ -77,6 +77,9 @@ public class WebErrorHandlerTest extends ortus.boxlang.web.util.BaseWebTest {
 
 		WebErrorHandler.handleError( e, mockExchange, context, null, null );
 
+		// Needed to flush buffer
+		finalizeRequest();
+
 		String output = stringWriter.toString();
 		assertThat( output ).contains( "CUSTOM_ERROR_PAGE" );
 		assertThat( output ).contains( "Data Check" );
