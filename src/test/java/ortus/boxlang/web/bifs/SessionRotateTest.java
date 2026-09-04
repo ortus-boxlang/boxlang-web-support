@@ -72,6 +72,9 @@ public class SessionRotateTest extends BaseWebTest {
 		    context );
 		// @formatter:on
 
+		// Needed to flush session cookies
+		finalizeRequest();
+
 		RequestBoxContext	requestContext	= context.getParentOfType( RequestBoxContext.class );
 		IStruct				initialSession	= variables.getAsStruct( Key.of( "initialSession" ) );
 		assertTrue( variables.getAsStruct( result ).containsKey( Key.of( "foo" ) ) );

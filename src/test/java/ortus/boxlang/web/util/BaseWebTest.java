@@ -7,6 +7,7 @@ import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.util.HashMap;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInstance;
@@ -73,6 +74,19 @@ public class BaseWebTest {
 
 		BaseApplicationListener appListener = context.getApplicationListener();
 		appListener.onRequestStart( context, new Object[] { requestURI } );
+	}
+
+	@AfterEach
+	public void afterEach() {
+		context.shutdown();
+	}
+
+	/**
+	 * Call this to finaize the request, including the final flushing of the buffer, neccessary
+	 * for any test checking session cookie or session persistence lifecycle.
+	 */
+	protected void finalizeRequest() {
+		context.flushBuffer( true );
 	}
 
 }
