@@ -106,4 +106,54 @@ public class WebErrorHandlerTest extends ortus.boxlang.web.util.BaseWebTest {
 
 		verify( mockExchange ).setResponseStatus( 500 );
 	}
+
+	@DisplayName( "Stops rendering circular causes" )
+	@Test
+	public void testCircularCauses() {
+		CyclicException exception = new CyclicException( "Circular cause" );
+		exception.setCause( exception );
+
+		assertDoesNotThrow( () -> WebErrorHandler.handleError( exception, mockExchange, context, null, null ) );
+	}
+
+	@DisplayName( "Limits nested causes to 50" )
+	@Test
+	public void testNestedCauseLimit() {
+		CyclicException	exception	= new CyclicException( "Cause 0" );
+		CyclicException	current		= exception;
+		for ( int i = 1; i <= 51; i++ ) {
+			CyclicException cause = new CyclicException( "Cause " + i );
+			current.setCause( cause );
+			current = cause;
+		}
+
+		StringWriter stringWriter = new StringWriter();
+		when( mockExchange.getResponseWriter() ).thenReturn( new PrintWriter( stringWriter ) );
+
+		WebErrorHandler.handleError( exception, mockExchange, context, null, null );
+		finalizeRequest();
+
+		String	output			= stringWriter.toString();
+		String	errorComment	= output.substring( 0, output.indexOf( "-->" ) );
+		assertThat( errorComment ).contains( "Cause 50" );
+		assertThat( errorComment ).doesNotContain( "Cause 51" );
+	}
+
+	private static class CyclicException extends RuntimeException {
+
+		private Throwable cause;
+
+		CyclicException( String message ) {
+			super( message );
+		}
+
+		@Override
+		public synchronized Throwable getCause() {
+			return cause;
+		}
+
+		void setCause( Throwable cause ) {
+			this.cause = cause;
+		}
+	}
 }

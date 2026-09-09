@@ -46,7 +46,12 @@ public class WebErrorHandler {
 	/**
 	 * Logger for handling errors
 	 */
-	private static final BoxLangLogger logger = BoxRuntime.getInstance().getLoggingService().EXCEPTION_LOGGER;
+	private static final BoxLangLogger	logger				= BoxRuntime.getInstance().getLoggingService().EXCEPTION_LOGGER;
+
+	/**
+	 * Maximum number of nested causes rendered on the error page.
+	 */
+	private static final int			MAX_NESTED_CAUSES	= 50;
 
 	/**
 	 * Handle an error
@@ -123,13 +128,15 @@ public class WebErrorHandler {
 	 * @return the error page string
 	 */
 	private static String buildErrorPage( Throwable e, Throwable templateError ) {
-		StringBuilder	errorOutput		= new StringBuilder();
-		BoxRuntime		runtime			= BoxRuntime.getInstance();
-		Throwable		thisException	= e;
-		Array			tagContext		= ExceptionUtil.buildTagContext( e );
+		StringBuilder	errorOutput			= new StringBuilder();
+		BoxRuntime		runtime				= BoxRuntime.getInstance();
+		Throwable		originalException	= e;
+		Throwable		thisException		= originalException;
+		int				nestedCauseCount	= 0;
+		Array			tagContext			= ExceptionUtil.buildTagContext( e );
 
 		// Put the error messages in a quick comment which helps if viewing the source directly in a log file or console.
-		StringBuilder	errorComment	= new StringBuilder();
+		StringBuilder	errorComment		= new StringBuilder();
 		errorComment.append( "<!--\n" );
 		// output the first file:lineno from the tag context, if available
 		if ( !tagContext.isEmpty() ) {
@@ -145,9 +152,14 @@ public class WebErrorHandler {
 				    .append( "\n" );
 			}
 		}
-		while ( thisException != null ) {
+		while ( thisException != null && nestedCauseCount <= MAX_NESTED_CAUSES ) {
 			errorComment.append( "    " ).append( escapeHTML( thisException.getMessage() ) ).append( "\n" );
-			thisException = thisException.getCause();
+			Throwable cause = thisException.getCause();
+			if ( cause == originalException ) {
+				break;
+			}
+			thisException = cause;
+			nestedCauseCount++;
 		}
 		errorComment.append( "-->" );
 
@@ -178,10 +190,11 @@ public class WebErrorHandler {
 
 		// error body start
 		errorOutput.append( "<div class=\"bx-err-body\">" );
-		thisException = e;
+		thisException		= originalException;
+		nestedCauseCount	= 0;
 		// track error count
 		var errCount = 0;
-		while ( thisException != null ) {
+		while ( thisException != null && nestedCauseCount <= MAX_NESTED_CAUSES ) {
 			errCount++;
 			var cosClass = "bx-err-cos";
 			if ( errCount % 2 == 0 ) {
@@ -338,7 +351,12 @@ public class WebErrorHandler {
 					    .append( "<br>" );
 				}
 			}
-			thisException = thisException.getCause();
+			Throwable cause = thisException.getCause();
+			if ( cause == originalException ) {
+				break;
+			}
+			thisException = cause;
+			nestedCauseCount++;
 		}
 
 		// let's close the error divs
