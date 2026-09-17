@@ -668,13 +668,36 @@ public class WebRequestBoxContext extends RequestBoxContext {
 	 * config
 	 */
 	public boolean isWhitespaceCompressionEnabled() {
-		IStruct config = getConfig();
-		// If the global setting is disabled, return false
-		if ( !BooleanCaster.cast( config.getOrDefault( Key.whitespaceCompressionEnabled, true ) ) ) {
+		IStruct	config	= getConfig();
+		boolean	enabled	= BooleanCaster.cast( config.getOrDefault( Key.whitespaceCompressionEnabled, true ) );
+
+		// An Application.bx setting overrides the runtime config, so an application can
+		// opt out on its own. The runtime boxlang.json belongs to the machine, which an
+		// app cannot carry with it - a container image, or an app deployed onto someone
+		// else's server, has no way to ship that setting.
+		if ( config.get( Key.applicationSettings ) instanceof IStruct appSettings
+		    && appSettings.containsKey( Key.whitespaceCompressionEnabled ) ) {
+			enabled = BooleanCaster.attempt( appSettings.get( Key.whitespaceCompressionEnabled ) ).getOrDefault( enabled );
+		}
+
+		// If the setting is disabled, return false
+		if ( !enabled ) {
 			return false;
 		}
-		// If the response is HTML, return true
+
 		String contentTypeHeader = httpExchange.getResponseHeader( "Content-Type" );
+
+		// Server-Sent Events are never compressible. A frame is terminated by a BLANK
+		// line, so collapsing consecutive newlines removes every frame terminator and
+		// leaves a stream no client can parse - a browser EventSource fires no events,
+		// and BoxLang's own http().sse( true ) consumption reports totalEvents: 0.
+		// Newlines are structural in SSE, not incidental whitespace, so this holds
+		// regardless of the setting above.
+		if ( contentTypeHeader != null && contentTypeHeader.startsWith( "text/event-stream" ) ) {
+			return false;
+		}
+
+		// If the response is HTML, return true
 		// Note, Lucee will NOT trim whitespace on text/plain, but will for text/html. Adobe seems much more liberal and will trim for both.
 		// If this becomes a compat issue, then introduce a setting for the content type prefixes to trim whitespace for.
 		if ( contentTypeHeader != null && ( contentTypeHeader.startsWith( "text/" )
