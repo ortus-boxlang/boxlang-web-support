@@ -67,6 +67,7 @@ public class FileUploadTest extends ortus.boxlang.web.util.BaseWebTest {
 	public void setUpTempFileSystem() throws MalformedURLException, IOException {
 		if ( !FileSystemUtil.exists( tmpDirectory ) ) {
 			FileSystemUtil.createDirectory( tmpDirectory, true, null );
+			FileSystemUtil.createDirectory( tmpDirectory + "/no_extension", true, null );
 		}
 		if ( !FileSystemUtil.exists( testUpload ) ) {
 			BufferedInputStream urlStream = new BufferedInputStream( URI.create( testURLImage ).toURL().openStream() );
@@ -102,6 +103,19 @@ public class FileUploadTest extends ortus.boxlang.web.util.BaseWebTest {
 			}
 			mockUploads.add( new ortus.boxlang.web.exchange.IBoxHTTPExchange.FileUpload( Key.of( field ), fieldFile,
 			    fieldFile.getFileName().toString() ) );
+
+			if ( field.equals( "file3" ) ) {
+				String	noExtensionFileName	= field + "_no_extension";
+				Path	noExtensionFilePath	= Path.of( tmpDirectory, noExtensionFileName );
+
+				try {
+					Files.copy( Path.of( testUpload ), noExtensionFilePath, StandardCopyOption.REPLACE_EXISTING );
+				} catch ( IOException e ) {
+					throw new BoxIOException( e );
+				}
+				mockUploads.add( new ortus.boxlang.web.exchange.IBoxHTTPExchange.FileUpload( Key.of( noExtensionFileName ), noExtensionFilePath,
+				    noExtensionFilePath.getFileName().toString() ) );
+			}
 		} );
 
 		ortus.boxlang.web.exchange.IBoxHTTPExchange.FileUpload[] uploadsArray = mockUploads
@@ -398,6 +412,44 @@ public class FileUploadTest extends ortus.boxlang.web.util.BaseWebTest {
 
 	}
 
+	@DisplayName( "It tests the BIF FileUpload without an extension" )
+	@Test
+	public void testBifFileUploadNoExtension() {
+		String fileFieldName = "file3_no_extension";
+		variables.put( Key.directory, Path.of( tmpDirectory ).toAbsolutePath().toString() );
+		variables.put( Key.of( "filefield" ), fileFieldName );
+		runtime.executeSource(
+		    """
+		         result = FileUpload(
+		    filefield = filefield,
+		         	destination = directory & "/no_extension",
+		    nameconflict = "overwrite"
+		         );
+		         """,
+		    context );
+
+		assertThat( variables.get( result ) ).isInstanceOf( IStruct.class );
+
+		IStruct fileInfo = variables.getAsStruct( result );
+
+		assertThat( fileInfo.getAsString( KeyDictionary.serverFile ) ).isInstanceOf( String.class );
+		assertThat( fileInfo.getAsString( KeyDictionary.serverFile ) ).isNotEmpty();
+		assertThat( fileInfo.getAsString( KeyDictionary.serverFile ) ).doesNotContain( "/" );
+		assertThat( fileInfo.getAsString( KeyDictionary.serverFile ) ).doesNotContain( "\\" );
+		assertThat( fileInfo.getAsString( KeyDictionary.clientFile ) )
+		    .isEqualTo( fileFieldName );
+		assertThat( fileInfo.get( KeyDictionary.clientFileExt ) ).isEqualTo( "" );
+		assertThat( fileInfo.get( KeyDictionary.clientFileName ) ).isEqualTo( fileFieldName );
+		assertThat( fileInfo.get( KeyDictionary.serverFileExt ) ).isEqualTo( "" );
+		assertThat( fileInfo.getAsString( KeyDictionary.serverFileName ) ).doesNotContain( "." );
+		assertThat( fileInfo.getAsString( KeyDictionary.serverFileName ) ).doesNotContain( "/" );
+		assertThat( fileInfo.getAsString( KeyDictionary.serverFileName ) ).doesNotContain( "\\" );
+		assertThat( fileInfo.getAsString( KeyDictionary.mimeType ) ).isEqualTo( "application/octet-stream" );
+		assertThat( fileInfo.get( KeyDictionary.contentType ) ).isEqualTo( "application" );
+		assertThat( fileInfo.get( KeyDictionary.contentSubType ) ).isEqualTo( "octet-stream" );
+
+	}
+
 	@DisplayName( "It tests the BIF FileUpload with explicitly allowed extensions" )
 	@Test
 	public void testBifFileSecurity() {
@@ -512,25 +564,27 @@ public class FileUploadTest extends ortus.boxlang.web.util.BaseWebTest {
 
 		assertThat( variables.get( result ) ).isInstanceOf( Array.class );
 
-		variables.getAsArray( result ).stream().map( StructCaster::cast ).forEach( fileInfo -> {
-			assertThat( fileInfo.getAsString( KeyDictionary.serverFile ) ).isInstanceOf( String.class );
-			assertThat( fileInfo.getAsString( KeyDictionary.serverFile ) ).isNotEmpty();
-			assertThat( fileInfo.getAsString( KeyDictionary.serverFile ) ).doesNotContain( "/" );
-			assertThat( fileInfo.getAsString( KeyDictionary.serverFile ) ).doesNotContain( "\\" );
-			assertThat( fileInfo.getAsString( KeyDictionary.serverFile ) ).endsWith( ".jpg" );
-			assertThat( fileInfo.getAsString( KeyDictionary.clientFile ) )
-			    .isNotEqualTo( fileInfo.getAsString( KeyDictionary.serverFile ) );
-			assertThat( fileInfo.get( KeyDictionary.clientFileExt ) ).isEqualTo( "jpg" );
-			assertThat( fileInfo.getAsString( KeyDictionary.clientFileName ) ).doesNotContain( "." );
-			assertThat( fileInfo.getAsString( KeyDictionary.clientFileName ) ).isAnyOf( testFields[ 0 ], testFields[ 1 ], testFields[ 2 ] );
-			assertThat( fileInfo.get( KeyDictionary.serverFileExt ) ).isEqualTo( "jpg" );
-			assertThat( fileInfo.getAsString( KeyDictionary.serverFileName ) ).doesNotContain( "." );
-			assertThat( fileInfo.getAsString( KeyDictionary.serverFileName ) ).doesNotContain( "/" );
-			assertThat( fileInfo.getAsString( KeyDictionary.serverFileName ) ).doesNotContain( "\\" );
-			assertThat( fileInfo.get( KeyDictionary.contentType ) ).isEqualTo( "image" );
-			assertThat( fileInfo.get( KeyDictionary.contentSubType ) ).isEqualTo( "jpeg" );
-			assertThat( fileInfo.get( KeyDictionary.fileSize ) ).isEqualTo( fileInfo.get( KeyDictionary.oldFileSize ) );
-		} );
+		variables.getAsArray( result ).stream().map( StructCaster::cast )
+		    .filter( item -> item.getAsString( KeyDictionary.clientFileExt ).equals( "jpg" ) )
+		    .forEach( fileInfo -> {
+			    assertThat( fileInfo.getAsString( KeyDictionary.serverFile ) ).isInstanceOf( String.class );
+			    assertThat( fileInfo.getAsString( KeyDictionary.serverFile ) ).isNotEmpty();
+			    assertThat( fileInfo.getAsString( KeyDictionary.serverFile ) ).doesNotContain( "/" );
+			    assertThat( fileInfo.getAsString( KeyDictionary.serverFile ) ).doesNotContain( "\\" );
+			    assertThat( fileInfo.getAsString( KeyDictionary.serverFile ) ).endsWith( ".jpg" );
+			    assertThat( fileInfo.getAsString( KeyDictionary.clientFile ) )
+			        .isNotEqualTo( fileInfo.getAsString( KeyDictionary.serverFile ) );
+			    assertThat( fileInfo.get( KeyDictionary.clientFileExt ) ).isEqualTo( "jpg" );
+			    assertThat( fileInfo.getAsString( KeyDictionary.clientFileName ) ).doesNotContain( "." );
+			    assertThat( fileInfo.getAsString( KeyDictionary.clientFileName ) ).isAnyOf( testFields[ 0 ], testFields[ 1 ], testFields[ 2 ] );
+			    assertThat( fileInfo.get( KeyDictionary.serverFileExt ) ).isEqualTo( "jpg" );
+			    assertThat( fileInfo.getAsString( KeyDictionary.serverFileName ) ).doesNotContain( "." );
+			    assertThat( fileInfo.getAsString( KeyDictionary.serverFileName ) ).doesNotContain( "/" );
+			    assertThat( fileInfo.getAsString( KeyDictionary.serverFileName ) ).doesNotContain( "\\" );
+			    assertThat( fileInfo.get( KeyDictionary.contentType ) ).isEqualTo( "image" );
+			    assertThat( fileInfo.get( KeyDictionary.contentSubType ) ).isEqualTo( "jpeg" );
+			    assertThat( fileInfo.get( KeyDictionary.fileSize ) ).isEqualTo( fileInfo.get( KeyDictionary.oldFileSize ) );
+		    } );
 
 	}
 
