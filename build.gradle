@@ -144,15 +144,17 @@ task libsToDistro( type: Copy ) {
 
 	    file( "build/evergreen" ).mkdirs()
 	    if( branch == 'development' ){
+			Files.copy( file( "build/resources/main/META-INF/boxlang-web-support/version.properties" ).toPath(), file( "build/evergreen/version-snapshot.properties" ).toPath(), StandardCopyOption.REPLACE_EXISTING )
 	        Files.copy( file( "build/distributions/boxlang-web-support-${version}.jar" ).toPath(), file( "build/evergreen/boxlang-web-support-snapshot.jar" ).toPath(), StandardCopyOption.REPLACE_EXISTING )
 	        // Copy checksums
 			Files.copy( file( "build/distributions/boxlang-web-support-${version}.jar.sha-256" ).toPath(), file( "build/evergreen/boxlang-web-support-snapshot.jar.sha-256" ).toPath(), StandardCopyOption.REPLACE_EXISTING )
 			Files.copy( file( "build/distributions/boxlang-web-support-${version}.jar.md5" ).toPath(), file( "build/evergreen/boxlang-web-support-snapshot.jar.md5" ).toPath(), StandardCopyOption.REPLACE_EXISTING )
 	    } else {
+			Files.copy( file( "build/resources/main/META-INF/boxlang-web-support/version.properties" ).toPath(), file( "build/evergreen/version-latest.properties" ).toPath(), StandardCopyOption.REPLACE_EXISTING )
 	        Files.copy( file( "build/distributions/boxlang-web-support-${version}.jar" ).toPath(), file( "build/evergreen/boxlang-web-support-latest.jar" ).toPath(), StandardCopyOption.REPLACE_EXISTING )
 	        // Copy checksums
-			Files.copy( file( "build/distributions/boxlang-web-support-${version}.jar.sha-256" ).toPath(), file( "build/evergreen/boxlang-miniserver-latest.jar.sha-256" ).toPath(), StandardCopyOption.REPLACE_EXISTING )
-			Files.copy( file( "build/distributions/boxlang-web-support-${version}.jar.md5" ).toPath(), file( "build/evergreen/boxlang-miniserver-latest.jar.md5" ).toPath(), StandardCopyOption.REPLACE_EXISTING )
+			Files.copy( file( "build/distributions/boxlang-web-support-${version}.jar.sha-256" ).toPath(), file( "build/evergreen/boxlang-web-support-latest.jar.sha-256" ).toPath(), StandardCopyOption.REPLACE_EXISTING )
+			Files.copy( file( "build/distributions/boxlang-web-support-${version}.jar.md5" ).toPath(), file( "build/evergreen/boxlang-web-support-latest.jar.md5" ).toPath(), StandardCopyOption.REPLACE_EXISTING )
 	    }
 
 		println "+ Libs have been moved to the distribution folder"
