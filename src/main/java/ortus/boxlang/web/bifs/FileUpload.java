@@ -27,7 +27,6 @@ import java.util.stream.Stream;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
 
-import ortus.boxlang.compiler.parser.Parser;
 import ortus.boxlang.runtime.bifs.BIF;
 import ortus.boxlang.runtime.bifs.BoxBIF;
 import ortus.boxlang.runtime.context.IBoxContext;
@@ -239,7 +238,7 @@ public class FileUpload extends BIF {
 			throw new BoxRuntimeException( "The specified destination path [" + destination + "] does not exist" );
 		}
 
-		String	extension		= Parser.getFileExtension( fileName ).get();
+		String	extension		= FilenameUtils.getExtension( fileName );
 		Path	filePath		= destinationPath.resolve( fileName );
 		String	nameConflict	= arguments.getAsString( Key.nameconflict ).toLowerCase();
 
@@ -247,7 +246,7 @@ public class FileUpload extends BIF {
 		IStruct	uploadRecord	= newUploadRecord();
 		uploadRecord.put( KeyDictionary.clientDirectory, destinationPath.toString() );
 		uploadRecord.put( KeyDictionary.clientFile, upload.originalFileName() );
-		uploadRecord.put( KeyDictionary.clientFileExt, Parser.getFileExtension( upload.originalFileName() ).get() );
+		uploadRecord.put( KeyDictionary.clientFileExt, FilenameUtils.getExtension( upload.originalFileName() ) );
 		uploadRecord.put( KeyDictionary.clientFileName, FilenameUtils.getBaseName( upload.originalFileName() ) );
 		uploadRecord.put( KeyDictionary.attemptedServerFile, filePath.toString() );
 
@@ -385,7 +384,7 @@ public class FileUpload extends BIF {
 		// System and request level whitelist and blacklist settings
 		IStruct	requestSettings				= context.getParentOfType( RequestBoxContext.class ).getSettings();
 		String	uploadMimeType				= FileSystemUtil.getMimeType( upload.originalFileName() );
-		String	uploadExtension				= Parser.getFileExtension( upload.originalFileName() ).get().toLowerCase();
+		String	uploadExtension				= FilenameUtils.getExtension( upload.originalFileName() ).toLowerCase();
 		String	allowedExtensions			= arguments.getAsString( KeyDictionary.allowedExtensions );
 		String	blockedExtensions			= arguments.getAsString( KeyDictionary.blockedExtensions );
 		String	allowedMimeTypes			= arguments.getAsString( Key.accept );

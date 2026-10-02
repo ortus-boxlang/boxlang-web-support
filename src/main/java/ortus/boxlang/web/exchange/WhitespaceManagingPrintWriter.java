@@ -186,6 +186,12 @@ public class WhitespaceManagingPrintWriter extends PrintWriter {
 			return;
 		}
 
+		if ( ch == '\n' && deferredLineBreak != null && deferredLineBreak.charValue() == '\r' ) {
+			writeDirect( deferredLineBreak.charValue() );
+			deferredLineBreak = ch;
+			return;
+		}
+
 		if ( lineHasContent ) {
 			flushPendingWhitespace();
 			deferredLineBreak		= ch;

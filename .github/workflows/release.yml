@@ -55,7 +55,7 @@ jobs:
           forgeboxAPIKey: ${{ secrets.FORGEBOX_API_TOKEN }}
 
       - name: Setup Java
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@v6
         with:
           distribution: "temurin"
           java-version: ${{ env.JDK }}
@@ -95,7 +95,7 @@ jobs:
           ./gradlew build -x test --stacktrace --console=plain
 
       - name: Commit Changelog [unreleased] with latest version
-        uses: EndBug/add-and-commit@v10.0.0
+        uses: EndBug/add-and-commit@v11.1.1
         if: env.SNAPSHOT == 'false'
         with:
           author_name: Github Actions
@@ -131,6 +131,17 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_ACCESS_SECRET }}
           SOURCE_DIR: "build/distributions"
           DEST_DIR: "ortussolutions/boxlang-runtimes/${{ env.MODULE_ID }}/${{ env.VERSION }}"
+
+      - name: Upload Evergreen Distributions to S3
+        uses: jakejarvis/s3-sync-action@master
+        with:
+          args: --acl public-read
+        env:
+          AWS_S3_BUCKET: "downloads.ortussolutions.com"
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_ACCESS_SECRET }}
+          SOURCE_DIR: "build/evergreen"
+          DEST_DIR: "ortussolutions/boxlang-runtimes/${{ env.MODULE_ID }}/"
 
       - name: Upload API Docs to S3
         uses: jakejarvis/s3-sync-action@master
@@ -229,7 +240,7 @@ jobs:
           git pull
 
       - name: Commit Version Bump
-        uses: EndBug/add-and-commit@v10.0.0
+        uses: EndBug/add-and-commit@v11.1.1
         with:
           author_name: Github Actions
           author_email: info@ortussolutions.com
