@@ -20,6 +20,18 @@
 
 This package is a collection of utilities, tools, BIFS, components, etc that can be built into the BoxLang servlet and mini server runtimes.
 
+## Software Bill of Materials (SBOM)
+
+Every release publishes a [CycloneDX](https://cyclonedx.org/) SBOM that lists the runtime dependencies of this artifact.
+
+- **Files:** `boxlang-web-support-<version>.cdx.json` and `boxlang-web-support-<version>.cdx.json.sha256`
+- **Where:** next to the other release artifacts at `https://downloads.ortussolutions.com/ortussolutions/boxlang-runtimes/boxlang-web-support/<version>/`, and attached to the GitHub release.
+- **Verify:** `sha256sum -c boxlang-web-support-<version>.cdx.json.sha256`
+- **Scan:** `grype sbom:boxlang-web-support-<version>.cdx.json`
+- **Scope:** runtime dependencies only (no test dependencies), generated from the resolved dependency graph and not from the shaded jar.
+
+See the [SBOM documentation](https://boxlang.ortusbooks.com/getting-started/configuration/security#software-bill-of-materials-sbom) for details.
+
 ## Ortus Sponsors
 
 BoxLang is a professional open-source project, and it is completely funded by the [community](https://patreon.com/ortussolutions) and [Ortus Solutions, Corp](https://www.ortussolutions.com). Ortus Patreons get many benefits like a cfcasts account, a FORGEBOX Pro account, and so much more. If you are interested in becoming a sponsor, please visit our patronage page: [https://patreon.com/ortussolutions](https://patreon.com/ortussolutions)

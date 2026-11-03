@@ -222,80 +222,108 @@ public class WebRequestExecutor {
 		 * --------------------------------------------------------------------------------
 		 */
 		finally {
-			ensureContentType( exchange, DEFAULT_CONTENT_TYPE );
+			// Best effort attempt to finalize the response. A failure in here must NOT prevent the nested finally
+			// block below from running, since that is what ends any open transaction and releases its JDBC
+			// connection back to the connection pool.
+			try {
+				ensureContentType( exchange, DEFAULT_CONTENT_TYPE );
 
-			if ( context != null ) {
-				context.flushBuffer( false );
-			}
+				if ( context != null ) {
+					context.flushBuffer( false );
+				}
 
-			// Was there an error produced above
-			if ( errorToHandle != null ) {
+				// Was there an error produced above
+				if ( errorToHandle != null ) {
 
-				// If the error to handle is an abort, then take care of it
-				if ( errorToHandle instanceof AbortException e ) {
+					// If the error to handle is an abort, then take care of it
+					if ( errorToHandle instanceof AbortException e ) {
 
-					ensureContentType( exchange, DEFAULT_CONTENT_TYPE );
+						ensureContentType( exchange, DEFAULT_CONTENT_TYPE );
 
-					if ( appListener != null ) {
-						try {
-							appListener.onAbort( context, new Object[] { requestString } );
-						} catch ( AbortException aae ) {
-							if ( aae.getCause() != null ) {
-								errorToHandle = aae.getCause();
+						if ( appListener != null ) {
+							try {
+								appListener.onAbort( context, new Object[] { requestString } );
+							} catch ( AbortException aae ) {
+								if ( aae.getCause() != null ) {
+									errorToHandle = aae.getCause();
+								}
+							} catch ( Throwable ae ) {
+								// Opps, an error while handling onAbort
+								errorToHandle = ae;
 							}
-						} catch ( Throwable ae ) {
-							// Opps, an error while handling onAbort
-							errorToHandle = ae;
+						}
+
+						if ( e.getCause() != null ) {
+							errorToHandle = e.getCause();
 						}
 					}
 
-					if ( e.getCause() != null ) {
-						errorToHandle = e.getCause();
-					}
-				}
+					// This could still run EVEN IF the error above WAS an abort, as the onAbort could have thrown an error or the abort could have specified a
+					// custom error to throw in its cause.
+					if ( ! ( errorToHandle instanceof AbortException ) ) {
+						// Log it to the exception logs no matter what
+						BoxRuntime.getInstance()
+						    .getLoggingService()
+						    .getLogger( "exception" )
+						    .error( errorToHandle.getMessage(), errorToHandle );
 
-				// This could still run EVEN IF the error above WAS an abort, as the onAbort could have thrown an error or the abort could have specified a
-				// custom error to throw in its cause.
-				if ( ! ( errorToHandle instanceof AbortException ) ) {
-					// Log it to the exception logs no matter what
-					BoxRuntime.getInstance()
-					    .getLoggingService()
-					    .getLogger( "exception" )
-					    .error( errorToHandle.getMessage(), errorToHandle );
-
-					try {
-						// A return of true means the error has been "handled". False means the default
-						// error handling should be used
-						if ( appListener == null || !appListener.onError( context, new Object[] { errorToHandle, "" } ) ) {
-							WebErrorHandler.handleError( errorToHandle, exchange, context, frTransService, trans );
+						try {
+							// A return of true means the error has been "handled". False means the default
+							// error handling should be used
+							if ( appListener == null || !appListener.onError( context, new Object[] { errorToHandle, "" } ) ) {
+								WebErrorHandler.handleError( errorToHandle, exchange, context, frTransService, trans );
+							}
+							// This is a failsafe in case the onError blows up.
+						} catch ( AbortException ae ) {
+							// If we abort during our onError, it's prolly too late to output a custom exception, so we'll ignore that logic in this path.
+						} catch ( Throwable t ) {
+							WebErrorHandler.handleError( t, exchange, context, frTransService, trans );
 						}
-						// This is a failsafe in case the onError blows up.
-					} catch ( AbortException ae ) {
-						// If we abort during our onError, it's prolly too late to output a custom exception, so we'll ignore that logic in this path.
-					} catch ( Throwable t ) {
-						WebErrorHandler.handleError( t, exchange, context, frTransService, trans );
+
 					}
 
 				}
 
-			}
+				if ( context != null ) {
+					// It's important that this is the only force=true flush. This flush is what triggers setting session cookies and persisting session scopes
+					// and we really only want that to happen once at the very end of the request.
+					context.flushBuffer( true );
+				} else {
+					exchange.flushResponseBuffer();
+				}
+			} catch ( Throwable t ) {
+				// Log-only, do NOT rethrow. The response may already be committed, and rethrowing here would mask
+				// the error that got us into this block as well as skip the resource cleanup below.
+				logger.error( "Error finalizing web request response: " + t.getMessage(), t );
+			} finally {
+				// Each step is isolated so that a failure in one does not skip the others. context.shutdown() is
+				// what ends any open transaction and releases its connection back to the pool, and
+				// RequestBoxContext.removeCurrent() must always run so the thread-local request context stack
+				// doesn't leak across requests on a pooled thread.
+				try {
+					if ( frTransService != null ) {
+						frTransService.endTransaction( trans );
+					}
+				} catch ( Throwable t ) {
+					logger.error( "Error ending the FusionReactor request transaction: " + t.getMessage(), t );
+				}
 
-			if ( context != null ) {
-				// It's important that this is the only force=true flush. This flush is what triggers setting session cookies and persisting session scopes
-				// and we really only want that to happen once at the very end of the request.
-				context.flushBuffer( true );
-			} else {
-				exchange.flushResponseBuffer();
-			}
+				try {
+					if ( context != null ) {
+						context.shutdown();
+					}
+				} catch ( Throwable t ) {
+					logger.error( "Error shutting down the web request context: " + t.getMessage(), t );
+				}
 
-			if ( frTransService != null ) {
-				frTransService.endTransaction( trans );
+				try {
+					RequestBoxContext.removeCurrent();
+				} catch ( Throwable t ) {
+					logger.error( "Error clearing the current web request context: " + t.getMessage(), t );
+				}
+
+				Thread.currentThread().setContextClassLoader( oldClassLoader );
 			}
-			if ( context != null ) {
-				context.shutdown();
-			}
-			RequestBoxContext.removeCurrent();
-			Thread.currentThread().setContextClassLoader( oldClassLoader );
 		}
 	}
 
