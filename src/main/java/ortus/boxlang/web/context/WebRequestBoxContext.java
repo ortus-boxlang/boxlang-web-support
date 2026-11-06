@@ -602,6 +602,27 @@ public class WebRequestBoxContext extends RequestBoxContext {
 	}
 
 	/**
+	 * {@inheritDoc}
+	 * <p>
+	 * A web request is identified by the URL it was addressed with, so that several URLs which are
+	 * rewritten onto one template each get their own cache entry, and the same URL keeps its cache
+	 * entry no matter which template ends up serving it. This mirrors Adobe ColdFusion, whose generated
+	 * cache keys embed the full request URL.
+	 *
+	 * @return The full URL this request was addressed with
+	 */
+	@Override
+	public String getRequestCacheKey() {
+		// The exchange is discarded when the context is shut down, and no thread should touch it after
+		// that. Fall back to the superclass rather than throwing from a context asked mid-teardown.
+		if ( this.httpExchange == null ) {
+			return super.getRequestCacheKey();
+		}
+		StringBuffer requestURL = this.httpExchange.getRequestURL();
+		return requestURL != null ? requestURL.toString() : super.getRequestCacheKey();
+	}
+
+	/**
 	 * Get the request body as a byte array
 	 *
 	 * @return The request body
