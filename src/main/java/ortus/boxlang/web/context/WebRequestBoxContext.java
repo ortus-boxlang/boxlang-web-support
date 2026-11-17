@@ -365,22 +365,23 @@ public class WebRequestBoxContext extends RequestBoxContext {
 	@Override
 	public ScopeSearchResult scopeFindNearby( Key key, IScope defaultScope, boolean shallow, boolean forAssign ) {
 
-		// In query loop?
-		if ( !forAssign ) {
-			var querySearch = queryFindNearby( key );
-			if ( querySearch != null ) {
-				return querySearch;
+		if ( !isKeyVisibleScope( key, true, shallow ) ) {
+			// In query loop?
+			if ( !forAssign ) {
+				var querySearch = queryFindNearby( key );
+				if ( querySearch != null ) {
+					return querySearch;
+				}
+			}
+
+			// In Variables scope? (thread-safe lookup and get)
+			Object result = variablesScope.getRaw( key );
+			// Null means not found
+			if ( isDefined( result, forAssign ) ) {
+				// Unwrap the value now in case it was really actually null for real
+				return new ScopeSearchResult( variablesScope, Struct.unWrapNull( result ), key );
 			}
 		}
-
-		// In Variables scope? (thread-safe lookup and get)
-		Object result = variablesScope.getRaw( key );
-		// Null means not found
-		if ( isDefined( result, forAssign ) ) {
-			// Unwrap the value now in case it was really actually null for real
-			return new ScopeSearchResult( variablesScope, Struct.unWrapNull( result ), key );
-		}
-
 		if ( shallow ) {
 			return null;
 		}
@@ -419,7 +420,7 @@ public class WebRequestBoxContext extends RequestBoxContext {
 		}
 
 		// We don't look here if just setting a variable
-		if ( !forAssign ) {
+		if ( !forAssign && !isKeyVisibleScope( key, false, false ) ) {
 			Object result = CGIScope.getRaw( key );
 			// Null means not found
 			if ( isDefined( result, forAssign ) ) {
