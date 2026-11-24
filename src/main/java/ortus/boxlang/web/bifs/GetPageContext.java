@@ -20,6 +20,8 @@ import ortus.boxlang.runtime.bifs.BIF;
 import ortus.boxlang.runtime.bifs.BoxBIF;
 import ortus.boxlang.runtime.context.IBoxContext;
 import ortus.boxlang.runtime.scopes.ArgumentsScope;
+import ortus.boxlang.web.context.BoxlangHTTPRequest;
+import ortus.boxlang.web.context.BoxlangHTTPResponse;
 import ortus.boxlang.web.context.WebRequestBoxContext;
 import ortus.boxlang.web.exchange.IBoxHTTPExchange;
 
@@ -59,7 +61,7 @@ public class GetPageContext extends BIF {
 
 		/**
 		 * Get the exchange
-		 * 
+		 *
 		 * @return the exchange
 		 */
 		public IBoxHTTPExchange getExchange() {
@@ -67,21 +69,21 @@ public class GetPageContext extends BIF {
 		}
 
 		/**
-		 * Returns the current context object. This method is provided for backward compatibility
+		 * Returns a servlet-compatible response object backed by the current exchange.
 		 *
-		 * @return
+		 * @return the response object
 		 */
-		public PageContext getResponse() {
-			return this;
+		public BoxlangHTTPResponse getResponse() {
+			return new BoxlangHTTPResponse( context );
 		}
 
 		/**
-		 * Returns the current request object. This method is provided for backward compatibility
+		 * Returns a servlet-compatible request object backed by the current exchange.
 		 *
-		 * @return
+		 * @return the request object
 		 */
-		public PageContext getRequest() {
-			return this;
+		public BoxlangHTTPRequest getRequest() {
+			return new BoxlangHTTPRequest( context );
 		}
 
 		/**
