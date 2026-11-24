@@ -8,6 +8,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import ortus.boxlang.runtime.scopes.Key;
+import ortus.boxlang.runtime.types.Array;
 import ortus.boxlang.web.context.BoxlangHTTPRequest;
 import ortus.boxlang.web.context.BoxlangHTTPResponse;
 import ortus.boxlang.web.util.BaseWebTest;
@@ -78,6 +79,9 @@ public class GetPageContextTest extends BaseWebTest {
 		assertThat( request.getServerPort() ).isEqualTo( 8080 );
 		assertThat( request.getScheme() ).isEqualTo( "http" );
 		assertThat( request.getHeader( "Host" ) ).isEqualTo( "localhost" );
+		assertThat( request.getHeaderNames() ).isInstanceOf( Array.class );
+		assertThat( request.getAttributeNames() ).isInstanceOf( Array.class );
+		assertThat( request.getCookies() ).isInstanceOf( Array.class );
 
 		Object res = variables.get( Key.of( "res" ) );
 		assertThat( res ).isInstanceOf( BoxlangHTTPResponse.class );
@@ -91,6 +95,8 @@ public class GetPageContextTest extends BaseWebTest {
 
 		response.setHeader( "X-Test", "1" );
 		assertThat( response.getHeader( "X-Test" ) ).isEqualTo( "1" );
+		assertThat( response.getHeaderNames() ).isInstanceOf( Array.class );
+		assertThat( response.getCookies() ).isInstanceOf( Array.class );
 	}
 
 }
