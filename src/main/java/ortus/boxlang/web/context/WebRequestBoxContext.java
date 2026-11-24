@@ -250,7 +250,7 @@ public class WebRequestBoxContext extends RequestBoxContext {
 
 		BoxCookie sessionCookie = new BoxCookie( sessionCookieDefaults.getAsString( Key._NAME ),
 		    newId.getName() )
-		    .setPath( "/" );
+		        .setPath( "/" );
 
 		Optional.ofNullable( sessionCookieSettings.get( KeyDictionary.httpOnly ) ).map( BooleanCaster::cast ).map( sessionCookie::setHttpOnly );
 
@@ -653,7 +653,7 @@ public class WebRequestBoxContext extends RequestBoxContext {
 		IStruct	appMappings	= getApplicationListener().getSettings().getAsStruct( Key.mappings );
 		// Only set this if our application this.mappings doesn't already override it
 		if ( appMappings == null || appMappings.get( Key._slash ) == null ) {
-			config.getAsStruct( Key.mappings ).put( Key._slash, Mapping.ofInternal( "/", webRoot ) );
+			config.getAsStruct( Key.mappings ).put( Key._slash, Mapping.ofExternal( "/", webRoot ) );
 		}
 		configCache = config;
 		return config;
