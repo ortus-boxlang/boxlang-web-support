@@ -706,6 +706,26 @@ public class FileUploadTest extends ortus.boxlang.web.util.BaseWebTest {
 		assertFalse( fileInfo.getAsBoolean( KeyDictionary.fileWasSaved ) );
 	}
 
+	@DisplayName( "It tests the BIF FileUpload with empty string filefield and accept arguments" )
+	@Test
+	public void testBifFileUploadWithEmptyStringOptionals() {
+		variables.put( Key.directory, Path.of( tmpDirectory ).toAbsolutePath().toString() );
+		runtime.executeSource(
+		    """
+		    result = FileUpload( directory, "", "", "makeunique" );
+		    """,
+		    context );
+
+		assertThat( variables.get( result ) ).isInstanceOf( IStruct.class );
+
+		IStruct fileInfo = variables.getAsStruct( result );
+
+		// Blank filefield falls back to the first upload in the request
+		assertThat( fileInfo.getAsString( KeyDictionary.clientFile ) ).isEqualTo( testFields[ 0 ] + ".jpg" );
+		assertThat( fileInfo.getAsString( KeyDictionary.serverFile ) ).endsWith( ".jpg" );
+		assertTrue( fileInfo.getAsBoolean( KeyDictionary.fileWasSaved ) );
+	}
+
 	/**
 	 * Helper method to setup clean uploads for each test scenario
 	 */

@@ -161,6 +161,11 @@ public class FileUpload extends BIF {
 
 		// Single File Upload
 		if ( bifMethodKey.equals( KeyDictionary.fileUpload ) ) {
+
+			// Treat empty string arguments for filefield and accept as null
+			nullIfEmpty( arguments, Key.filefield );
+			nullIfEmpty( arguments, Key.accept );
+
 			String	field			= arguments.getAsString( Key.filefield );
 			// Accept `mimeType` as an alias for `accept` for CFML compat
 			Object	mimeArgument	= arguments.get( KeyDictionary.mimeType );
@@ -190,6 +195,19 @@ public class FileUpload extends BIF {
 
 		// If we reach here then we are processing multiple file uploads
 		return Stream.of( uploads ).map( upload -> uploadFile( upload, arguments, context ) ).collect( BLCollector.toArray() );
+	}
+
+	/**
+	 * Replaces an empty or blank string argument with null in the arguments scope so that
+	 * CFML callers passing "" are treated the same as callers who omit the argument.
+	 *
+	 * @param arguments The arguments scope to mutate
+	 * @param key       The argument key to normalize
+	 */
+	private static void nullIfEmpty( IStruct arguments, Key key ) {
+		if ( StringUtils.isBlank( arguments.getAsString( key ) ) ) {
+			arguments.put( key, null );
+		}
 	}
 
 	/**
