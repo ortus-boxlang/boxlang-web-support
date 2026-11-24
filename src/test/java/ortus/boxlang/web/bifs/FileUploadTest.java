@@ -726,6 +726,28 @@ public class FileUploadTest extends ortus.boxlang.web.util.BaseWebTest {
 		assertTrue( fileInfo.getAsBoolean( KeyDictionary.fileWasSaved ) );
 	}
 
+	@DisplayName( "It tests the BIF FileUploadAll with CFML positional arguments" )
+	@Test
+	public void testBifFileUploadAllPositional() {
+		setupUploadsForTest();
+
+		variables.put( Key.directory, Path.of( tmpDirectory ).toAbsolutePath().toString() );
+		runtime.executeSource(
+		    """
+		    result = FileUploadAll( directory, "", "makeunique" );
+		    """,
+		    context );
+
+		assertThat( variables.get( result ) ).isInstanceOf( Array.class );
+
+		// Every upload should be saved: the second argument is the MIME accept filter (blank here)
+		// and the third is nameConflict, not the other way around.
+		variables.getAsArray( result ).stream().map( StructCaster::cast ).forEach( fileInfo -> {
+			assertTrue( fileInfo.getAsBoolean( KeyDictionary.fileWasSaved ) );
+			assertThat( fileInfo.getAsString( KeyDictionary.serverFile ) ).endsWith( ".jpg" );
+		} );
+	}
+
 	/**
 	 * Helper method to setup clean uploads for each test scenario
 	 */

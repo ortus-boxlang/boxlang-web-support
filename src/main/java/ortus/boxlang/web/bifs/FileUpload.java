@@ -159,6 +159,21 @@ public class FileUpload extends BIF {
 			throw new BoxRuntimeException( "No file uploads were found in the request" );
 		}
 
+		// fileUploadAll shares this BIF's argument order, but its CFML signature has no filefield argument:
+		// fileUploadAll( destination, accept, nameConflict, ... ). Positional calls therefore land one slot
+		// too far right, so shift accept and nameConflict back to the left.
+		if ( bifMethodKey.equals( KeyDictionary.fileUploadAll ) && arguments.isPositional() ) {
+			Object	acceptValue		= arguments.get( Key.accept );
+			Object	filefieldValue	= arguments.get( Key.filefield );
+
+			if ( acceptValue != null ) {
+				arguments.put( Key.nameconflict, acceptValue );
+			}
+			arguments.put( Key.accept, filefieldValue );
+			arguments.put( Key.filefield, null );
+			nullIfEmpty( arguments, Key.accept );
+		}
+
 		// Single File Upload
 		if ( bifMethodKey.equals( KeyDictionary.fileUpload ) ) {
 
