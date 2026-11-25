@@ -1,21 +1,15 @@
 name: Pull Requests
 
 on:
-  push:
-    branches-ignore:
-      - "main"
-      - "master"
-      - "development"
-      - "releases/v*"
+  # Use only PR events so updates do not also start a duplicate push run.
   pull_request:
     branches:
       - "releases/v*"
       - development
 
-# Share one group per branch for `push` and `pull_request`, so a push to a PR branch does not run twice:
-# the pull_request run cancels the push run.
+# Cancel superseded runs for the same PR.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 jobs:
